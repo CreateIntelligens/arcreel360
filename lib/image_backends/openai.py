@@ -1,4 +1,4 @@
-"""OpenAIImageBackend — OpenAI 图片生成后端。"""
+"""OpenAIImageBackend — OpenAI 圖片生成後端。"""
 
 from __future__ import annotations
 
@@ -17,15 +17,15 @@ from lib.retry import with_retry_async
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gpt-image-1.5"
+DEFAULT_MODEL = "gpt-image-2"
 _MAX_REFERENCE_IMAGES = 16
 
 _SIZE_MAP: dict[str, str] = {
-    "9:16": "1024x1792",
-    "16:9": "1792x1024",
+    "9:16": "1024x1536",
+    "16:9": "1536x1024",
     "1:1": "1024x1024",
-    "3:4": "1024x1792",
-    "4:3": "1792x1024",
+    "3:4": "1024x1536",
+    "4:3": "1536x1024",
 }
 
 _QUALITY_MAP: dict[str, str] = {
@@ -37,7 +37,7 @@ _QUALITY_MAP: dict[str, str] = {
 
 
 class OpenAIImageBackend:
-    """OpenAI 图片生成后端，支持 T2I 和 I2I。"""
+    """OpenAI 圖片生成後端，支援 T2I 和 I2I。"""
 
     def __init__(self, *, api_key: str | None = None, model: str | None = None, base_url: str | None = None):
         self._client = create_openai_client(api_key=api_key, base_url=base_url)
@@ -66,20 +66,21 @@ class OpenAIImageBackend:
         return await self._generate_create(request)
 
     async def _generate_create(self, request: ImageGenerationRequest) -> ImageGenerationResult:
+        size = _SIZE_MAP.get(request.aspect_ratio, "1024x1536")
+        quality = _QUALITY_MAP.get(request.image_size, "medium")
         response = await self._client.images.generate(
             model=self._model,
             prompt=request.prompt,
-            size=_SIZE_MAP.get(request.aspect_ratio, "1024x1792"),
-            quality=_QUALITY_MAP.get(request.image_size, "medium"),
-            response_format="b64_json",
+            size=size,
+            quality=quality,
             n=1,
         )
-        return self._save_and_return(response, request)
+        return self._save_and_return(response, request, quality=quality, size=size)
 
     async def _generate_edit(self, request: ImageGenerationRequest) -> ImageGenerationResult:
         refs = request.reference_images
         if len(refs) > _MAX_REFERENCE_IMAGES:
-            logger.warning("参考图数量 %d 超过上限 %d，截断", len(refs), _MAX_REFERENCE_IMAGES)
+            logger.warning("參考圖數量 %d 超過上限 %d，截斷", len(refs), _MAX_REFERENCE_IMAGES)
             refs = refs[:_MAX_REFERENCE_IMAGES]
         image_files = []
         try:
@@ -88,29 +89,40 @@ class OpenAIImageBackend:
                 try:
                     image_files.append(open(ref_path, "rb"))  # noqa: SIM115
                 except FileNotFoundError:
-                    logger.warning("参考图不存在，跳过: %s", ref_path)
+                    logger.warning("參考圖不存在，跳過: %s", ref_path)
             if not image_files:
-                logger.warning("所有参考图均无效，回退到 T2I")
+                logger.warning("所有參考圖均無效，回退到 T2I")
                 return await self._generate_create(request)
+            size = _SIZE_MAP.get(request.aspect_ratio, "1024x1536")
+            quality = _QUALITY_MAP.get(request.image_size, "medium")
             response = await self._client.images.edit(
                 model=self._model,
                 image=image_files,
                 prompt=request.prompt,
-                response_format="b64_json",
+                size=size,
+                quality=quality,
             )
         finally:
             for f in image_files:
                 f.close()
-        return self._save_and_return(response, request)
+        return self._save_and_return(response, request, quality=quality, size=size)
 
-    def _save_and_return(self, response, request: ImageGenerationRequest) -> ImageGenerationResult:
+    def _save_and_return(
+        self,
+        response,
+        request: ImageGenerationRequest,
+        *,
+        quality: str,
+        size: str,
+    ) -> ImageGenerationResult:
         image_bytes = base64.b64decode(response.data[0].b64_json)
         request.output_path.parent.mkdir(parents=True, exist_ok=True)
         request.output_path.write_bytes(image_bytes)
-        logger.info("OpenAI 图片生成完成: %s", request.output_path)
+        logger.info("OpenAI 圖片生成完成: %s", request.output_path)
         return ImageGenerationResult(
             image_path=request.output_path,
             provider=PROVIDER_OPENAI,
             model=self._model,
-            quality=_QUALITY_MAP.get(request.image_size, "medium"),
+            quality=quality,
+            size=size,
         )

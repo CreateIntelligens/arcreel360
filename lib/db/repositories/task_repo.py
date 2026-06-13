@@ -50,6 +50,7 @@ def _task_to_dict(row: Task) -> dict[str, Any]:
         "dependency_task_id": row.dependency_task_id,
         "dependency_group": row.dependency_group,
         "dependency_index": row.dependency_index,
+        "cancelled_by": row.cancelled_by,
         "queued_at": dt_to_iso(row.queued_at),
         "started_at": dt_to_iso(row.started_at),
         "finished_at": dt_to_iso(row.finished_at),
@@ -264,10 +265,17 @@ class TaskRepository(BaseRepository):
         await self.session.commit()
         return task_data
 
-    async def mark_failed(self, task_id: str, error_message: str) -> dict[str, Any] | None:
+    async def mark_failed(
+        self,
+        task_id: str,
+        error_message: str,
+        *,
+        error_detail: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         failed_task, changed = await self._mark_failed_internal(
             task_id=task_id,
             error_message=error_message,
+            error_detail=error_detail,
             allowed_statuses=ACTIVE_TASK_STATUSES,
         )
         if failed_task is None:
@@ -288,6 +296,7 @@ class TaskRepository(BaseRepository):
         task_id: str,
         error_message: str,
         allowed_statuses: tuple[str, ...],
+        error_detail: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any] | None, bool]:
         result = await self.session.execute(select(Task).where(Task.task_id == task_id))
         task = result.scalar_one_or_none()
@@ -298,16 +307,17 @@ class TaskRepository(BaseRepository):
             return _task_to_dict(task), False
 
         now = utc_now()
-        await self.session.execute(
-            update(Task)
-            .where(Task.task_id == task_id)
-            .values(
-                status="failed",
-                error_message=error_message[:2000],
-                finished_at=now,
-                updated_at=now,
-            )
-        )
+        values: dict[str, Any] = {
+            "status": "failed",
+            "error_message": error_message[:2000],
+            "finished_at": now,
+            "updated_at": now,
+        }
+        if error_detail is not None:
+            existing = _json_loads(task.result_json, {}) or {}
+            existing["error_detail"] = error_detail
+            values["result_json"] = _json_dumps(existing)
+        await self.session.execute(update(Task).where(Task.task_id == task_id).values(**values))
         await self.session.flush()
 
         res = await self.session.execute(select(Task).where(Task.task_id == task_id))
@@ -354,6 +364,137 @@ class TaskRepository(BaseRepository):
                 error_message=failed_task.get("error_message") or blocked_message,
             )
         return cascaded
+
+    async def get_cancel_preview(self, task_id: str) -> dict[str, Any]:
+        task = await self._get_queued_task_for_cancel(task_id)
+        return {
+            "task": _task_summary(task),
+            "cascaded": await self._collect_queued_dependents(task_id),
+        }
+
+    async def _get_queued_task_for_cancel(self, task_id: str) -> Task:
+        result = await self.session.execute(select(Task).where(Task.task_id == task_id))
+        task = result.scalar_one_or_none()
+        if not task:
+            raise ValueError(f"任務 '{task_id}' 不存在")
+        if task.status != "queued":
+            raise ValueError("只有排隊中的任務可以取消")
+        return task
+
+    async def _collect_queued_dependents(self, task_id: str) -> list[dict[str, Any]]:
+        result = await self.session.execute(
+            select(Task)
+            .where(
+                Task.dependency_task_id == task_id,
+                Task.status == "queued",
+            )
+            .order_by(Task.queued_at.asc())
+        )
+
+        dependents: list[dict[str, Any]] = []
+        for task in result.scalars().all():
+            dependents.append(_task_summary(task))
+            dependents.extend(await self._collect_queued_dependents(task.task_id))
+        return dependents
+
+    async def cancel_task(self, task_id: str) -> dict[str, Any]:
+        await self._get_queued_task_for_cancel(task_id)
+
+        cancelled: list[dict[str, Any]] = []
+        skipped_running: list[dict[str, Any]] = []
+
+        task_data = await self._mark_cancelled(task_id, cancelled_by="user")
+        if task_data:
+            cancelled.append(task_data)
+        else:
+            await self._append_if_running(task_id, skipped_running)
+
+        await self._cascade_cancel_dependents(task_id, cancelled, skipped_running)
+        await self.session.commit()
+        return {"cancelled": cancelled, "skipped_running": skipped_running}
+
+    async def _mark_cancelled(self, task_id: str, *, cancelled_by: str) -> dict[str, Any] | None:
+        now = utc_now()
+        result = await self.session.execute(
+            update(Task)
+            .where(Task.task_id == task_id, Task.status == "queued")
+            .values(
+                status="cancelled",
+                cancelled_by=cancelled_by,
+                finished_at=now,
+                updated_at=now,
+            )
+        )
+        if result.rowcount == 0:
+            return None
+
+        await self.session.flush()
+        row = await self.session.execute(select(Task).where(Task.task_id == task_id))
+        cancelled_task = row.scalar_one()
+        task_data = _task_to_dict(cancelled_task)
+        await self._append_event(
+            task_id=task_id,
+            project_name=cancelled_task.project_name,
+            event_type="cancelled",
+            status="cancelled",
+            data=task_data,
+        )
+        return task_data
+
+    async def _cascade_cancel_dependents(
+        self,
+        task_id: str,
+        cancelled: list[dict[str, Any]],
+        skipped_running: list[dict[str, Any]],
+    ) -> None:
+        result = await self.session.execute(
+            select(Task.task_id, Task.status).where(Task.dependency_task_id == task_id).order_by(Task.queued_at.asc())
+        )
+
+        for dep_id, dep_status in result.all():
+            if dep_status == "queued":
+                task_data = await self._mark_cancelled(dep_id, cancelled_by="cascade")
+                if task_data:
+                    cancelled.append(task_data)
+                    await self._cascade_cancel_dependents(dep_id, cancelled, skipped_running)
+                else:
+                    await self._append_if_running(dep_id, skipped_running)
+            elif dep_status == "running":
+                await self._append_if_running(dep_id, skipped_running)
+
+    async def _append_if_running(self, task_id: str, skipped_running: list[dict[str, Any]]) -> None:
+        result = await self.session.execute(select(Task).where(Task.task_id == task_id, Task.status == "running"))
+        task = result.scalar_one_or_none()
+        if task:
+            skipped_running.append(_task_to_dict(task))
+
+    async def get_cancel_all_preview(self, project_name: str) -> int:
+        return await self._count_tasks_by_status(project_name=project_name, status="queued")
+
+    async def cancel_all_queued(self, project_name: str) -> dict[str, Any]:
+        running_count = await self._count_tasks_by_status(project_name=project_name, status="running")
+
+        queued_result = await self.session.execute(
+            select(Task)
+            .where(Task.project_name == project_name, Task.status == "queued")
+            .order_by(Task.queued_at.asc())
+        )
+        queued_tasks = list(queued_result.scalars().all())
+        cancelled: list[dict[str, Any]] = []
+
+        for task in queued_tasks:
+            task_data = await self._mark_cancelled(task.task_id, cancelled_by="user")
+            if task_data:
+                cancelled.append(task_data)
+
+        await self.session.commit()
+        return {"cancelled_count": len(cancelled), "skipped_running_count": running_count}
+
+    async def _count_tasks_by_status(self, *, project_name: str, status: str) -> int:
+        result = await self.session.execute(
+            select(func.count()).select_from(Task).where(Task.project_name == project_name, Task.status == status)
+        )
+        return result.scalar_one()
 
     async def requeue_running(self, *, limit: int = 1000) -> int:
         now = utc_now()
@@ -466,7 +607,7 @@ class TaskRepository(BaseRepository):
         stmt = self._scope_query(stmt, Task)
         result = await self.session.execute(stmt)
 
-        stats = {"queued": 0, "running": 0, "succeeded": 0, "failed": 0, "total": 0}
+        stats = {"queued": 0, "running": 0, "succeeded": 0, "failed": 0, "cancelled": 0, "total": 0}
         total = 0
         for row in result.all():
             s, cnt = row[0], row[1]
@@ -592,3 +733,11 @@ class TaskRepository(BaseRepository):
             "updated_at": dt_to_iso(row.updated_at),
             "is_online": row.lease_until > time.time(),
         }
+
+
+def _task_summary(task: Task) -> dict[str, Any]:
+    return {
+        "task_id": task.task_id,
+        "task_type": task.task_type,
+        "resource_id": task.resource_id,
+    }

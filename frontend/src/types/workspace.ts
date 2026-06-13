@@ -1,9 +1,10 @@
-export type ProjectEventSource = "webui" | "worker" | "filesystem";
+export type ProjectEventSource = "webui" | "worker" | "agent" | "filesystem";
+export type WorkspaceAnchorType = "character" | "clue" | "segment" | "episode";
 
 export interface ProjectChangeFocus {
   pane: "characters" | "clues" | "episode";
   episode?: number;
-  anchor_type?: "character" | "clue" | "segment";
+  anchor_type?: WorkspaceAnchorType;
   anchor_id?: string;
   tab?: string;
 }
@@ -42,7 +43,7 @@ export interface ProjectEventSnapshotPayload {
 
 export interface WorkspaceFocusTarget {
   request_id: string;
-  type: "character" | "clue" | "segment";
+  type: WorkspaceAnchorType;
   id: string;
   route: string;
   highlight: true;

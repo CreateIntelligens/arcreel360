@@ -6,6 +6,7 @@ import { API } from "@/api";
 import { useAppStore } from "@/stores/app-store";
 import { useProjectsStore } from "@/stores/projects-store";
 import { ProjectsPage } from "@/components/pages/ProjectsPage";
+import type { ProjectSummary } from "@/types";
 
 vi.mock("@/components/pages/CreateProjectModal", () => ({
   CreateProjectModal: () => <div data-testid="create-project-modal">Create Project Modal</div>,
@@ -20,6 +21,24 @@ function renderPage() {
       </Router>,
     ),
     location,
+  };
+}
+
+function makeProjectSummary(overrides: Partial<ProjectSummary> = {}): ProjectSummary {
+  return {
+    name: "demo",
+    title: "Demo Project",
+    style: "Anime",
+    thumbnail: null,
+    status: {
+      current_phase: "setup",
+      phase_progress: 0.1,
+      characters: { total: 0, completed: 0 },
+      clues: { total: 0, completed: 0 },
+      scenes: { total: 0, completed: 0 },
+      episodes_summary: { total: 0, scripted: 0, in_production: 0, completed: 0 },
+    },
+    ...overrides,
   };
 }
 
@@ -46,7 +65,7 @@ describe("ProjectsPage", () => {
 
     expect(await screen.findByText("暫無專案")).toBeInTheDocument();
     expect(
-      screen.getByText("點擊右上角「新建專案」或「匯入 ZIP」開始創作"),
+      screen.getByText("點選右上角「新建專案」或「匯入 ZIP」開始創作"),
     ).toBeInTheDocument();
   });
 
@@ -59,10 +78,11 @@ describe("ProjectsPage", () => {
           style: "Anime",
           thumbnail: null,
           status: {
-            current_phase: "production",
+            current_phase: "storyboard",
             phase_progress: 0.5,
             characters: { total: 2, completed: 2 },
             clues: { total: 2, completed: 1 },
+            scenes: { total: 0, completed: 0 },
             episodes_summary: { total: 1, scripted: 1, in_production: 1, completed: 0 },
           },
         },
@@ -72,7 +92,7 @@ describe("ProjectsPage", () => {
     renderPage();
 
     expect(await screen.findByText("Demo Project")).toBeInTheDocument();
-    expect(screen.getByText("Anime · 製作中")).toBeInTheDocument();
+    expect(screen.getByText("Anime · 分鏡圖")).toBeInTheDocument();
     expect(screen.getByText("50%")).toBeInTheDocument();
   });
 
@@ -105,6 +125,7 @@ describe("ProjectsPage", () => {
               phase_progress: 1,
               characters: { total: 1, completed: 1 },
               clues: { total: 1, completed: 1 },
+              scenes: { total: 0, completed: 0 },
               episodes_summary: { total: 1, scripted: 1, in_production: 0, completed: 1 },
             },
           },
@@ -121,11 +142,11 @@ describe("ProjectsPage", () => {
         characters: {},
         clues: {},
       },
-      warnings: ["发现未识别的附加文件/目录: extras"],
+      warnings: ["發現未識別的附加檔案/目錄: extras"],
       conflict_resolution: "none",
       diagnostics: {
-        auto_fixed: [{ code: "missing_clues_field", message: "segments[0]: 补全缺失字段 clues_in_segment" }],
-        warnings: [{ code: "validation_warning", message: "发现未识别的附加文件/目录: extras" }],
+        auto_fixed: [{ code: "missing_clues_field", message: "segments[0]: 補全缺失欄位 clues_in_segment" }],
+        warnings: [{ code: "validation_warning", message: "發現未識別的附加檔案/目錄: extras" }],
       },
     });
 
@@ -206,6 +227,7 @@ describe("ProjectsPage", () => {
               phase_progress: 1,
               characters: { total: 1, completed: 1 },
               clues: { total: 1, completed: 1 },
+              scenes: { total: 0, completed: 0 },
               episodes_summary: { total: 1, scripted: 1, in_production: 0, completed: 1 },
             },
           },
@@ -262,5 +284,54 @@ describe("ProjectsPage", () => {
     await waitFor(() => {
       expect(location.history?.at(-1)).toBe("/app/projects/demo-renamed");
     });
+  });
+
+  it("opens the delete confirmation dialog, handles deletion, and refreshes the list", async () => {
+    vi.spyOn(API, "listProjects")
+      .mockResolvedValueOnce({
+        projects: [
+          makeProjectSummary({
+            name: "to-delete",
+            title: "Project to Delete",
+          }),
+        ],
+      })
+      .mockResolvedValueOnce({ projects: [] });
+
+    const deleteSpy = vi.spyOn(API, "deleteProject").mockResolvedValue({ success: true } as any);
+
+    renderPage();
+
+    expect(await screen.findByText("Project to Delete")).toBeInTheDocument();
+
+    const deleteBtn = screen.getByRole("button", { name: "刪除專案 Project to Delete" });
+    fireEvent.click(deleteBtn);
+
+    expect(screen.getByRole("heading", { name: "刪除專案" })).toBeInTheDocument();
+
+    const confirmBtn = screen.getByRole("button", { name: "確認刪除" });
+    expect(confirmBtn).toBeDisabled();
+
+    const input = screen.getByPlaceholderText("DELETE");
+    fireEvent.change(input, { target: { value: "DELETE" } });
+    expect(confirmBtn).not.toBeDisabled();
+
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(deleteSpy).toHaveBeenCalledWith("to-delete");
+    });
+
+    await waitFor(() => {
+      expect(API.listProjects).toHaveBeenCalledTimes(2);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "刪除專案" })).not.toBeInTheDocument();
+    });
+    expect(await screen.findByText("暫無專案")).toBeInTheDocument();
+
+    expect(useAppStore.getState().toast?.text).toBe("專案「Project to Delete」已刪除");
+    expect(useAppStore.getState().toast?.tone).toBe("success");
   });
 });

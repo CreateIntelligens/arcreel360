@@ -405,7 +405,7 @@ class SessionManager:
         """Load configuration from environment."""
         self.system_prompt = os.environ.get(
             "ASSISTANT_SYSTEM_PROMPT",
-            "你是视频项目协作助手。优先复用项目中的 Skills 与现有文件结构，避免擅自改写数据格式。"
+            "你是视频项目协作助手。优先复用项目中的 Skills 与現有文件结构，避免擅自改写数据格式。"
         ).strip()
         self.max_turns = int(os.environ.get("ASSISTANT_MAX_TURNS", "8"))
         self.cli_path = os.environ.get("ASSISTANT_CLAUDE_CLI_PATH", "").strip() or None
@@ -1224,7 +1224,7 @@ export function useAssistantState({
                 return sessions[0]?.id || "";
             });
         } catch (error) {
-            pushToast(`加载会话失败：${error.message}`, "error");
+            pushToast(`加载会话失敗：${error.message}`, "error");
         } finally {
             setAssistantLoadingSessions(false);
         }
@@ -1242,7 +1242,7 @@ export function useAssistantState({
             const data = await window.API.listAssistantSkills(currentAssistantProject || null);
             setAssistantSkills(data.skills || []);
         } catch (error) {
-            pushToast(`加载技能列表失败：${error.message}`, "error");
+            pushToast(`加载技能列表失敗：${error.message}`, "error");
             setAssistantSkills([]);
         } finally {
             setAssistantSkillsLoading(false);
@@ -1330,7 +1330,7 @@ export function useAssistantState({
                 setAssistantMessages(data.messages || []);
             }
         } catch (error) {
-            pushToast(`加载消息失败：${error.message}`, "error");
+            pushToast(`加载消息失敗：${error.message}`, "error");
         } finally {
             setAssistantMessagesLoading(false);
         }
@@ -1353,7 +1353,7 @@ export function useAssistantState({
         if (assistantCurrentSessionId) return assistantCurrentSessionId;
 
         const projectName = currentAssistantProject || projects[0]?.name;
-        if (!projectName) throw new Error("请先创建至少一个项目");
+        if (!projectName) throw new Error("请先创建至少一個项目");
 
         const data = await window.API.createAssistantSession(projectName, "");
         setAssistantSessions((prev) => [{ id: data.id, ...data }, ...prev]);
@@ -1387,7 +1387,7 @@ export function useAssistantState({
             setSessionStatus("running");
             connectStream(sessionId);
         } catch (error) {
-            setAssistantError(error.message || "发送失败");
+            setAssistantError(error.message || "发送失敗");
             setAssistantSending(false);
         }
     }, [assistantInput, assistantSending, connectStream, ensureAssistantSession]);
@@ -1456,7 +1456,7 @@ export function useAssistantState({
             setSessionDialogTitle("");
             setSessionDialogSessionId("");
         } catch (error) {
-            pushToast(`保存会话失败：${error.message}`, "error");
+            pushToast(`保存会话失敗：${error.message}`, "error");
         } finally {
             setSessionDialogSubmitting(false);
         }
@@ -1498,7 +1498,7 @@ export function useAssistantState({
             setDeleteDialogSessionId("");
             setDeleteDialogSessionTitle("");
         } catch (error) {
-            pushToast(`删除失败：${error.message}`, "error");
+            pushToast(`删除失敗：${error.message}`, "error");
         } finally {
             setDeleteDialogSubmitting(false);
         }
@@ -1655,7 +1655,7 @@ cd webui && python -m uvicorn server.main:app --reload --port 8000
 cd frontend && pnpm dev
 ```
 
-**Step 3: 测试场景**
+**Step 3: 测试場景**
 
 1. 创建新会话
 2. 发送消息，验证 SSE 流式响应

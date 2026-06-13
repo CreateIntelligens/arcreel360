@@ -1,9 +1,11 @@
-"""OpenAIVideoBackend — OpenAI Sora 视频生成后端。"""
+"""OpenAIVideoBackend — OpenAI Sora 影片生成後端。"""
 
 from __future__ import annotations
 
 import logging
 from pathlib import Path
+
+from PIL import Image, ImageOps
 
 from lib.openai_shared import OPENAI_RETRYABLE_ERRORS, create_openai_client
 from lib.providers import PROVIDER_OPENAI
@@ -35,7 +37,7 @@ def _resolve_size(resolution: str, aspect_ratio: str) -> str:
 
 
 class OpenAIVideoBackend:
-    """OpenAI Sora 视频生成后端。"""
+    """OpenAI Sora 影片生成後端。"""
 
     def __init__(self, *, api_key: str | None = None, model: str | None = None, base_url: str | None = None):
         self._client = create_openai_client(api_key=api_key, base_url=base_url)
@@ -65,33 +67,45 @@ class OpenAIVideoBackend:
             "size": _resolve_size(request.resolution, request.aspect_ratio),
         }
 
+        temp_image_path = None
         if request.start_image and Path(request.start_image).exists():
-            kwargs["input_reference"] = _encode_start_image(request.start_image)
+            resolved_image_path = _resize_image_to_fit(Path(request.start_image), kwargs["size"])
+            if resolved_image_path != Path(request.start_image):
+                temp_image_path = resolved_image_path
+            kwargs["input_reference"] = _encode_start_image(resolved_image_path)
 
-        logger.info("OpenAI 视频生成开始: model=%s, seconds=%s", self._model, kwargs["seconds"])
+        logger.info("OpenAI 影片生成開始: model=%s, seconds=%s", self._model, kwargs["seconds"])
 
-        video = await self._create_video(**kwargs)
+        try:
+            video = await self._create_video(**kwargs)
 
-        if video.status == "failed":
-            raise RuntimeError(f"Sora 视频生成失败: {video.error}")
+            if video.status == "failed":
+                raise RuntimeError(f"Sora 影片生成失敗: {video.error}")
 
-        content = await self._download_content_with_retry(video.id)
-        request.output_path.parent.mkdir(parents=True, exist_ok=True)
-        request.output_path.write_bytes(content.content)
+            content = await self._download_content_with_retry(video.id)
+            request.output_path.parent.mkdir(parents=True, exist_ok=True)
+            request.output_path.write_bytes(content.content)
 
-        logger.info("OpenAI 视频下载完成: %s", request.output_path)
+            logger.info("OpenAI 影片下載完成: %s", request.output_path)
 
-        return VideoGenerationResult(
-            video_path=request.output_path,
-            provider=PROVIDER_OPENAI,
-            model=self._model,
-            duration_seconds=int(video.seconds if video.seconds is not None else kwargs["seconds"]),
-            task_id=video.id,
-        )
+            return VideoGenerationResult(
+                video_path=request.output_path,
+                provider=PROVIDER_OPENAI,
+                model=self._model,
+                duration_seconds=int(video.seconds if video.seconds is not None else kwargs["seconds"]),
+                task_id=video.id,
+            )
+        finally:
+            if temp_image_path and temp_image_path.exists():
+                try:
+                    temp_image_path.unlink()
+                    logger.info("已刪除臨時適配圖片: %s", temp_image_path.name)
+                except Exception as e:
+                    logger.warning("刪除臨時適配圖片失敗: %s", e)
 
     @with_retry_async(retryable_errors=OPENAI_RETRYABLE_ERRORS)
     async def _create_video(self, **kwargs):
-        """视频生成（create_and_poll），带独立重试。"""
+        """影片生成（create_and_poll），帶獨立重試。"""
         return await self._client.videos.create_and_poll(**kwargs)
 
     @with_retry_async(
@@ -100,7 +114,7 @@ class OpenAIVideoBackend:
         retryable_errors=OPENAI_RETRYABLE_ERRORS,
     )
     async def _download_content_with_retry(self, video_id: str):
-        """单独重试内容下载，避免因下载失败重新触发视频生成。"""
+        """單獨重試內容下載，避免因下載失敗重新觸發影片生成。"""
         return await self._client.videos.download_content(video_id)
 
 
@@ -116,3 +130,27 @@ def _map_duration(seconds: int) -> str:
 def _encode_start_image(image_path: Path) -> tuple[str, bytes, str]:
     mime = IMAGE_MIME_TYPES.get(image_path.suffix.lower(), "image/png")
     return (image_path.name, image_path.read_bytes(), mime)
+
+
+def _resize_image_to_fit(image_path: Path, target_size: str) -> Path:
+    """如果圖片尺寸與 target_size (格式 WxH，如 1280x720) 不符，將其縮放到 target_size 並返回新檔案的路徑。"""
+    try:
+        tw, th = map(int, target_size.split("x"))
+    except ValueError:
+        return image_path
+
+    try:
+        with Image.open(image_path) as img:
+            w, h = img.size
+            if w == tw and h == th:
+                return image_path
+
+            logger.info("圖片尺寸不符，將 %s (%dx%d) 縮放為 %s 以符合 OpenAI 限制", image_path.name, w, h, target_size)
+            resized_img = ImageOps.fit(img, (tw, th), Image.Resampling.LANCZOS)
+
+            temp_path = image_path.parent / f"{image_path.stem}_resized_{target_size}{image_path.suffix}"
+            resized_img.save(temp_path)
+            return temp_path
+    except Exception as e:
+        logger.warning("檢測或縮放圖片尺寸失敗: %s", e)
+        return image_path

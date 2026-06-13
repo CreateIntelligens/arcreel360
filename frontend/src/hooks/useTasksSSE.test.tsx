@@ -37,7 +37,7 @@ describe("useTasksSSE (polling)", () => {
   });
 
   it("polls on mount, updates store, and cleans up on unmount", async () => {
-    const stats = { queued: 1, running: 0, succeeded: 0, failed: 0, total: 1 };
+    const stats = { queued: 1, running: 0, succeeded: 0, failed: 0, cancelled: 0, total: 1 };
     const listSpy = vi.spyOn(API, "listTasks").mockResolvedValue({
       items: [makeTask()],
       total: 1,
@@ -83,7 +83,7 @@ describe("useTasksSSE (polling)", () => {
 
     // Recover on next poll
     listSpy.mockResolvedValueOnce({ items: [], total: 0, page: 1, page_size: 200 });
-    vi.spyOn(API, "getTaskStats").mockResolvedValueOnce({ stats: { queued: 0, running: 0, succeeded: 0, failed: 0, total: 0 } } as any);
+    vi.spyOn(API, "getTaskStats").mockResolvedValueOnce({ stats: { queued: 0, running: 0, succeeded: 0, failed: 0, cancelled: 0, total: 0 } } as any);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000);
@@ -102,7 +102,7 @@ describe("useTasksSSE (polling)", () => {
       page_size: 200,
     });
     vi.spyOn(API, "getTaskStats").mockResolvedValue({
-      stats: { queued: 1, running: 1, succeeded: 0, failed: 0, total: 2 },
+      stats: { queued: 1, running: 1, succeeded: 0, failed: 0, cancelled: 0, total: 2 },
     } as any);
 
     renderHook(() => useTasksSSE("demo"));
@@ -125,13 +125,13 @@ describe("useTasksSSE (polling)", () => {
     });
     // Backend returns { stats: { ... } } wrapper
     vi.spyOn(API, "getTaskStats").mockResolvedValue({
-      stats: { queued: 3, running: 2, succeeded: 10, failed: 1, total: 16 },
+      stats: { queued: 3, running: 2, succeeded: 10, failed: 1, cancelled: 0, total: 16 },
     } as any);
 
     renderHook(() => useTasksSSE("demo"));
     await act(async () => {});
 
     const { stats } = useTasksStore.getState();
-    expect(stats).toEqual({ queued: 3, running: 2, succeeded: 10, failed: 1, total: 16 });
+    expect(stats).toEqual({ queued: 3, running: 2, succeeded: 10, failed: 1, cancelled: 0, total: 16 });
   });
 });

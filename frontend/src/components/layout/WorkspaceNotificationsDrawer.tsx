@@ -82,7 +82,7 @@ export function WorkspaceNotificationsDrawer({
             <div>
               <p className="text-sm text-slate-200">目前沒有通知</p>
               <p className="mt-1 text-xs text-slate-500">
-                專案刷新、生成完成與可定位變更會出現在這裡
+                專案重新整理、生成完成與可定位變更會出現在這裡
               </p>
             </div>
           </div>
@@ -121,7 +121,7 @@ export function WorkspaceNotificationsDrawer({
                             onClick={() => onNavigate(item)}
                             className="inline-flex items-center gap-1 rounded-full border border-sky-300/18 bg-sky-300/10 px-3 py-1 text-xs font-medium text-sky-100 transition-all hover:-translate-y-0.5 hover:border-sky-200/35 hover:bg-sky-300/14"
                           >
-                            查看定位
+                            檢視定位
                             <ArrowUpRight className="h-3.5 w-3.5" />
                           </button>
                         ) : (
@@ -189,8 +189,8 @@ function getToneIcon(tone: WorkspaceNotification["tone"]) {
 
 function formatNotificationTime(timestamp: number): string {
   const diff = Date.now() - timestamp;
-  if (diff < 60_000) return "刚刚";
-  if (diff < 3_600_000) return `${Math.max(1, Math.floor(diff / 60_000))} 分钟前`;
+  if (diff < 60_000) return "剛剛";
+  if (diff < 3_600_000) return `${Math.max(1, Math.floor(diff / 60_000))} 分鐘前`;
 
   const date = new Date(timestamp);
   return `${date.getHours().toString().padStart(2, "0")}:${date

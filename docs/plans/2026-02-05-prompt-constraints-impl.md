@@ -23,9 +23,9 @@
 
 ```python
 d. **image_prompt**：生成包含以下字段的对象：
-   - scene：用中文描述此刻画面中的具体场景——角色位置、姿态、表情、服装细节，以及可见的环境元素和物品。
+   - scene：用中文描述此刻画面中的具体場景——角色位置、姿态、表情、服装细节，以及可见的环境元素和物品。
      聚焦当下瞬间的可见画面。仅描述摄像机能够捕捉到的具体视觉元素。
-     确保描述避免超出此刻画面的元素。排除比喻、隐喻、抽象情绪词、主观评价、多场景切换等无法直接渲染的描述。
+     确保描述避免超出此刻画面的元素。排除比喻、隐喻、抽象情绪词、主观评价、多場景切换等无法直接渲染的描述。
      画面应自包含，不暗示过去事件或未来发展。
    - composition：
      - shot_type：镜头类型（Extreme Close-up, Close-up, Medium Close-up, Medium Shot, Medium Long Shot, Long Shot, Extreme Long Shot, Over-the-shoulder, Point-of-view）
@@ -60,12 +60,12 @@ git commit -m "feat(prompt): add image_prompt constraints to narration mode"
 e. **video_prompt**：生成包含以下字段的对象：
    - action：用中文精确描述该时长内主体的具体动作——身体移动、手势变化、表情转换。
      聚焦单一连贯动作，确保在指定时长（4/6/8秒）内可完成。
-     排除多场景切换、蒙太奇、快速剪辑等单次生成无法实现的效果。
+     排除多場景切换、蒙太奇、快速剪辑等单次生成无法实现的效果。
      排除比喻性动作描述（如"像蝴蝶般飞舞"）。
    - camera_motion：镜头运动（Static, Pan Left, Pan Right, Tilt Up, Tilt Down, Zoom In, Zoom Out, Tracking Shot）
-     每个片段仅选择一种镜头运动。
+     每個片段仅選择一种镜头运动。
    - ambiance_audio：用中文描述画内音（diegetic sound）——环境声、脚步声、物体声音。
-     仅描述场景内真实存在的声音。排除音乐、BGM、旁白、画外音。
+     仅描述場景内真实存在的声音。排除音乐、BGM、旁白、画外音。
    - dialogue：{{speaker, line}} 数组。仅当原文有引号对话时填写。speaker 必须来自 characters_in_segment。
 ```
 
@@ -94,9 +94,9 @@ git commit -m "feat(prompt): add video_prompt constraints to narration mode"
 
 ```python
 c. **image_prompt**：生成包含以下字段的对象：
-   - scene：用中文描述此刻画面中的具体场景——角色位置、姿态、表情、服装细节，以及可见的环境元素和物品。16:9 横屏构图。
+   - scene：用中文描述此刻画面中的具体場景——角色位置、姿态、表情、服装细节，以及可见的环境元素和物品。16:9 横屏构图。
      聚焦当下瞬间的可见画面。仅描述摄像机能够捕捉到的具体视觉元素。
-     确保描述避免超出此刻画面的元素。排除比喻、隐喻、抽象情绪词、主观评价、多场景切换等无法直接渲染的描述。
+     确保描述避免超出此刻画面的元素。排除比喻、隐喻、抽象情绪词、主观评价、多場景切换等无法直接渲染的描述。
      画面应自包含，不暗示过去事件或未来发展。
    - composition：
      - shot_type：镜头类型（Extreme Close-up, Close-up, Medium Close-up, Medium Shot, Medium Long Shot, Long Shot, Extreme Long Shot, Over-the-shoulder, Point-of-view）
@@ -131,12 +131,12 @@ git commit -m "feat(prompt): add image_prompt constraints to drama mode"
 d. **video_prompt**：生成包含以下字段的对象：
    - action：用中文精确描述该时长内主体的具体动作——身体移动、手势变化、表情转换。
      聚焦单一连贯动作，确保在指定时长（4/6/8秒）内可完成。
-     排除多场景切换、蒙太奇、快速剪辑等单次生成无法实现的效果。
+     排除多場景切换、蒙太奇、快速剪辑等单次生成无法实现的效果。
      排除比喻性动作描述（如"像蝴蝶般飞舞"）。
    - camera_motion：镜头运动（Static, Pan Left, Pan Right, Tilt Up, Tilt Down, Zoom In, Zoom Out, Tracking Shot）
-     每个片段仅选择一种镜头运动。
+     每個片段仅選择一种镜头运动。
    - ambiance_audio：用中文描述画内音（diegetic sound）——环境声、脚步声、物体声音。
-     仅描述场景内真实存在的声音。排除音乐、BGM、旁白、画外音。
+     仅描述場景内真实存在的声音。排除音乐、BGM、旁白、画外音。
    - dialogue：{{speaker, line}} 数组。包含角色对话。speaker 必须来自 characters_in_scene。
 ```
 
@@ -157,7 +157,7 @@ git commit -m "feat(prompt): add video_prompt constraints to drama mode"
 ### Task 5: 集成验证
 
 **Files:**
-- Test: `projects/test0205/` (现有测试项目)
+- Test: `projects/test0205/` (現有测试项目)
 
 **Step 1: 验证 prompt 构建函数正常工作**
 
@@ -231,11 +231,11 @@ python -c "from lib.prompt_builders_script import build_narration_prompt, build_
 
 ---
 
-## 后续步骤（可选）
+## 后续步骤（可選）
 
-实现完成后，可使用 `/generate-script` 重新生成测试项目的剧本，验证约束效果：
+实现完成后，可使用 `/generate-script` 生成测试项目的剧本，验证约束效果：
 
 ```bash
-# 使用 generate-script skill 重新生成
+# 使用 generate-script skill 生成
 # 然后检查生成的 episode_1.json 中的 image_prompt 和 video_prompt
 ```

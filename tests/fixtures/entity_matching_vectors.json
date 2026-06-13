@@ -1,0 +1,109 @@
+{
+  "_comment": "前後端共用比對測試向量。Python: tests/test_entity_matching_vectors.py；TS: frontend/src/utils/entity-matching.vectors.test.ts。任一端行為漂移即測試紅。新增案例只改此檔。",
+  "cases": [
+    {
+      "name": "basic_chinese",
+      "text": "小明拿起了青玉碎片",
+      "characters": { "小明": {}, "阿克 (Arke)": {} },
+      "clues": { "青玉碎片（Jade Shard）": {} },
+      "scenes": {},
+      "expected": { "characterNames": ["小明"], "clueNames": ["青玉碎片（Jade Shard）"], "sceneName": null }
+    },
+    {
+      "name": "english_alias_maps_to_key",
+      "text": "Arke found the Jade Shard",
+      "characters": { "阿克 (Arke)": {} },
+      "clues": { "青玉碎片（Jade Shard）": {} },
+      "scenes": {},
+      "expected": { "characterNames": ["阿克 (Arke)"], "clueNames": ["青玉碎片（Jade Shard）"], "sceneName": null }
+    },
+    {
+      "name": "full_key_with_paren",
+      "text": "角色阿克 (Arke)出場",
+      "characters": { "阿克 (Arke)": {} },
+      "clues": {},
+      "scenes": {},
+      "expected": { "characterNames": ["阿克 (Arke)"], "clueNames": [], "sceneName": null }
+    },
+    {
+      "name": "longest_first",
+      "text": "錦衣衛出場",
+      "characters": { "錦衣衛": {}, "錦衣": {} },
+      "clues": {},
+      "scenes": {},
+      "expected": { "characterNames": ["錦衣衛"], "clueNames": [], "sceneName": null }
+    },
+    {
+      "name": "non_overlapping",
+      "text": "甲乙丙",
+      "characters": { "甲乙": {}, "乙丙": {} },
+      "clues": {},
+      "scenes": {},
+      "expected": { "characterNames": ["甲乙"], "clueNames": [], "sceneName": null }
+    },
+    {
+      "name": "cross_group_character_wins",
+      "text": "古玉很重要",
+      "characters": { "古玉": {} },
+      "clues": { "古玉": {} },
+      "scenes": {},
+      "expected": { "characterNames": ["古玉"], "clueNames": [], "sceneName": null }
+    },
+    {
+      "name": "ascii_word_boundary",
+      "text": "Heroic action by Hero",
+      "characters": { "Hero": {} },
+      "clues": {},
+      "scenes": {},
+      "expected": { "characterNames": ["Hero"], "clueNames": [], "sceneName": null }
+    },
+    {
+      "name": "ascii_boundary_prefix_monkey",
+      "text": "MonKey business",
+      "characters": {},
+      "clues": { "Key": {} },
+      "scenes": {},
+      "expected": { "characterNames": [], "clueNames": [], "sceneName": null }
+    },
+    {
+      "name": "scene_english_alias",
+      "text": "the Wasteland is vast",
+      "characters": {},
+      "clues": {},
+      "scenes": { "荒野 (Wasteland)": {} },
+      "expected": { "characterNames": [], "clueNames": [], "sceneName": "荒野 (Wasteland)" }
+    },
+    {
+      "name": "multiple_with_scene",
+      "text": "小明和錦衣衛在古城相遇",
+      "characters": { "小明": {}, "錦衣衛": {} },
+      "clues": {},
+      "scenes": { "古城": {} },
+      "expected": { "characterNames": ["小明", "錦衣衛"], "clueNames": [], "sceneName": "古城" }
+    },
+    {
+      "name": "no_match",
+      "text": "未知角色出場",
+      "characters": { "小明": {} },
+      "clues": {},
+      "scenes": {},
+      "expected": { "characterNames": [], "clueNames": [], "sceneName": null }
+    },
+    {
+      "name": "astral_emoji_in_name_before_known",
+      "text": "桌上有兔熊玩偶🐻，旁邊站著小明",
+      "characters": { "小明": {} },
+      "clues": { "兔熊玩偶🐻": {} },
+      "scenes": {},
+      "expected": { "characterNames": ["小明"], "clueNames": ["兔熊玩偶🐻"], "sceneName": null }
+    },
+    {
+      "name": "astral_emoji_cursor_alignment",
+      "text": "🎬開場後小明登場",
+      "characters": { "小明": {} },
+      "clues": {},
+      "scenes": {},
+      "expected": { "characterNames": ["小明"], "clueNames": [], "sceneName": null }
+    }
+  ]
+}

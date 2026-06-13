@@ -45,7 +45,7 @@ class _FakePM:
                     "segment_break": False,
                     "characters_in_segment": [],
                     "clues_in_segment": [],
-                    "image_prompt": "首镜头",
+                    "image_prompt": "首鏡頭",
                 },
                 {
                     "segment_id": "E1S02",
@@ -58,7 +58,7 @@ class _FakePM:
                         "composition": {
                             "shot_type": "Medium Shot",
                             "lighting": "暖光",
-                            "ambiance": "薄雾",
+                            "ambiance": "薄霧",
                         },
                     },
                 },
@@ -68,7 +68,7 @@ class _FakePM:
                     "segment_break": True,
                     "characters_in_segment": ["Alice"],
                     "clues_in_segment": ["玉佩"],
-                    "image_prompt": "切场后的镜头",
+                    "image_prompt": "切場後的鏡頭",
                 },
             ],
         }
@@ -142,8 +142,10 @@ class TestGenerationTasks:
         mode_items = get_storyboard_items({"content_mode": "drama", "scenes": []})
         assert mode_items[1] == "scene_id"
 
+        # 字串型 prompt：有風格時前綴注入，無風格時原樣回傳
         prompt = generation_tasks._normalize_storyboard_prompt("text", "Anime")
-        assert prompt == "text"
+        assert prompt == "Anime\n\ntext"
+        assert generation_tasks._normalize_storyboard_prompt("text", "") == "text"
 
         with pytest.raises(ValueError):
             generation_tasks._normalize_storyboard_prompt({"scene": ""}, "Anime")
@@ -152,7 +154,7 @@ class TestGenerationTasks:
             {
                 "action": "行走",
                 "camera_motion": "",
-                "ambiance_audio": "风声",
+                "ambiance_audio": "風聲",
                 "dialogue": [{"speaker": "Alice", "line": "hello"}],
             }
         )
@@ -232,7 +234,7 @@ class TestGenerationTasks:
         clue_result = await generation_tasks.execute_clue_task(
             "demo",
             "玉佩",
-            {"prompt": "线索描述"},
+            {"prompt": "線索描述"},
         )
         assert clue_result["resource_type"] == "clues"
 
@@ -258,7 +260,7 @@ class TestGenerationTasks:
             )
 
     async def test_execute_video_task_generates_thumbnail(self, monkeypatch, tmp_path):
-        """视频生成后应自动提取首帧缩略图"""
+        """影片生成後應自動提取首幀縮圖"""
         project_path = _prepare_files(tmp_path)
         fake_pm = _FakePM(project_path)
         fake_generator = _FakeGenerator()
@@ -282,13 +284,13 @@ class TestGenerationTasks:
         )
 
         assert result["resource_type"] == "videos"
-        # 验证 update_scene_asset 被调用，其中包含 video_thumbnail
+        # 驗證 update_scene_asset 被呼叫，其中包含 video_thumbnail
         asset_types = [call["asset_type"] for call in fake_pm.updated_assets]
         assert "video_thumbnail" in asset_types
         assert thumbnail_path.exists()
 
     async def test_get_media_generator_skips_image_backend_for_video_tasks(self, monkeypatch, tmp_path):
-        """视频任务只应初始化视频 backend，避免图片配置缺失导致提前失败。"""
+        """影片任務只應初始化影片 backend，避免圖片配置缺失導致提前失敗。"""
         project_path = _prepare_files(tmp_path)
         fake_pm = _FakePM(project_path)
         fake_video_backend = object()
@@ -326,7 +328,7 @@ class TestGenerationTasks:
         assert generator._video_backend is fake_video_backend
 
     def test_emit_success_batch_includes_fingerprints(self, monkeypatch, tmp_path):
-        """生成成功事件应携带 asset_fingerprints"""
+        """生成成功事件應攜帶 asset_fingerprints"""
         captured = []
         monkeypatch.setattr(
             generation_tasks,
@@ -372,11 +374,41 @@ class TestGenerationTasks:
         with pytest.raises(ValueError):
             await generation_tasks.execute_video_task("demo", "E1S01", {"script_file": "episode_1.json", "prompt": "x"})
 
-        with pytest.raises(ValueError):
-            await generation_tasks.execute_character_task("demo", "Alice", {"prompt": ""})
+    async def test_resolve_video_backend_payload_override(self, monkeypatch, tmp_path):
+        """驗證 _resolve_video_backend 優先使用 payload 中的 video_provider 及 settings"""
+        project_path = _prepare_files(tmp_path)
+        fake_pm = _FakePM(project_path)
+        monkeypatch.setattr(generation_tasks, "get_project_manager", lambda: fake_pm)
 
-        with pytest.raises(ValueError):
-            await generation_tasks.execute_clue_task("demo", "玉佩", {"prompt": ""})
+        # Mock resolver 與 _get_or_create_video_backend
+        class FakeResolver:
+            async def default_video_backend(self):
+                return "gemini-aistudio", "veo-3.1-lite-generate-preview"
+
+        resolved_args = []
+
+        async def fake_get_backend(provider_name, settings, resolver, default_video_model=None):
+            resolved_args.append((provider_name, settings, default_video_model))
+            return object()
+
+        monkeypatch.setattr(generation_tasks, "_get_or_create_video_backend", fake_get_backend)
+
+        # 1. 帶有 payload 覆蓋
+        payload = {
+            "video_provider": "byteplus",
+            "video_provider_settings": {"model": "doubao-seedance-2-0-260128"},
+        }
+        resolver = FakeResolver()
+        await generation_tasks._resolve_video_backend("demo", resolver, payload)
+        assert len(resolved_args) == 1
+        assert resolved_args[0][0] == "byteplus"
+        assert resolved_args[0][1] == {"model": "doubao-seedance-2-0-260128"}
+
+        # 2. 不帶 payload 覆蓋，使用 project.json (預設為 None, 走 default_video_provider_id)
+        resolved_args.clear()
+        await generation_tasks._resolve_video_backend("demo", resolver, {"script_file": "episode_1.json"})
+        assert len(resolved_args) == 1
+        assert resolved_args[0][0] == "gemini-aistudio"
 
 
 class TestGetAspectRatio:
@@ -400,3 +432,72 @@ class TestGetAspectRatio:
     def test_clues_always_16_9(self):
         project = {"aspect_ratio": "9:16"}
         assert generation_tasks.get_aspect_ratio(project, "clues") == "16:9"
+
+
+class TestGetOrCreateVideoBackend:
+    async def test_byteplus_model_substitution(self, monkeypatch):
+        """驗證當使用 byteplus 且模型非 ep- 開頭時，會自動替換為配置的 endpoint_id。"""
+        import contextlib
+        from unittest.mock import MagicMock
+
+        # Clear cache to avoid hits
+        generation_tasks._backend_cache.clear()
+
+        # Mock create_backend
+        created_backends = []
+
+        def fake_create_backend(name, **kwargs):
+            created_backends.append((name, kwargs))
+            mock_backend = MagicMock()
+            mock_backend.model = kwargs.get("model")
+            return mock_backend
+
+        monkeypatch.setattr("lib.video_backends.create_backend", fake_create_backend)
+
+        # Mock resolver
+        class FakeResolver:
+            def __init__(self, endpoint_id):
+                self.endpoint_id = endpoint_id
+
+            async def provider_config(self, provider_id):
+                return {"api_key": "fake-key"}
+
+            @contextlib.asynccontextmanager
+            async def _open_session(self):
+                class FakeSvc:
+                    def __init__(self, endpoint_id):
+                        self.endpoint_id = endpoint_id
+
+                    async def get_setting(self, key, default=""):
+                        if key == "byteplus_video_endpoint_id":
+                            return self.endpoint_id
+                        return default
+
+                yield object(), FakeSvc(self.endpoint_id)
+
+        resolver_with_endpoint = FakeResolver("ep-2026-test")
+        resolver_no_endpoint = FakeResolver("")
+
+        # 1. 有配置 endpoint_id 且傳入 non-endpoint 模型名稱
+        await generation_tasks._get_or_create_video_backend(
+            "byteplus", {"model": "doubao-seedance-2-0-260128"}, resolver_with_endpoint
+        )
+        assert len(created_backends) == 1
+        assert created_backends[0][0] == "byteplus"
+        assert created_backends[0][1]["model"] == "ep-2026-test"
+
+        # 2. 沒有配置 endpoint_id 且傳入 non-endpoint 模型名稱
+        created_backends.clear()
+        await generation_tasks._get_or_create_video_backend(
+            "byteplus", {"model": "doubao-seedance-2-0-260128"}, resolver_no_endpoint
+        )
+        assert len(created_backends) == 1
+        assert created_backends[0][1]["model"] == "doubao-seedance-2-0-260128"
+
+        # 3. 有配置 endpoint_id 但傳入的本來就是 ep- 開頭的模型名稱（不應替換）
+        created_backends.clear()
+        await generation_tasks._get_or_create_video_backend(
+            "byteplus", {"model": "ep-another-endpoint"}, resolver_with_endpoint
+        )
+        assert len(created_backends) == 1
+        assert created_backends[0][1]["model"] == "ep-another-endpoint"

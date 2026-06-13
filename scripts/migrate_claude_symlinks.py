@@ -51,7 +51,7 @@ def main():
                 continue
 
             if symlink_path.is_symlink() and not symlink_path.exists():
-                # 损坏的软连接
+                # 損壞的軟連線
                 if args.dry_run:
                     print(f"  WOULD REPAIR {project_dir.name}/{name} (broken symlink)")
                 else:

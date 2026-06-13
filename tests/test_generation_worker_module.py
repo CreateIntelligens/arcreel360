@@ -37,8 +37,8 @@ class _FakeQueue:
     async def mark_task_succeeded(self, task_id, result):
         self.succeeded.append((task_id, result))
 
-    async def mark_task_failed(self, task_id, error):
-        self.failed.append((task_id, error))
+    async def mark_task_failed(self, task_id, error, *, error_detail=None):
+        self.failed.append((task_id, error, error_detail))
 
 
 class TestReadIntEnv:
@@ -98,7 +98,7 @@ class TestProviderPool:
 class TestExtractProvider:
     async def test_video_provider_in_payload(self):
         task = {"payload": {"video_provider": "ark"}}
-        assert await _extract_provider(task) == "ark"
+        assert await _extract_provider(task) == "byteplus"
 
     async def test_image_provider_in_payload(self):
         task = {"payload": {"image_provider": "gemini-vertex"}}
@@ -117,7 +117,7 @@ class TestExtractProvider:
         assert await _extract_provider(task) == "gemini-aistudio"
 
     async def test_resolves_video_from_global_config(self, monkeypatch):
-        """payload 无 provider、项目无覆盖时，从全局 ConfigResolver 解析。"""
+        """payload 無 provider、專案無覆蓋時，從全域性 ConfigResolver 解析。"""
 
         async def fake_video_backend(self):
             return ("gemini-vertex", "veo-2.0-generate-001")
@@ -134,7 +134,7 @@ class TestExtractProvider:
         assert await _extract_provider(task) == "gemini-vertex"
 
     async def test_resolves_image_from_global_config(self, monkeypatch):
-        """payload 无 provider、项目无覆盖时，从全局 ConfigResolver 解析。"""
+        """payload 無 provider、專案無覆蓋時，從全域性 ConfigResolver 解析。"""
 
         async def fake_image_backend(self):
             return ("gemini-vertex", "imagen-3.0-generate-002")
@@ -151,7 +151,7 @@ class TestExtractProvider:
         assert await _extract_provider(task) == "gemini-vertex"
 
     async def test_project_level_video_provider_takes_precedence(self, monkeypatch):
-        """项目级 video_backend 优先于全局默认。"""
+        """專案級 video_backend 優先於全域性預設。"""
 
         async def should_not_be_called(self):
             raise AssertionError("ConfigResolver should not be called")
@@ -165,10 +165,10 @@ class TestExtractProvider:
             lambda: type("PM", (), {"load_project": lambda self, name: {"video_backend": "ark"}})(),
         )
         task = {"payload": {}, "project_name": "test", "task_type": "video"}
-        assert await _extract_provider(task) == "ark"
+        assert await _extract_provider(task) == "byteplus"
 
     async def test_project_level_image_backend_takes_precedence(self, monkeypatch):
-        """项目级 image_backend 优先于全局默认。"""
+        """專案級 image_backend 優先於全域性預設。"""
 
         async def should_not_be_called(self):
             raise AssertionError("ConfigResolver should not be called")
@@ -185,7 +185,7 @@ class TestExtractProvider:
         assert await _extract_provider(task) == "gemini-vertex"
 
     async def test_payload_provider_takes_precedence_over_config(self, monkeypatch):
-        """payload 中有 provider 时优先使用，不走项目/全局配置。"""
+        """payload 中有 provider 時優先使用，不走專案/全域性配置。"""
 
         async def should_not_be_called(self):
             raise AssertionError("ConfigResolver should not be called")
@@ -195,12 +195,12 @@ class TestExtractProvider:
             should_not_be_called,
         )
         task = {"payload": {"video_provider": "ark"}, "project_name": "test", "task_type": "video"}
-        assert await _extract_provider(task) == "ark"
+        assert await _extract_provider(task) == "byteplus"
 
 
 class TestProjectLevelProvider:
     def test_video_provider(self):
-        assert _project_level_provider({"video_backend": "ark"}, "video") == "ark"
+        assert _project_level_provider({"video_backend": "byteplus"}, "video") == "byteplus"
 
     def test_video_backend_with_slash(self):
         assert _project_level_provider({"video_backend": "grok/grok-imagine-video"}, "video") == "grok"
@@ -224,11 +224,12 @@ class TestNormalizeProviderId:
         assert _normalize_provider_id("vertex") == "gemini-vertex"
 
     def test_already_new(self):
-        assert _normalize_provider_id("ark") == "ark"
+        assert _normalize_provider_id("byteplus") == "byteplus"
         assert _normalize_provider_id("grok") == "grok"
 
-    def test_seedance_to_ark(self):
-        assert _normalize_provider_id("seedance") == "ark"
+    def test_legacy_ark_and_seedance_to_byteplus(self):
+        assert _normalize_provider_id("ark") == "byteplus"
+        assert _normalize_provider_id("seedance") == "byteplus"
 
 
 class TestBuildDefaultPools:
@@ -270,6 +271,26 @@ class TestGenerationWorker:
         monkeypatch.setattr("server.services.generation_tasks.execute_generation_task", _raise)
         await worker._process_task({"task_id": "t2"})
         assert queue.failed and queue.failed[0][0] == "t2"
+        assert queue.failed[0][2] is None
+
+    @pytest.mark.asyncio
+    async def test_process_task_forwards_structured_detail(self, monkeypatch):
+        from lib.video_backends.gemini import VeoInvalidCombinationError
+
+        queue = _FakeQueue()
+        worker = GenerationWorker(queue=queue)
+
+        async def _raise_veo(_task):
+            raise VeoInvalidCombinationError("veo-3.1-lite-generate-preview")
+
+        monkeypatch.setattr("server.services.generation_tasks.execute_generation_task", _raise_veo)
+        await worker._process_task({"task_id": "t3"})
+        assert queue.failed and queue.failed[0][0] == "t3"
+        detail = queue.failed[0][2]
+        assert isinstance(detail, dict)
+        assert detail["code"] == "veo_invalid_combination"
+        assert detail["model"] == "veo-3.1-lite-generate-preview"
+        assert "hint" in detail
 
     @pytest.mark.asyncio
     async def test_start_stop_run_loop_releases_lease(self):
@@ -344,7 +365,7 @@ class TestGenerationWorker:
                         "task_id": "vid1",
                         "task_type": "gen_video",
                         "media_type": "video",
-                        "payload": {"video_provider": "ark"},
+                        "payload": {"video_provider": "byteplus"},
                     },
                 ]
 
@@ -357,7 +378,7 @@ class TestGenerationWorker:
         queue = _ClaimableQueue()
         pools = {
             "gemini-aistudio": ProviderPool(provider_id="gemini-aistudio", image_max=3, video_max=2),
-            "ark": ProviderPool(provider_id="ark", image_max=0, video_max=2),
+            "byteplus": ProviderPool(provider_id="byteplus", image_max=0, video_max=2),
         }
         worker = GenerationWorker(queue=queue, pools=pools)
 
@@ -372,13 +393,13 @@ class TestGenerationWorker:
         claimed = await worker._claim_tasks()
         assert claimed
         assert "img1" in pools["gemini-aistudio"].image_inflight
-        assert "vid1" in pools["ark"].video_inflight
+        assert "vid1" in pools["byteplus"].video_inflight
 
         # Wait for tasks to complete
         await asyncio.gather(
             *[
                 *pools["gemini-aistudio"].image_inflight.values(),
-                *pools["ark"].video_inflight.values(),
+                *pools["byteplus"].video_inflight.values(),
             ],
             return_exceptions=True,
         )

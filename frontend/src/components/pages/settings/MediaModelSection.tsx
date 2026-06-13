@@ -6,8 +6,10 @@ import { ProviderModelSelect } from "@/components/ui/ProviderModelSelect";
 import { PROVIDER_NAMES } from "@/components/ui/ProviderIcon";
 import { useAppStore } from "@/stores/app-store";
 import { useConfigStatusStore } from "@/stores/config-status-store";
+import { shouldHideTextModelOption } from "@/utils/provider-models";
 
 const TEXT_MODEL_FIELDS = [
+  ["default_text_backend", "助手對話"],
   ["text_backend_script", "劇本生成"],
   ["text_backend_overview", "總覽生成"],
   ["text_backend_style", "風格分析"],
@@ -57,13 +59,14 @@ export function MediaModelSection() {
     }
   }, [draft, fetchConfig]);
 
+  const currentBytePlusEndpoint = draft.byteplus_video_endpoint_id ?? settings?.byteplus_video_endpoint_id ?? "";
+  const videoBackends = options?.video_backends ?? [];
+  const imageBackends: string[] = options?.image_backends ?? [];
+  const textBackends: string[] = (options?.text_backends ?? []).filter((value) => !shouldHideTextModelOption(value));
+
   if (!settings || !options) {
     return <div className="p-6 text-sm text-gray-500">載入中…</div>;
   }
-
-  const videoBackends: string[] = options.video_backends ?? [];
-  const imageBackends: string[] = options.image_backends ?? [];
-  const textBackends: string[] = options.text_backends ?? [];
 
   const currentVideo = draft.default_video_backend ?? settings.default_video_backend ?? "";
   const currentImage = draft.default_image_backend ?? settings.default_image_backend ?? "";
@@ -109,6 +112,25 @@ export function MediaModelSection() {
           生成音訊
           <span className="text-xs text-gray-500">（僅部分供應商支援）</span>
         </label>
+
+        <label className="mt-4 block text-sm font-medium text-gray-100">
+          BytePlus ModelArk Endpoint ID
+          <input
+            type="text"
+            value={currentBytePlusEndpoint}
+            onChange={(e) =>
+              setDraft((prev) => ({
+                ...prev,
+                byteplus_video_endpoint_id: e.target.value,
+              }))
+            }
+            placeholder="ep-..."
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className="mt-2 w-full rounded-lg border border-gray-700 bg-gray-900/80 px-3 py-2 font-mono text-sm text-gray-200 transition-colors placeholder:text-gray-600 hover:border-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-gray-900"
+          />
+        </label>
       </div>
 
       {/* Image backend selector */}
@@ -134,7 +156,7 @@ export function MediaModelSection() {
       {/* Text backend selectors */}
       <div className="rounded-xl border border-gray-800 bg-gray-950/40 p-4">
         <div className="mb-3 text-sm font-medium text-gray-100">文字模型</div>
-        <p className="mb-3 text-xs text-gray-500">依任務類型設定文字模型，留空表示自動選擇</p>
+        <p className="mb-3 text-xs text-gray-500">依任務型別設定文字模型，留空表示自動選擇</p>
 
         {textBackends.length > 0 ? (
           <div className="space-y-3">

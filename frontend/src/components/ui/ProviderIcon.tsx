@@ -7,21 +7,22 @@ import VolcengineColor from "@lobehub/icons/es/Volcengine/components/Color";
 export const PROVIDER_NAMES: Record<string, string> = {
   "gemini-aistudio": "AI Studio",
   "gemini-vertex": "Vertex AI",
-  ark: "火山方舟",
+  byteplus: "BytePlus ModelArk",
+  ark: "BytePlus ModelArk",
   grok: "Grok",
   openai: "OpenAI",
 };
 
 /**
- * 根据 providerId 渲染对应的供应商图标。
- * 支持 gemini-aistudio、gemini-vertex、grok、ark，其余显示首字母。
+ * 根據 providerId 渲染對應的供應商圖示。
+ * 支援 gemini-aistudio、gemini-vertex、byteplus、grok，其餘顯示首字母。
  */
 export function ProviderIcon({ providerId, className }: { providerId: string; className?: string }) {
   const cls = className ?? "h-6 w-6";
   if (providerId === "gemini-vertex") return <VertexAIColor className={cls} />;
   if (providerId.startsWith("gemini")) return <GeminiColor className={cls} />;
   if (providerId.startsWith("grok")) return <GrokMono className={cls} />;
-  if (providerId === "ark") return <VolcengineColor className={cls} />;
+  if (providerId === "byteplus" || providerId === "ark") return <VolcengineColor className={cls} />;
   if (providerId === "openai") return <OpenAIMono className={cls} />;
   // Fallback: first letter badge
   return (

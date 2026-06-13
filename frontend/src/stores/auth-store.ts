@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { API } from "@/api";
 import { getToken, setToken as saveToken, clearToken } from "@/utils/auth";
 
 interface AuthState {
@@ -7,7 +8,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   initialize: () => void;
-  login: (token: string, username: string) => void;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   setLoading: (loading: boolean) => void;
 }
@@ -27,9 +28,15 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  login: (token, username) => {
+  login: async (username, password) => {
+    const { access_token: token } = await API.auth.login(username, password);
     saveToken(token);
-    set({ token, username, isAuthenticated: true, isLoading: false });
+    set({
+      token,
+      username,
+      isAuthenticated: true,
+      isLoading: false,
+    });
   },
 
   logout: () => {

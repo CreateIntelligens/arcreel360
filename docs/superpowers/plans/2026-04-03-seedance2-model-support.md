@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 注册 Seedance 2.0 和 2.0 Fast 两个视频模型，添加定价规则和 per-model 能力映射，使用户可在配置中选用这两个模型进行 t2v/i2v 生成。
+**Goal:** 注册 Seedance 2.0 和 2.0 Fast 两個视频模型，添加定价规则和 per-model 能力映射，使用户可在配置中選用这两個模型进行 t2v/i2v 生成。
 
-**Architecture:** 在现有 Ark 视频后端基础上扩展：registry 添加模型条目，backend 用映射表替代写死的 capabilities，cost calculator 添加定价条目。不改动 `generate()` 方法和 SDK 调用逻辑。
+**Architecture:** 在現有 Ark 视频后端基础上扩展：registry 添加模型条目，backend 用映射表替代写死的 capabilities，cost calculator 添加定价条目。不改动 `generate()` 方法和 SDK 调用逻辑。
 
 **Tech Stack:** Python, pytest, volcenginesdkarkruntime
 
@@ -16,7 +16,7 @@
 - Modify: `lib/config/registry.py:189-196` (ark models 的 video 部分)
 - Test: `tests/test_config_registry_models.py`
 
-- [ ] **Step 1: 写失败测试 — 验证 ark 有 3 个视频模型**
+- [ ] **Step 1: 写失敗测试 — 验证 ark 有 3 個视频模型**
 
 在 `tests/test_config_registry_models.py` 的 `TestProviderRegistry` 类末尾添加：
 
@@ -37,10 +37,10 @@ def test_ark_video_models_include_seedance_2(self):
     assert video_models["doubao-seedance-2-0-260128"].default is False
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_config_registry_models.py::TestProviderRegistry::test_ark_video_models_include_seedance_2 -v`
-Expected: FAIL — `assert 1 == 3`（当前只有 1 个视频模型）
+Expected: FAIL — `assert 1 == 3`（当前只有 1 個视频模型）
 
 - [ ] **Step 3: 实现 — 添加模型条目**
 
@@ -79,7 +79,7 @@ git commit -m "feat: 注册 Seedance 2.0 和 2.0 Fast 视频模型到 Ark 供应
 - Modify: `lib/video_backends/ark.py:20-39` (类定义和 `__init__`)
 - Test: `tests/test_video_backend_ark.py`
 
-- [ ] **Step 1: 写失败测试 — 验证 2.0 模型能力**
+- [ ] **Step 1: 写失敗测试 — 验证 2.0 模型能力**
 
 在 `tests/test_video_backend_ark.py` 中添加新的测试类，放在 `TestArkProperties` 之后：
 
@@ -115,7 +115,7 @@ class TestArkModelCapabilities:
         assert VideoCapability.FLEX_TIER in caps
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_video_backend_ark.py::TestArkModelCapabilities -v`
 Expected: FAIL — 2.0 模型获得的是默认 capabilities（包含 FLEX_TIER，不含 VIDEO_EXTEND）
@@ -186,7 +186,7 @@ git commit -m "feat: ArkVideoBackend 按模型区分 capabilities（Seedance 2.0
 - Modify: `lib/cost_calculator.py:87-94` (ARK_VIDEO_COST 字典)
 - Test: `tests/test_cost_calculator.py`
 
-- [ ] **Step 1: 写失败测试 — 验证 2.0 定价**
+- [ ] **Step 1: 写失敗测试 — 验证 2.0 定价**
 
 在 `tests/test_cost_calculator.py` 的 `TestArkCost` 类末尾添加：
 
@@ -224,7 +224,7 @@ def test_seedance_2_fast_cost(self):
     assert amount == pytest.approx(37.00)
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_cost_calculator.py::TestArkCost::test_seedance_2_cost -v`
 Expected: FAIL — 未知模型回退到 1.5 Pro 的 16.00 费率

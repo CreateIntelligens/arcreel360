@@ -4,7 +4,7 @@
 
 **Goal:** 为 Grok 和 Ark 创建共享模块（`grok_shared.py` / `ark_shared.py`），统一客户端创建逻辑，消除三处后端中的重复代码。
 
-**Architecture:** 新增两个共享模块 `lib/grok_shared.py` 和 `lib/ark_shared.py`，提供工厂函数。各后端改为调用共享工厂。Grok 文本后端额外从同步 Client 迁移到 AsyncClient。
+**Architecture:** 新增两個共享模块 `lib/grok_shared.py` 和 `lib/ark_shared.py`，提供工厂函数。各后端改为调用共享工厂。Grok 文本后端额外从同步 Client 迁移到 AsyncClient。
 
 **Tech Stack:** Python, xai_sdk, volcenginesdkarkruntime, pytest
 
@@ -21,7 +21,7 @@
 | `lib/text_backends/ark.py` | 改动 | 改用 `create_ark_client()` + 导入 `ARK_BASE_URL` |
 | `lib/image_backends/grok.py` | 改动 | 改用 `create_grok_client()` |
 | `lib/video_backends/grok.py` | 改动 | 改用 `create_grok_client()` |
-| `lib/text_backends/grok.py` | 改动 | 改用 `create_grok_client()` + 异步化 |
+| `lib/text_backends/grok.py` | 改动 | 改用 `create_grok_client()` + 異步化 |
 | `server/routers/providers.py` | 改动 | `_test_ark()` 改用 `create_ark_client()` |
 | `tests/test_image_backends/test_ark.py` | 改动 | mock 路径从 `volcenginesdkarkruntime.Ark` 改为 `lib.ark_shared.create_ark_client` |
 | `tests/test_video_backend_ark.py` | 改动 | 同上 |
@@ -478,7 +478,7 @@ def backend(mock_ark_client):
                 ArkVideoBackend(api_key=None)
 ```
 
-注意：错误消息从 `"ARK_API_KEY"` 变为 `"Ark API Key"`（统一为 `ark_shared.py` 中的消息）。不再需要 mock `volcenginesdkarkruntime.Ark`，因为 `create_ark_client()` 会在校验失败时直接抛出。
+注意：错误消息从 `"ARK_API_KEY"` 变为 `"Ark API Key"`（统一为 `ark_shared.py` 中的消息）。不再需要 mock `volcenginesdkarkruntime.Ark`，因为 `create_ark_client()` 会在校验失敗时直接抛出。
 
 - [ ] **Step 3: 运行 Ark 视频后端测试**
 
@@ -691,7 +691,7 @@ class TestGenerate:
 ```python
     @pytest.fixture
     def backend_no_structured(self, mock_ark):
-        """创建一个模型不支持原生 structured_output 的 backend。"""
+        """创建一個模型不支持原生 structured_output 的 backend。"""
         mock_client = MagicMock()
         mock_ark.return_value = mock_client
         b = ArkTextBackend(api_key="k")
@@ -700,7 +700,7 @@ class TestGenerate:
 
     @pytest.fixture
     def backend_with_structured(self, mock_ark):
-        """创建一个模型支持原生 structured_output 的 backend（模拟）。"""
+        """创建一個模型支持原生 structured_output 的 backend（模拟）。"""
         mock_client = MagicMock()
         mock_ark.return_value = mock_client
         b = ArkTextBackend(api_key="k", model="mock-model-with-structured")
@@ -713,7 +713,7 @@ class TestGenerate:
 ```python
     @pytest.fixture
     def backend_no_structured(self, mock_ark):
-        """创建一个模型不支持原生 structured_output 的 backend。"""
+        """创建一個模型不支持原生 structured_output 的 backend。"""
         _, mock_client = mock_ark
         b = ArkTextBackend(api_key="k")
         b._test_client = mock_client
@@ -721,7 +721,7 @@ class TestGenerate:
 
     @pytest.fixture
     def backend_with_structured(self, mock_ark):
-        """创建一个模型支持原生 structured_output 的 backend（模拟）。"""
+        """创建一個模型支持原生 structured_output 的 backend（模拟）。"""
         _, mock_client = mock_ark
         b = ArkTextBackend(api_key="k", model="mock-model-with-structured")
         b._test_client = mock_client
@@ -952,7 +952,7 @@ class GrokImageBackend:
 
 - [ ] **Step 3: 适配测试 `tests/test_image_backends/test_grok.py`**
 
-当前测试通过 `patch.dict("sys.modules", {"xai_sdk": mock_sdk})` mock 整个 xai_sdk 模块。由于 `grok_shared.py` 在模块级别 `import xai_sdk`，需要改为 mock `lib.grok_shared.create_grok_client`。
+当前测试通过 `patch.dict("sys.modules", {"xai_sdk": mock_sdk})` mock 整個 xai_sdk 模块。由于 `grok_shared.py` 在模块级别 `import xai_sdk`，需要改为 mock `lib.grok_shared.create_grok_client`。
 
 改动前（fixture，第 16-23 行）：
 ```python
@@ -1029,7 +1029,7 @@ class TestInit:
                 GrokImageBackend(api_key="")
 ```
 
-注意：由于 `_patch_xai_sdk` 已经 mock 了 `create_grok_client` 返回成功，错误测试需要用 `side_effect` 覆盖来模拟校验失败。或者更简单的方式 —— 不使用 `_patch_xai_sdk` fixture，直接测试：
+注意：由于 `_patch_xai_sdk` 已经 mock 了 `create_grok_client` 返回成功，错误测试需要用 `side_effect` 覆盖来模拟校验失敗。或者更简单的方式 —— 不使用 `_patch_xai_sdk` fixture，直接测试：
 
 ```python
 class TestInit:
@@ -1046,7 +1046,7 @@ class TestInit:
             GrokImageBackend(api_key="")
 ```
 
-这更好 —— `create_grok_client` 传入空字符串或 None（通过 `api_key or ""`）会直接校验失败，不需要 mock。但 `grok_shared.py` 顶层 `import xai_sdk` 需要该模块存在。因此仍需保留 `_patch_xai_sdk` 或者改用 `patch.dict("sys.modules", {"xai_sdk": MagicMock()})`。
+这更好 —— `create_grok_client` 传入空字符串或 None（通过 `api_key or ""`）会直接校验失敗，不需要 mock。但 `grok_shared.py` 顶层 `import xai_sdk` 需要该模块存在。因此仍需保留 `_patch_xai_sdk` 或者改用 `patch.dict("sys.modules", {"xai_sdk": MagicMock()})`。
 
 最佳方案：让 `_patch_xai_sdk` 仍然 mock `sys.modules` 来满足 import，同时对错误测试使用 `side_effect`：
 
@@ -1066,7 +1066,7 @@ def _patch_xai_sdk(_mock_xai_sdk_module):
         yield mock_client_instance
 ```
 
-但这对于此测试文件过于复杂。更简单的做法 —— 由于 `grok_shared.py` 已有顶层 `import xai_sdk`，如果 `xai_sdk` 已安装为项目依赖（应该是），则无需 mock `sys.modules`。检查 pyproject.toml 确认。如果 `xai_sdk` 是可选依赖未必安装，则需要保留 module mock。
+但这对于此测试文件过于复杂。更简单的做法 —— 由于 `grok_shared.py` 已有顶层 `import xai_sdk`，如果 `xai_sdk` 已安装为项目依赖（应该是），则无需 mock `sys.modules`。检查 pyproject.toml 确认。如果 `xai_sdk` 是可選依赖未必安装，则需要保留 module mock。
 
 **实施时判断策略：** 如果 `xai_sdk` 已在 pyproject.toml dependencies 中，直接移除 `sys.modules` mock。如果不在，保留 `autouse` 级别的 module mock + 单独的 `create_grok_client` mock。
 
@@ -1256,7 +1256,7 @@ class GrokVideoBackend:
 
 改动后 —— 不需要改。`create_grok_client(api_key="")` 会抛出 ValueError，匹配 `"XAI_API_KEY"`。但需要 `xai_sdk` 模块可导入（`grok_shared.py` 顶层 import）。如果 `xai_sdk` 是已安装依赖则无需改动；否则需加 `sys.modules` mock。
 
-**异步测试（`test_text_to_video`，第 55-105 行）：**
+**異步测试（`test_text_to_video`，第 55-105 行）：**
 
 改动前：
 ```python
@@ -1306,13 +1306,13 @@ git commit -m "refactor: Grok 视频后端改用 grok_shared 共享工厂"
 
 ---
 
-### Task 7: 适配 Grok 文本后端（含异步化）
+### Task 7: 适配 Grok 文本后端（含異步化）
 
 **Files:**
 - Modify: `lib/text_backends/grok.py`
 - Modify: `tests/test_text_backends/test_grok.py`
 
-这是最复杂的任务：同步 `xai_sdk.Client` → 异步 `xai_sdk.AsyncClient`。
+这是最复杂的任务：同步 `xai_sdk.Client` → 異步 `xai_sdk.AsyncClient`。
 
 - [ ] **Step 1: 改造 `lib/text_backends/grok.py`**
 
@@ -1478,7 +1478,7 @@ class GrokTextBackend:
 核心改动：
 1. mock 对象从 `xai_sdk.Client` 改为 `create_grok_client` 返回的 mock
 2. `sync_to_thread` fixture 不再需要（因为不再用 `asyncio.to_thread`）
-3. `chat.sample` / `chat.parse` mock 需要改为 `AsyncMock`（异步调用）
+3. `chat.sample` / `chat.parse` mock 需要改为 `AsyncMock`（異步调用）
 
 改动前（fixture，第 13-20 行）：
 ```python
@@ -1626,7 +1626,7 @@ Expected: 全部 PASS
 
 ```bash
 git add lib/text_backends/grok.py tests/test_text_backends/test_grok.py
-git commit -m "refactor: Grok 文本后端改用 grok_shared 共享工厂 + 异步化"
+git commit -m "refactor: Grok 文本后端改用 grok_shared 共享工厂 + 異步化"
 ```
 
 ---

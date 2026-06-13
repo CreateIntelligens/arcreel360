@@ -2,13 +2,13 @@
 
 ArcReel 当前使用 OAuth2 Bearer JWT 认证，所有 API 端点通过 `get_current_user` 依赖验证。前端先通过 `/auth/token` 获取 JWT，后续请求携带 `Authorization: Bearer <jwt>`。
 
-OpenClaw 等外部平台需要长期有效的 API Key 来调用 ArcReel API，而非短期 JWT。此外，现有助手对话基于 SSE 流式，外部 Agent 需要同步请求-响应接口。
+OpenClaw 等外部平台需要长期有效的 API Key 来调用 ArcReel API，而非短期 JWT。此外，現有助手对话基于 SSE 流式，外部 Agent 需要同步请求-响应接口。
 
 ## Goals / Non-Goals
 
 **Goals:**
-- 在现有认证体系中增加 API Key 认证模式，与 JWT 认证共存
-- 复用现有 API 端点，无需创建独立的"公开 API"层
+- 在現有认证体系中增加 API Key 认证模式，与 JWT 认证共存
+- 复用現有 API 端点，无需创建独立的"公开 API"层
 - 提供同步 Agent 对话端点供外部调用
 - 编写符合 OpenClaw AgentSkill 规范的 skill.md
 
@@ -16,7 +16,7 @@ OpenClaw 等外部平台需要长期有效的 API Key 来调用 ArcReel API，�
 - 不实现多用户/多租户体系（保持单用户模式）
 - 不实现 API 调用频率限制（后续迭代）
 - 不实现 API Key 权限范围控制（所有 key 拥有完整权限）
-- 不重构现有 API 端点的路径或参数格式
+- 不重构現有 API 端点的路径或参数格式
 
 ## Decisions
 
@@ -37,9 +37,9 @@ OpenClaw 等外部平台需要长期有效的 API Key 来调用 ArcReel API，�
 2. 检查 token 是否以 `arc-` 开头
 3. **是 → API Key 路径**：计算 SHA-256 哈希 → 查数据库 → 成功则返回 `{"sub": "apikey:<key_name>", "via": "apikey"}`
 4. **否 → JWT 路径**：JWT 解码验证 → 成功则返回 payload
-5. 任一路径失败 → 返回 401
+5. 任一路径失敗 → 返回 401
 
-**理由**: 前缀判定是确定性的，避免不必要的 JWT 解码尝试。最小改动，所有现有端点自动获得 API Key 支持。
+**理由**: 前缀判定是确定性的，避免不必要的 JWT 解码尝试。最小改动，所有現有端点自动获得 API Key 支持。
 
 **替代方案**: 单独的认证中间件（改动更大）；新建独立路由前缀（违反复用原则）。
 
@@ -51,8 +51,8 @@ OpenClaw 等外部平台需要长期有效的 API Key 来调用 ArcReel API，�
 ```json
 {
   "project_name": "my-project",
-  "message": "帮我写一个悬疑剧本",
-  "session_id": null  // 可选，传入则复用会话
+  "message": "帮我写一個悬疑剧本",
+  "session_id": null  // 可選，传入则复用会话
 }
 ```
 
@@ -77,16 +77,16 @@ OpenClaw 等外部平台需要长期有效的 API Key 来调用 ArcReel API，�
 - `key_hash`: SHA-256 哈希
 - `key_prefix`: 前 8 位（`arc-xxxx`）用于列表展示
 - `created_at`: 创建时间
-- `expires_at`: 过期时间（可选，默认 30 天）
+- `expires_at`: 过期时间（可選，默认 30 天）
 - `last_used_at`: 最近使用时间
 
-**理由**: 与现有 ORM 体系一致，复用 SQLAlchemy async + Alembic migration。
+**理由**: 与現有 ORM 体系一致，复用 SQLAlchemy async + Alembic migration。
 
 ### 5. skill.md 动态服务
 
 **决定**: skill.md 作为模板存放在 `public/skill.md.template`，其中 API URL 使用 `{{BASE_URL}}` 占位符。通过 FastAPI 路由 `GET /skill.md` 动态渲染：从请求的 `Host` header 和 scheme 推断实际 base URL，替换占位符后返回。
 
-**理由**: 本项目是自部署服务，每个用户的域名/端口不同，skill.md 中的 API URL 必须动态适配。静态文件无法做到这一点。
+**理由**: 本项目是自部署服务，每個用户的域名/端口不同，skill.md 中的 API URL 必须动态适配。静态文件无法做到这一点。
 
 **替代方案**: 让用户手动填写 base URL 配置（增加用户负担）；前端生成（OpenClaw 需要从服务端直接获取）。
 

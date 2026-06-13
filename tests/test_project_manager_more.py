@@ -36,7 +36,7 @@ class _FakeTextBackend:
             text=json.dumps(
                 {
                     "synopsis": "故事梗概",
-                    "genre": "悬疑",
+                    "genre": "懸疑",
                     "theme": "真相",
                     "world_setting": "古代",
                 },
@@ -91,7 +91,7 @@ class TestProjectManagerMore:
         pm = ProjectManager(tmp_path / "projects")
 
         first = pm.generate_project_name("My Demo Project")
-        second = pm.generate_project_name("我的项目")
+        second = pm.generate_project_name("我的專案")
 
         assert first.startswith("my-demo-project-")
         assert second.startswith("project-")
@@ -161,7 +161,7 @@ class TestProjectManagerMore:
             pm.update_scene_asset("demo", "episode_1.json", "NOT_FOUND", "video_clip", "x.mp4")
 
     def test_load_script_strips_scripts_prefix(self, tmp_path):
-        """load_script / save_script / update_scene_asset 应兼容带 scripts/ 前缀的文件名"""
+        """load_script / save_script / update_scene_asset 應相容帶 scripts/ 字首的檔名"""
         pm = ProjectManager(tmp_path / "projects")
         pm.create_project("demo")
         pm.create_project_metadata("demo", "Demo", "Anime", "narration")
@@ -174,21 +174,21 @@ class TestProjectManagerMore:
         }
         pm.save_script("demo", script, "episode_1.json")
 
-        # 纯文件名
+        # 純檔名
         loaded1 = pm.load_script("demo", "episode_1.json")
         assert loaded1["episode"] == 1
 
-        # 带 scripts/ 前缀（前端传入的格式）
+        # 帶 scripts/ 字首（前端傳入的格式）
         loaded2 = pm.load_script("demo", "scripts/episode_1.json")
         assert loaded2["episode"] == 1
 
-        # save_script 也应兼容带前缀的文件名
-        script["title"] = "修改后"
+        # save_script 也應相容帶字首的檔名
+        script["title"] = "修改後"
         pm.save_script("demo", script, "scripts/episode_1.json")
         loaded3 = pm.load_script("demo", "episode_1.json")
-        assert loaded3["title"] == "修改后"
+        assert loaded3["title"] == "修改後"
 
-        # update_scene_asset 也应兼容
+        # update_scene_asset 也應相容
         pm.update_scene_asset(
             "demo", "scripts/episode_1.json", "E1S01", "storyboard_image", "storyboards/scene_E1S01.png"
         )
@@ -247,12 +247,12 @@ class TestProjectManagerMore:
         # direct add_* return bool
         assert pm.add_character("demo", "Bob", "side", "") is True
         assert pm.add_character("demo", "Bob", "side", "") is False
-        assert pm.add_clue("demo", "线索X", "prop", "desc", "minor") is True
-        assert pm.add_clue("demo", "线索X", "prop", "desc", "minor") is False
+        assert pm.add_clue("demo", "線索X", "desc", "minor") is True
+        assert pm.add_clue("demo", "線索X", "desc", "minor") is False
 
         added_chars = pm.add_characters_batch("demo", {"Bob": {"description": "d"}, "C": {"description": "d"}})
         assert added_chars == 1
-        added_clues = pm.add_clues_batch("demo", {"线索X": {"type": "prop"}, "线索Y": {"type": "location"}})
+        added_clues = pm.add_clues_batch("demo", {"線索X": {"description": "d"}, "線索Y": {"description": "d"}})
         assert added_clues == 1
 
         pm.add_episode("demo", 1, "第一集", "scripts/episode_1.json")
@@ -312,7 +312,7 @@ class TestProjectManagerMore:
 
         monkeypatch.setattr("lib.text_generator.create_text_backend_for_task", _fake_create_backend)
         overview = await pm.generate_overview("demo")
-        assert overview["genre"] == "悬疑"
+        assert overview["genre"] == "懸疑"
         assert "generated_at" in overview
 
         with warnings.catch_warnings(record=True) as captured:
@@ -326,6 +326,22 @@ class TestProjectManagerMore:
         pm_empty.create_project_metadata("demo", "Demo")
         with pytest.raises(ValueError):
             await pm_empty.generate_overview("demo")
+
+    def test_read_source_files_includes_docx(self, tmp_path):
+        from tests.test_docx_utils import create_fake_docx_bytes
+
+        pm = ProjectManager(tmp_path / "projects")
+        pm.create_project("demo")
+        pm.create_project_metadata("demo", "Demo")
+
+        project_dir = pm.get_project_path("demo")
+        docx_bytes = create_fake_docx_bytes(["第一章內容", "第二段文字"])
+        (project_dir / "source" / "novel.docx").write_bytes(docx_bytes)
+
+        content = pm._read_source_files("demo")
+
+        assert "novel.docx" in content
+        assert "第一章內容\n第二段文字" in content
 
 
 class TestFromCwd:
@@ -347,17 +363,17 @@ class TestFromCwd:
         project_dir.mkdir(parents=True)
 
         monkeypatch.chdir(project_dir)
-        with pytest.raises(FileNotFoundError, match="不是有效的项目目录"):
+        with pytest.raises(FileNotFoundError, match="不是有效的專案目錄"):
             ProjectManager.from_cwd()
 
 
 class TestPathTraversalProtection:
-    """路径遍历防护测试"""
+    """路徑遍歷防護測試"""
 
     def test_get_project_path_rejects_traversal(self, tmp_path):
         pm = ProjectManager(tmp_path / "projects")
         pm.create_project("demo")
-        # normalize_project_name 的正则先拦截
+        # normalize_project_name 的正則先攔截
         with pytest.raises(ValueError):
             pm.get_project_path("../etc")
         with pytest.raises(ValueError):
@@ -376,7 +392,7 @@ class TestPathTraversalProtection:
         pm = ProjectManager(tmp_path / "projects")
         pm.create_project("demo")
         pm.create_project_metadata("demo", "Demo")
-        with pytest.raises(ValueError, match="非法文件名"):
+        with pytest.raises(ValueError, match="非法檔名"):
             pm.load_script("demo", "../../etc/passwd")
 
     def test_save_script_rejects_traversal_filename(self, tmp_path):
@@ -384,7 +400,7 @@ class TestPathTraversalProtection:
         pm.create_project("demo")
         pm.create_project_metadata("demo", "Demo")
         script = {"novel": {"chapter": "ch1"}, "scenes": [], "metadata": {}}
-        with pytest.raises(ValueError, match="非法文件名"):
+        with pytest.raises(ValueError, match="非法檔名"):
             pm.save_script("demo", script, filename="../../evil.json")
 
     def test_safe_subpath_allows_normal_filenames(self, tmp_path):
@@ -393,6 +409,134 @@ class TestPathTraversalProtection:
         project_dir = pm.get_project_path("demo")
         scripts_dir = project_dir / "scripts"
         scripts_dir.mkdir(exist_ok=True)
-        # 正常文件名不应被拦截
+        # 正常檔名不應被攔截
         real = pm._safe_subpath(scripts_dir, "episode_1.json")
         assert real.endswith("episode_1.json")
+
+
+class TestCommitEpisodeSplit:
+    def test_writes_files_and_updates_project(self, tmp_path):
+        pm = ProjectManager(tmp_path / "projects")
+        pm.create_project("demo")
+        pm.create_project_metadata("demo", "Demo")
+        proj_dir = pm.get_project_path("demo")
+        (proj_dir / "source").mkdir(exist_ok=True)
+        (proj_dir / "source" / "novel.txt").write_text("前半。後半。", encoding="utf-8")
+
+        result = pm.commit_episode_split(
+            "demo",
+            source_rel="source/novel.txt",
+            episode=1,
+            part_before="前半。",
+            part_after="後半。",
+            title="第一集",
+        )
+
+        assert (proj_dir / "source" / "episode_1.txt").read_text(encoding="utf-8") == "前半。"
+        assert (proj_dir / "source" / "_remaining.txt").read_text(encoding="utf-8") == "後半。"
+        # 原始檔未被修改
+        assert (proj_dir / "source" / "novel.txt").read_text(encoding="utf-8") == "前半。後半。"
+        # project.json episodes 多一筆
+        assert any(ep["episode"] == 1 and ep.get("title") == "第一集" for ep in result["episodes"])
+        # 重新載入確認持久化
+        reloaded = pm.load_project("demo")
+        assert any(ep["episode"] == 1 for ep in reloaded.get("episodes", []))
+
+    def test_existing_episode_updates_in_place(self, tmp_path):
+        pm = ProjectManager(tmp_path / "projects")
+        pm.create_project("demo")
+        pm.create_project_metadata("demo", "Demo")
+        proj_dir = pm.get_project_path("demo")
+        (proj_dir / "source").mkdir(exist_ok=True)
+        (proj_dir / "source" / "n.txt").write_text("ab", encoding="utf-8")
+        pm.commit_episode_split("demo", "source/n.txt", 1, "a", "b", title="舊標題")
+        pm.commit_episode_split("demo", "source/n.txt", 1, "a", "b", title="新標題")
+        episodes = pm.load_project("demo").get("episodes", [])
+        matching = [ep for ep in episodes if ep["episode"] == 1]
+        assert len(matching) == 1
+        assert matching[0]["title"] == "新標題"
+
+    def test_rejects_source_outside_source_dir(self, tmp_path):
+        pm = ProjectManager(tmp_path / "projects")
+        pm.create_project("demo")
+        pm.create_project_metadata("demo", "Demo")
+        with pytest.raises(ValueError, match="source 路徑超出"):
+            pm.commit_episode_split("demo", "../../etc/passwd", 1, "a", "b")
+
+
+class TestEpisodeIndexConsistency:
+    """防止「兩個劇本檔撞號」造成事件服務索引同步迴圈的防線。"""
+
+    def _make_pm(self, tmp_path: Path) -> ProjectManager:
+        pm = ProjectManager(tmp_path / "projects")
+        pm.create_project("demo")
+        pm.create_project_metadata("demo", "Demo", "Anime", "narration")
+        return pm
+
+    def test_save_script_corrects_episode_to_match_filename(self, tmp_path):
+        """內容 episode 與檔名集數不一致時，以檔名為準校正內容。"""
+        pm = self._make_pm(tmp_path)
+        # 內容宣稱第 1 集，卻存進 episode_2.json
+        script = {
+            "episode": 1,
+            "title": "第二集",
+            "content_mode": "narration",
+            "segments": [
+                {"segment_id": "E1S01", "episode": 1, "duration_seconds": 4},
+            ],
+        }
+        pm.save_script("demo", script, "episode_2.json")
+
+        loaded = pm.load_script("demo", "episode_2.json")
+        assert loaded["episode"] == 2
+        assert loaded["segments"][0]["episode"] == 2
+        # segment_id 不被校正（由生成端決定）
+        assert loaded["segments"][0]["segment_id"] == "E1S01"
+
+    def test_save_script_keeps_consistent_episode_untouched(self, tmp_path):
+        """內容 episode 與檔名一致時不做任何校正。"""
+        pm = self._make_pm(tmp_path)
+        script = {
+            "episode": 2,
+            "title": "第二集",
+            "content_mode": "narration",
+            "segments": [{"segment_id": "E2S01", "episode": 2, "duration_seconds": 4}],
+        }
+        pm.save_script("demo", script, "episode_2.json")
+        loaded = pm.load_script("demo", "episode_2.json")
+        assert loaded["episode"] == 2
+        assert loaded["segments"][0]["episode"] == 2
+
+    def test_two_scripts_do_not_collide_after_save(self, tmp_path):
+        """即使兩份內容都宣稱 episode=1，存成不同檔名後集數仍互不衝突。"""
+        pm = self._make_pm(tmp_path)
+        for filename in ("episode_1.json", "episode_2.json"):
+            pm.save_script(
+                "demo",
+                {
+                    "episode": 1,
+                    "title": filename,
+                    "content_mode": "narration",
+                    "segments": [],
+                },
+                filename,
+            )
+        assert pm.load_script("demo", "episode_1.json")["episode"] == 1
+        assert pm.load_script("demo", "episode_2.json")["episode"] == 2
+
+    def test_sync_episode_from_script_is_noop_when_unchanged(self, tmp_path):
+        """索引無變化時 sync_episode_from_script 不重寫 project.json。"""
+        pm = self._make_pm(tmp_path)
+        pm.save_script(
+            "demo",
+            {"episode": 1, "title": "第一集", "content_mode": "narration", "segments": []},
+            "episode_1.json",
+        )
+        pm.sync_episode_from_script("demo", "episode_1.json")
+
+        project_file = pm.get_project_path("demo") / "project.json"
+        before = project_file.stat().st_mtime_ns
+        # 第二次同步：內容未變，不應觸發寫入
+        pm.sync_episode_from_script("demo", "episode_1.json")
+        after = project_file.stat().st_mtime_ns
+        assert before == after

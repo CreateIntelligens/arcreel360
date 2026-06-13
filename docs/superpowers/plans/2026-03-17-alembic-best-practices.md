@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 修复 Alembic 配置缺陷，将 11 个 String 时间戳列统一为 DateTime(timezone=True)，添加外键约束，优化 PostgreSQL 连接池。
+**Goal:** 修复 Alembic 配置缺陷，将 11 個 String 时间戳列统一为 DateTime(timezone=True)，添加外键约束，优化 PostgreSQL 连接池。
 
 **Architecture:** 单次迁移脚本处理所有 schema 变更（列类型、外键、server_default）；ORM 模型和 repository 层同步适配；`*_to_dict()` 显式 `.isoformat()` 确保 JSON 序列化安全。
 
@@ -876,7 +876,7 @@ Alembic autogenerate 不能自动处理数据转换和 PostgreSQL USING 子句�
     ))
 ```
 
-2. 对每个表的列类型变更，autogenerate 应已生成 `batch_alter_table` 操作（因为 render_as_batch=True）。检查所有 11 列都包含在内。
+2. 对每個表的列类型变更，autogenerate 应已生成 `batch_alter_table` 操作（因为 render_as_batch=True）。检查所有 11 列都包含在内。
 
 3. 对 `task_events.task_id` 添加外键：autogenerate 应已生成。
 
@@ -896,7 +896,7 @@ Alembic autogenerate 不能自动处理数据转换和 PostgreSQL USING 子句�
     is_pg = bind.dialect.name == "postgresql"
 ```
 
-然后在每个列类型变更处添加 PG-specific USING：
+然后在每個列类型变更处添加 PG-specific USING：
 
 ```python
     if is_pg:
@@ -1009,12 +1009,12 @@ git commit -m "feat(db): add migration to unify timestamps and add FK constraint
 Run: `python -m pytest -v`
 Expected: 全部 PASS
 
-- [ ] **Step 2: 排查失败（如有）**
+- [ ] **Step 2: 排查失敗（如有）**
 
-如果有测试失败，检查是否因为：
+如果有测试失敗，检查是否因为：
 1. 测试中构造了 ISO 字符串类型的时间戳传给了期望 datetime 的字段
 2. 测试断言检查了时间戳的具体字符串格式（如 `Z` 结尾）
-3. `_row_to_dict` / `_task_to_dict` 的返回值格式变化导致断言失败
+3. `_row_to_dict` / `_task_to_dict` 的返回值格式变化导致断言失敗
 
 根据具体报错修复。
 

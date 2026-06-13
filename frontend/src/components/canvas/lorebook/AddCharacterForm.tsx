@@ -54,7 +54,7 @@ export function AddCharacterForm({ onSubmit, onCancel }: AddCharacterFormProps) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !description.trim()) return;
+    if (!name.trim()) return;
     setSubmitting(true);
     try {
       await onSubmit(
@@ -70,11 +70,11 @@ export function AddCharacterForm({ onSubmit, onCancel }: AddCharacterFormProps) 
 
   return (
     <div
-      className="mt-4 rounded-xl border border-indigo-500/30 bg-gray-900 p-4"
+      className="rounded-xl border border-indigo-500/30 bg-gray-900 p-5"
       data-workspace-editing="true"
     >
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-200">添加角色</h3>
+        <h3 className="text-sm font-semibold text-gray-200">新增角色</h3>
         <button
           type="button"
           onClick={onCancel}
@@ -87,13 +87,13 @@ export function AddCharacterForm({ onSubmit, onCancel }: AddCharacterFormProps) 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
           <label className="block text-xs font-medium text-gray-400 mb-1">
-            名称 <span className="text-red-400">*</span>
+            名稱 <span className="text-red-400">*</span>
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="角色名称"
+            placeholder="角色名稱"
             className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-indigo-500"
             autoFocus
           />
@@ -101,7 +101,7 @@ export function AddCharacterForm({ onSubmit, onCancel }: AddCharacterFormProps) 
 
         <div>
           <label className="block text-xs font-medium text-gray-400 mb-1">
-            描述 <span className="text-red-400">*</span>
+            描述 <span className="text-gray-600">（選填）</span>
           </label>
           <textarea
             value={description}
@@ -114,13 +114,13 @@ export function AddCharacterForm({ onSubmit, onCancel }: AddCharacterFormProps) 
 
         <div>
           <label className="block text-xs font-medium text-gray-400 mb-1">
-            声音风格
+            聲音風格
           </label>
           <input
             type="text"
             value={voiceStyle}
             onChange={(e) => setVoiceStyle(e.target.value)}
-            placeholder="可选，例如：温柔但有威严"
+            placeholder="可選，例如：溫柔但有威嚴"
             className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 outline-none focus:border-indigo-500"
           />
         </div>
@@ -136,11 +136,11 @@ export function AddCharacterForm({ onSubmit, onCancel }: AddCharacterFormProps) 
           </div>
 
           {referencePreview ? (
-            <div className="relative overflow-hidden rounded-lg border border-gray-700 bg-gray-800">
+            <div className="relative overflow-hidden rounded-lg border border-gray-700 bg-gray-800 h-32">
               <img
                 src={referencePreview}
                 alt="角色參考圖預覽"
-                className="h-32 w-full object-cover"
+                className="h-full w-full object-cover"
               />
               <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent px-3 py-2">
                 <span className="flex items-center gap-1.5 text-xs text-gray-200">
@@ -169,10 +169,10 @@ export function AddCharacterForm({ onSubmit, onCancel }: AddCharacterFormProps) 
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gray-700 bg-gray-800/50 px-3 py-4 text-sm text-gray-500 transition-colors hover:border-gray-500 hover:text-gray-300"
+              className="flex h-32 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-700 bg-gray-800/50 text-sm text-gray-500 transition-colors hover:border-gray-500 hover:text-gray-300"
             >
-              <Upload className="h-4 w-4" />
-              上傳參考圖片
+              <Upload className="h-6 w-6" />
+              <span>上傳參考圖片</span>
             </button>
           )}
 
@@ -184,7 +184,7 @@ export function AddCharacterForm({ onSubmit, onCancel }: AddCharacterFormProps) 
             className="hidden"
           />
           <p className="mt-1 text-xs text-gray-600">
-            用于后续角色设计图生成时保持角色一致性
+            用於後續角色設計圖生成時保持角色一致性
           </p>
         </div>
 
@@ -198,7 +198,7 @@ export function AddCharacterForm({ onSubmit, onCancel }: AddCharacterFormProps) 
           </button>
           <button
             type="submit"
-            disabled={submitting || !name.trim() || !description.trim()}
+            disabled={submitting || !name.trim()}
             className="rounded-lg bg-indigo-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (

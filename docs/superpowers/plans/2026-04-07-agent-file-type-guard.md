@@ -28,7 +28,7 @@
 - Modify: `server/agent_runtime/session_manager.py:498-526` (`_build_file_access_hook` 方法)
 - Test: `tests/test_session_manager_more.py`
 
-- [ ] **Step 1: 写扩展名拦截的失败测试**
+- [ ] **Step 1: 写扩展名拦截的失敗测试**
 
 在 `tests/test_session_manager_more.py` 的 `TestFileAccessHook` class 中，在 `test_file_access_hook_allows_bash_without_path_check` 之后添加：
 
@@ -105,7 +105,7 @@ async def test_file_access_hook_blocks_write_non_whitelisted_ext(self, tmp_path)
     await engine.dispose()
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_session_manager_more.py::TestFileAccessHook::test_file_access_hook_blocks_write_non_whitelisted_ext -v`
 Expected: FAIL — `.py` 文件的 Write 会返回 `{"continue_": True}` 而非 deny
@@ -153,7 +153,7 @@ def _is_path_allowed(
                 return False, (
                     f"不允许创建/编辑 {ext} 类型的文件。"
                     "Write/Edit 仅限 .json、.md、.txt 文件。"
-                    "如果你需要执行数据处理，请使用现有的 skill 脚本。"
+                    "如果你需要执行数据处理，请使用現有的 skill 脚本。"
                 )
         return True, None
 
@@ -235,12 +235,12 @@ git commit -m "feat: Write/Edit 文件类型白名单（.json/.md/.txt）"
 _PERSONA_PROMPT = """\
 ## 身份
 
-你是 ArcReel 智能体，一个专业的 AI 视频内容创作助手。你的职责是将小说转化为可发布的短视频内容。
+你是 ArcReel 智能体，一個专业的 AI 视频内容创作助手。你的职责是将小说转化为可发布的短视频内容。
 
 ## 行为准则
 
 - 主动引导用户完成视频创作工作流，而不仅仅被动回答问题
-- 遇到不确定的创作决策时，向用户提出选项并给出建议，而不是自行决定
+- 遇到不确定的创作决策时，向用户提出選項并给出建议，而不是自行决定
 - 涉及多步骤任务时，使用 TodoWrite 跟踪进度并向用户汇报
 - 你不能创建或编辑代码文件（.py/.js/.sh 等），Write/Edit 仅限 .json/.md/.txt
 - 你是用户的视频制作搭档，专业、友善、高效"""
@@ -253,7 +253,7 @@ _PERSONA_PROMPT = """\
 ```markdown
 ### 职责边界
 
-- **禁止编写代码**：不得创建或修改任何代码文件（.py/.js/.sh 等），数据处理必须通过现有 skill 脚本完成
+- **禁止编写代码**：不得创建或修改任何代码文件（.py/.js/.sh 等），数据处理必须通过現有 skill 脚本完成
 - **代码 bug 上报**：如果明确判断 skill 脚本出现的是代码 bug（而非参数或环境问题），向用户报告错误并建议反馈给开发者
 ```
 

@@ -20,7 +20,7 @@ from server.agent_runtime.session_store import SessionMetaStore
 
 
 def make_test_video(path: Path, *, duration_sec: float = 1.0, fps: int = 30) -> None:
-    """使用 ffmpeg 生成极短测试视频（64x64 像素）"""
+    """使用 ffmpeg 生成極短測試影片（64x64 畫素）"""
     path.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         [

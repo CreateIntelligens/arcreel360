@@ -1,4 +1,4 @@
-"""费用估算服务 — 计算预估 + 汇总实际费用。"""
+"""費用估算服務 — 計算預估 + 彙總實際費用。"""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ class CostEstimationService:
     ) -> dict[str, Any]:
         episodes_meta = project_data.get("episodes", [])
 
-        # Resolve current model config（共享单一 session）
+        # Resolve current model config（共享單一 session）
         async with self._resolver.session() as r:
             try:
                 image_provider, image_model = await r.default_image_backend()
@@ -59,16 +59,16 @@ class CostEstimationService:
             except Exception:
                 generate_audio = False
 
-        # 项目级视频配置覆盖
+        # 專案級影片配置覆蓋
         project_video_provider = project_data.get("video_provider")
         if project_video_provider:
             video_provider = project_video_provider
-            # 项目级可能有自己的模型设置
+            # 專案級可能有自己的模型設定
             project_video_settings = project_data.get("video_provider_settings", {}).get(project_video_provider, {})
             if project_video_settings.get("model"):
                 video_model = project_video_settings["model"]
 
-        # 项目级图片配置覆盖
+        # 專案級圖片配置覆蓋
         project_image_provider = project_data.get("image_provider")
         if project_image_provider:
             image_provider = project_image_provider
@@ -80,7 +80,7 @@ class CostEstimationService:
         # Get actual costs
         actual_by_segment = await self._tracker.get_actual_costs_by_segment(project_name)
 
-        # 预计算图片单价（所有 segment 相同）
+        # 預計算圖片單價（所有 segment 相同）
         image_unit_cost: tuple[float, str] | None = None
         try:
             image_unit_cost = cost_calculator.calculate_cost(
@@ -90,7 +90,7 @@ class CostEstimationService:
                 resolution="1K",
             )
         except Exception:
-            logger.debug("无法计算 image 预估单价", exc_info=True)
+            logger.debug("無法計算 image 預估單價", exc_info=True)
 
         episodes_result = []
         proj_est: dict[str, CostBreakdown] = {}
@@ -102,7 +102,7 @@ class CostEstimationService:
             if not script:
                 continue
 
-            raw_segments, id_key, _, _ = get_storyboard_items(script)
+            raw_segments, id_key, _, _, _ = get_storyboard_items(script)
 
             segments_result = []
             ep_est: dict[str, CostBreakdown] = {}
@@ -129,7 +129,7 @@ class CostEstimationService:
                     )
                     _add_cost(est_video, vid_amount, vid_currency)
                 except Exception:
-                    logger.debug("无法计算 video 预估 for %s", seg_id, exc_info=True)
+                    logger.debug("無法計算 video 預估 for %s", seg_id, exc_info=True)
 
                 seg_actual = actual_by_segment.get(seg_id, {})
                 act_image: CostBreakdown = seg_actual.get("image", {})

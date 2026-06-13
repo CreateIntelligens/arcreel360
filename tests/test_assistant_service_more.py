@@ -91,6 +91,16 @@ class _FakeSessionManager:
     async def shutdown_gracefully(self):
         return None
 
+    async def read_history_messages(self, session_id):
+        return []
+
+    def has_live_session(self, session_id):
+        return session_id in self.sessions
+
+    def get_live_status(self, session_id):
+        s = self.sessions.get(session_id)
+        return getattr(s, "status", None) if s is not None else None
+
 
 class _FakeTranscriptAdapter:
     def __init__(self, history=None):
@@ -101,6 +111,35 @@ class _FakeTranscriptAdapter:
 
 
 class TestAssistantServiceMore:
+    def test_normalize_provider_id_accepts_env_aliases_and_fallbacks(self, tmp_path):
+        service = AssistantService(project_root=tmp_path)
+
+        assert service._normalize_provider_id("gemini_full") == "gemini-full"
+        assert service._normalize_provider_id("gemini_lite") == "gemini-lite"
+        assert service._normalize_provider_id("openai_lite") == "openai-lite"
+        assert service._normalize_provider_id("openai_full") == "openai-full"
+        assert service._normalize_provider_id("gemini-full") == "gemini-full"
+        assert service._normalize_provider_id("openai-full") == "openai-full"
+        assert service._normalize_provider_id("") == "gemini-lite"
+        assert service._normalize_provider_id("garbage") == "gemini-lite"
+
+    def test_claude_append_prompt_requires_traditional_chinese(self, tmp_path):
+        service = AssistantService(project_root=tmp_path)
+        claude_provider = service.runtime_provider_registry["claude"]
+        prompt = claude_provider._session_manager._build_append_prompt("missing")  # type: ignore[attr-defined]
+
+        assert "繁體中文" in prompt
+
+    def test_lite_provider_system_prompts_require_traditional_chinese(self, tmp_path):
+        service = AssistantService(project_root=tmp_path)
+
+        for provider_id in ("gemini-lite", "openai-lite"):
+            provider = service.runtime_provider_registry[provider_id]
+            prompt = provider._build_system_prompt("missing")  # type: ignore[attr-defined]
+
+            assert "繁體中文" in prompt
+            assert "圖片/影片生成 prompt" in prompt
+
     @pytest.mark.asyncio
     async def test_service_init_interrupts_stale_running_sessions(self, tmp_path):
         # Create an in-memory async store and seed data
@@ -166,6 +205,7 @@ class TestAssistantServiceMore:
         sm = _FakeSessionManager()
         service.pm = _FakePM(valid_project="demo")
         service.session_manager = sm
+        service.runtime_provider = sm
         service.meta_store = _FakeMetaStore([meta])
 
         listed = await service.list_sessions()
@@ -218,6 +258,7 @@ class TestAssistantServiceMore:
         sm = _FakeSessionManager()
         sm.sessions["s1"] = SimpleNamespace()
         service.session_manager = sm
+        service.runtime_provider = sm
 
         ok = await service.delete_session("s1")
         assert ok is True
@@ -236,6 +277,7 @@ class TestAssistantServiceMore:
         sm.sessions["s1"] = SimpleNamespace()
         sm.close_error = RuntimeError("close failed")
         service.session_manager = sm
+        service.runtime_provider = sm
 
         with pytest.raises(RuntimeError, match="close failed"):
             await service.delete_session("s1")
@@ -252,6 +294,7 @@ class TestAssistantServiceMore:
         sm.buffer = [{"type": "runtime_status", "status": "running"}]
         sm.pending = [{"type": "ask_user_question", "question_id": "aq-1"}]
         service.session_manager = sm
+        service.runtime_provider = sm
         service.transcript_adapter = _FakeTranscriptAdapter(history=[])
 
         with pytest.raises(FileNotFoundError):

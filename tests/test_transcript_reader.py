@@ -352,7 +352,7 @@ class TestTranscriptReader:
         entries = [
             {
                 "type": "user",
-                "message": {"content": "继续任务"},
+                "message": {"content": "繼續任務"},
                 "uuid": "user-root",
             },
             {
@@ -363,7 +363,7 @@ class TestTranscriptReader:
                             "type": "tool_use",
                             "id": "task-1",
                             "name": "Task",
-                            "input": {"description": "检查项目状态"},
+                            "input": {"description": "檢查專案狀態"},
                         }
                     ],
                 },

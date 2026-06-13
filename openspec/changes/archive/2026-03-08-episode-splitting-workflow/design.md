@@ -25,7 +25,7 @@ ArcReel 的剧本创建流程中，`normalize_drama_script.py` 默认读取 `sou
 1. 提供 `peek_split_point.py` 脚本，展示目标字数附近的上下文供 agent 和用户决策
 2. 提供 `split_episode.py` 脚本，将小说物理切分为 per-episode 文件 + 剩余文件
 3. 将分集规划嵌入 manga-workflow 阶段 2 的前置检查
-4. 保持现有脚本（`normalize_drama_script.py`、`generate_script.py`）不变
+4. 保持現有脚本（`normalize_drama_script.py`、`generate_script.py`）不变
 
 **Non-Goals:**
 
@@ -38,7 +38,7 @@ ArcReel 的剧本创建流程中，`normalize_drama_script.py` 默认读取 `sou
 
 ### Decision 1：切分定位方式——锚点文本匹配
 
-**选择**：`split_episode.py` 使用**锚点文本**（切分点前的 N 个字符）定位切分位置，而非数字偏移
+**選择**：`split_episode.py` 使用**锚点文本**（切分点前的 N 個字符）定位切分位置，而非数字偏移
 
 **流程**：
 ```
@@ -54,7 +54,7 @@ split --anchor "他转身离开了。" --dry-run    ← 先 dry run 验证
 ```
 
 **参数设计**：
-- `--anchor <text>`：切分点前的文本片段（建议 10-20 个字符），脚本在原文中查找该文本，在其**末尾**处切分
+- `--anchor <text>`：切分点前的文本片段（建议 10-20 個字符），脚本在原文中查找该文本，在其**末尾**处切分
 - `--dry-run`：仅展示切分预览（前文末尾 + 后文开头各 50 字），不实际写文件
 - 如果 anchor 在原文中匹配到多处，报错并要求用户提供更长的锚点文本
 
@@ -66,17 +66,17 @@ split --anchor "他转身离开了。" --dry-run    ← 先 dry run 验证
 
 ### Decision 2：物理切分 vs 逻辑映射
 
-**选择**：物理切分（生成 `source/episode_N.txt` 文件）
+**選择**：物理切分（生成 `source/episode_N.txt` 文件）
 
 **替代方案**：
-- 在 project.json 中记录 `{start_marker, end_marker}` 映射，脚本运行时动态截取 → 需要改多个下游脚本，锚点匹配容易出错
+- 在 project.json 中记录 `{start_marker, end_marker}` 映射，脚本运行时动态截取 → 需要改多個下游脚本，锚点匹配容易出错
 - 用户手动拆分文件上传 → 用户体验差
 
 **理由**：物理切分后，下游流程（`normalize_drama_script.py --source source/episode_N.txt`）**零改动**。文件即状态，简单可靠，可调试。
 
 ### Decision 2：字数计数规则
 
-**选择**：含标点，不含空行
+**選择**：含标点，不含空行
 
 - 计数范围：所有非空行中的字符（包括中文字、标点符号、数字、英文字母）
 - 排除：纯空白行（`\n`、`\r\n`、只含空格的行）
@@ -84,7 +84,7 @@ split --anchor "他转身离开了。" --dry-run    ← 先 dry run 验证
 
 ### Decision 3：剩余内容管理方式
 
-**选择**：覆盖式 `_remaining.txt`
+**選择**：覆盖式 `_remaining.txt`
 
 - 每次 split 后，`_remaining.txt` 被更新为剩余内容
 - 原文 `novel.txt`（或用户上传的原始文件）始终保留
@@ -96,13 +96,13 @@ split --anchor "他转身离开了。" --dry-run    ← 先 dry run 验证
 
 ### Decision 4：脚本放置位置
 
-**选择**：`agent_runtime_profile/.claude/skills/manage-project/scripts/`
+**選择**：`agent_runtime_profile/.claude/skills/manage-project/scripts/`
 
-**理由**：分集操作属于项目管理范畴，与已有的 `add_characters_clues.py` 同目录。不属于 `generate-script` skill（那个是生成 JSON 剧本的）。
+**理由**：分集操作属于项目管理范畴，与已有的 `add_characters_clues.py` 同目录。不属于 `generate-script` skill（那個是生成 JSON 剧本的）。
 
 ### Decision 5：分集规划在工作流中的位置
 
-**选择**：阶段 2 的前置检查，而非独立阶段
+**選择**：阶段 2 的前置检查，而非独立阶段
 
 **理由**：
 - 分集规划只在需要时触发（`source/episode_{N}.txt` 不存在时）
@@ -128,7 +128,7 @@ split --anchor "他转身离开了。" --dry-run    ← 先 dry run 验证
 
 ## Risks / Trade-offs
 
-### [风险] 重新切分场景
+### [风险] 重新切分場景
 
 用户切完 3 集后发现第 1 集切分点不好，想重做。
 
@@ -136,6 +136,6 @@ split --anchor "他转身离开了。" --dry-run    ← 先 dry run 验证
 
 ### [Trade-off] 物理文件增多
 
-每集一个文件 + `_remaining.txt`，source/ 目录会有较多文件。
+每集一個文件 + `_remaining.txt`，source/ 目录会有较多文件。
 
 → **接受**：文件数量与集数成正比，可控。文件名清晰（`episode_N.txt`），不会混淆。

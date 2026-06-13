@@ -6,7 +6,7 @@
 
 当前文本生成任务（剧本生成、概述生成、风格分析）通过 `lib/text_client.py` 硬编码创建 `GeminiClient`，仅支持 Gemini（AI Studio / Vertex AI）。图片和视频生成已在 #165 中完成 Backend Protocol + Registry 的供应商抽象，文本生成需对齐该架构。
 
-### 现有调用点
+### 現有调用点
 
 | 调用点 | 文件 | 用途 | 特殊需求 |
 |--------|------|------|----------|
@@ -17,14 +17,14 @@
 
 ### 设计决策记录
 
-| 决策 | 选择 | 理由 |
+| 决策 | 選择 | 理由 |
 |------|------|------|
 | Vision（图片分析）归属 | 纳入 TextBackend 作为 VISION 能力 | 三家供应商均支持多模态，统一接口 |
 | 结构化输出策略 | Backend 内部透明处理 | 三家供应商均原生支持 structured output |
 | 任务队列 | 不走队列，保持直接 await | 文本生成延迟低，无需排队 |
 | GeminiClient 处置 | 直接删除，不做弃用保留 | 所有职责已迁移到各 Backend |
 | 能力声明粒度 | 模型级别，跨 text/image/video | 同一供应商不同模型能力不同 |
-| 文本模型选择 | 按任务类型分别配置 | 不同任务对模型能力/成本需求不同 |
+| 文本模型選择 | 按任务类型分别配置 | 不同任务对模型能力/成本需求不同 |
 | 供应商推断 | 自动推断已配置供应商 | 降低配置门槛，零配置即可用 |
 
 ## 架构总览
@@ -36,7 +36,7 @@ ScriptGenerator / ProjectManager / files.py
             ├─ 项目级任务配置
             ├─ 全局任务配置
             ├─ 全局默认
-            └─ 自动推断（首个 ready 供应商）
+            └─ 自动推断（首個 ready 供应商）
 
 lib/text_backends/
   ├─ base.py          # TextBackend Protocol + 数据类
@@ -142,7 +142,7 @@ def __init__(
 - 结构化输出：`client.beta.chat.completions.parse()` + Pydantic model
 - Vision：`client.responses.create()` + `input_image` type
 - JSON Schema → Pydantic model 转换：使用 `pydantic.create_model()` 动态构建，或将 JSON Schema dict 传入 `response_format={"type": "json_schema", "json_schema": schema}` （若 SDK 支持原始 schema）
-- 同步 SDK 通过 `asyncio.to_thread()` 包装为异步
+- 同步 SDK 通过 `asyncio.to_thread()` 包装为異步
 
 构造参数：
 ```python
@@ -154,7 +154,7 @@ def __init__(self, *, api_key: str | None = None, model: str | None = None)
 - 使用 `xai_sdk.Client`
 - 结构化输出：`chat.parse(PydanticModel)`
 - Vision：`image(image_url=...)` 或 `image(path=...)` helper
-- xai_sdk 有原生异步支持
+- xai_sdk 有原生異步支持
 
 构造参数：
 ```python
@@ -163,8 +163,8 @@ def __init__(self, *, api_key: str | None = None, model: str | None = None)
 
 ### 共性
 
-- 三个 Backend 构造参数统一风格：`api_key`, `model`（可选，默认从 registry 读 default）
-- `generate()` 内部根据 request 有无 `images` / `response_schema` 选择 SDK 调用方式
+- 三個 Backend 构造参数统一风格：`api_key`, `model`（可選，默认从 registry 读 default）
+- `generate()` 内部根据 request 有无 `images` / `response_schema` 選择 SDK 调用方式
 - 返回 `TextGenerationResult`，尽量填充 `input_tokens` / `output_tokens`
 
 ### 清理
@@ -191,7 +191,7 @@ def create_backend(name: str, **kwargs) -> TextBackend
 def get_registered_backends() -> list[str]
 ```
 
-`__init__.py` 自动注册三个 Backend。
+`__init__.py` 自动注册三個 Backend。
 
 ### ProviderMeta 重构 (`lib/config/registry.py`)
 
@@ -223,12 +223,12 @@ class ProviderMeta:
         return sorted(set(c for m in self.models.values() for c in m.capabilities))
 ```
 
-四个供应商全部补全 text 模型声明：
+四個供应商全部补全 text 模型声明：
 
 | 供应商 | 文本默认模型 | 能力 |
 |--------|-------------|------|
-| gemini-aistudio | gemini-3-flash-preview | text_generation, structured_output, vision |
-| gemini-vertex | gemini-3-flash-preview | text_generation, structured_output, vision |
+| gemini-aistudio | gemini-3.1-flash-lite | text_generation, structured_output, vision |
+| gemini-vertex | gemini-3.1-flash-lite | text_generation, structured_output, vision |
 | ark | doubao-seed-2-0-lite-260215 | text_generation, structured_output, vision |
 | grok | grok-4-1-fast-reasoning | text_generation, structured_output, vision |
 
@@ -236,7 +236,7 @@ class ProviderMeta:
 
 新增：
 ```python
-_DEFAULT_TEXT_BACKEND = "gemini-aistudio/gemini-3-flash-preview"
+_DEFAULT_TEXT_BACKEND = "gemini-aistudio/gemini-3.1-flash-lite"
 
 async def get_default_text_backend(self) -> tuple[str, str]:
     raw = await self._setting_repo.get("default_text_backend", _DEFAULT_TEXT_BACKEND)
@@ -261,7 +261,7 @@ async def text_backend_for_task(
 
 ```python
 async def _auto_resolve_backend(self, media_type: str) -> tuple[str, str]:
-    """遍历 PROVIDER_REGISTRY（按注册顺序），找到第一个满足以下条件的供应商：
+    """遍历 PROVIDER_REGISTRY（按注册顺序），找到第一個满足以下条件的供应商：
     1. required_keys 全部已配置（ready 状态）
     2. models 中有对应 media_type 的模型
     返回 (provider_id, default_model_id)。
@@ -272,7 +272,7 @@ async def _auto_resolve_backend(self, media_type: str) -> tuple[str, str]:
 ### 后端 API 变更
 
 - `GET /providers` 返回的 `ProviderStatus` 中 `media_types` 和 `capabilities` 从 `models` 推导
-- `GET /providers` 返回的每个供应商新增 `models` 字段：`dict[str, {display_name, media_type, capabilities, default}]`，供前端模型选择器按 media_type 分组渲染
+- `GET /providers` 返回的每個供应商新增 `models` 字段：`dict[str, {display_name, media_type, capabilities, default}]`，供前端模型選择器按 media_type 分组渲染
 - `GET /api/v1/system-config` 返回值包含 `default_text_backend` 及各任务类型配置
 - `PATCH /api/v1/system-config` 支持写入上述字段
 
@@ -329,14 +329,14 @@ async def create_text_backend_for_task(
 
 ### Tab 重命名
 
-现有的图片/视频相关 tab 改名为 **"模型选择"**。
+現有的图片/视频相关 tab 改名为 **"模型選择"**。
 
 ### MediaModelSection 重构 (`settings/MediaModelSection.tsx`)
 
 扩展为三组：
 
 ```
-模型选择
+模型選择
 ├─ 图片模型: [供应商/模型 dropdown]
 ├─ 视频模型: [供应商/模型 dropdown]
 └─ 文本模型
@@ -345,9 +345,9 @@ async def create_text_backend_for_task(
      └─ 风格分析: [dropdown, placeholder="自动"]
 ```
 
-- dropdown 选项从 `GET /providers` 返回的 `models` 按 `media_type` 过滤生成
+- dropdown 選項从 `GET /providers` 返回的 `models` 按 `media_type` 过滤生成
 - 文本任务类型留空表示走自动推断
-- 每个模型选项旁展示能力标签
+- 每個模型選項旁展示能力标签
 
 ### 项目配置页 (`ProjectSettingsPage.tsx`)
 
@@ -355,7 +355,7 @@ async def create_text_backend_for_task(
 
 ### 配置状态提示 (`config-status-store.ts`)
 
-- 改为从 providers 响应检查**是否存在至少一个 ready 状态的供应商**支持该 media_type
+- 改为从 providers 响应检查**是否存在至少一個 ready 状态的供应商**支持该 media_type
 - 三种 media_type 各自独立判断
 - 只要任一供应商 ready，该类型的配置提示消除
 
@@ -380,7 +380,7 @@ interface SystemSettings {
 
 ```python
 GEMINI_TEXT_COST = {
-    "gemini-3-flash-preview": {"input": 0.10, "output": 0.40},
+    "gemini-3.1-flash-lite": {"input": 0.10, "output": 0.40},
 }
 
 ARK_TEXT_COST = {
@@ -424,7 +424,7 @@ def calculate_text_cost(
 **向后兼容验证**：
 
 - 仅配置 Gemini 的用户，未设置 `default_text_backend`，自动推断正常工作
-- 现有图片/视频功能不受 ProviderMeta 重构影响
+- 現有图片/视频功能不受 ProviderMeta 重构影响
 
 ## 不在本次范围
 

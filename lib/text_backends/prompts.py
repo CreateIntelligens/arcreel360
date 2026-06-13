@@ -1,4 +1,4 @@
-"""文本生成 prompt 常量。"""
+"""文字生成 prompt 常量。"""
 
 STYLE_ANALYSIS_PROMPT = (
     "Analyze the visual style of this image. Describe the lighting, "

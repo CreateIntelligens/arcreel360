@@ -28,7 +28,7 @@ skill.md SHALL 定义以下核心工具及其 API 端点、请求/响应格式�
 
 #### Scenario: 工具定义完整性
 - **WHEN** OpenClaw Agent 解析 skill.md 中的工具定义
-- **THEN** 每个工具 SHALL 包含端点路径、HTTP 方法、请求参数说明、响应格式示例
+- **THEN** 每個工具 SHALL 包含端点路径、HTTP 方法、请求参数说明、响应格式示例
 
 ### Requirement: 认证说明
 skill.md SHALL 说明认证方式：用户从 ArcReel 设置页面获取 API Key（`arc-` 前缀），通过 `Authorization: Bearer <API_KEY>` 传递。

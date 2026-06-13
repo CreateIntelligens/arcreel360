@@ -5,9 +5,9 @@ const GROUP_NAME_LIMIT = 5;
 const ENTITY_LABELS: Record<ProjectChange["entity_type"], string> = {
   project: "專案",
   character: "角色",
-  clue: "線索",
+  clue: "道具",
   segment: "分鏡",
-  episode: "劇集",
+  episode: "劇本",
   overview: "專案總覽",
   draft: "預處理",
 };
@@ -26,8 +26,12 @@ export function buildEntityRevisionKey(
   return `${entityType}:${entityId}`;
 }
 
+export function buildStep1DraftRevisionKey(episode: number): string {
+  return buildEntityRevisionKey("draft", `episode_${episode}_step1`);
+}
+
 export function buildVersionResourceRevisionKey(
-  resourceType: "storyboards" | "videos" | "characters" | "clues",
+  resourceType: "storyboards" | "videos" | "characters" | "clues" | "scenes",
   resourceId: string,
 ): string {
   if (resourceType === "storyboards" || resourceType === "videos") {
@@ -35,6 +39,12 @@ export function buildVersionResourceRevisionKey(
   }
   if (resourceType === "characters") {
     return buildEntityRevisionKey("character", resourceId);
+  }
+  if (resourceType === "scenes") {
+    // ProjectChange.entity_type 尚無 "scene"，無法走 entity revision
+    // 失效路徑（同 StudioCanvasRouter.handleSaveScene 的處理）。這裡仍
+    // 回傳穩定的 scene 專屬 key，呼叫端用 refreshProject() 重抓快取。
+    return `scene:${resourceId}`;
   }
   return buildEntityRevisionKey("clue", resourceId);
 }
@@ -107,18 +117,18 @@ function formatSingleNotificationText(change: ProjectChange): string {
 
 function formatSingleDeferredText(change: ProjectChange): string {
   if (change.action === "storyboard_ready") {
-    return `AI 剛生成了 ${change.label} 的分鏡圖，點擊查看`;
+    return `AI 剛生成了 ${change.label} 的分鏡圖，點選檢視`;
   }
   if (change.action === "video_ready") {
-    return `AI 剛生成了 ${change.label} 的影片，點擊查看`;
+    return `AI 剛生成了 ${change.label} 的影片，點選檢視`;
   }
   if (change.action === "created") {
-    return `AI 剛新增了 ${change.label}，點擊查看`;
+    return `AI 剛新增了 ${change.label}，點選檢視`;
   }
   if (change.action === "deleted") {
-    return `AI 剛刪除了 ${change.label}，點擊查看`;
+    return `AI 剛刪除了 ${change.label}，點選檢視`;
   }
-  return `AI 剛更新了 ${change.label}，點擊查看`;
+  return `AI 剛更新了 ${change.label}，點選檢視`;
 }
 
 export function formatGroupedNotificationText(
@@ -156,13 +166,13 @@ export function formatGroupedDeferredText(
   const summary = summarizeGroupNames(group);
 
   if (group.action === "storyboard_ready" || group.action === "video_ready") {
-    return `AI 剛生成了 ${count} 個${entityLabel}：${summary}，點擊查看`;
+    return `AI 剛生成了 ${count} 個${entityLabel}：${summary}，點選檢視`;
   }
   if (group.action === "created") {
-    return `AI 剛新增了 ${count} 個${entityLabel}：${summary}，點擊查看`;
+    return `AI 剛新增了 ${count} 個${entityLabel}：${summary}，點選檢視`;
   }
   if (group.action === "deleted") {
-    return `AI 剛刪除了 ${count} 個${entityLabel}：${summary}，點擊查看`;
+    return `AI 剛刪除了 ${count} 個${entityLabel}：${summary}，點選檢視`;
   }
-  return `AI 剛更新了 ${count} 個${entityLabel}：${summary}，點擊查看`;
+  return `AI 剛更新了 ${count} 個${entityLabel}：${summary}，點選檢視`;
 }

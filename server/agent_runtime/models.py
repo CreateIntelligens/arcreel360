@@ -13,13 +13,14 @@ SessionStatus = Literal["idle", "running", "completed", "error", "interrupted"]
 class SessionMeta(BaseModel):
     """Session metadata stored in database."""
 
-    id: str  # 对外暴露，填充 sdk_session_id 值
+    id: str  # 對外暴露，填充 sdk_session_id 值
     provider: str = "claude"
     project_name: str
     title: str = ""
     status: SessionStatus = "idle"
     created_at: datetime
     updated_at: datetime
+    capabilities: dict[str, Any] | None = None
 
     @classmethod
     def from_store(cls, **data: Any) -> "SessionMeta":

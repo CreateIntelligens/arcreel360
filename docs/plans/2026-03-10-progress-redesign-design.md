@@ -12,7 +12,7 @@
 | 问题 | 现状 | 目标 |
 |------|------|------|
 | 剧本创作阶段缺失 | 源文件上传、概述生成、分集规划、JSON 剧本生成均未追踪 | 纳入进度 |
-| 阶段关系不准确 | 角色/线索视为两个顺序阶段 | 独立的 worldbuilding 阶段（并行） |
+| 阶段关系不准确 | 角色/线索视为两個顺序阶段 | 独立的 worldbuilding 阶段（并行） |
 | 分镜/视频粒度错误 | 按项目汇总（所有集的总和） | 按集独立计算 |
 | 阶段推断逻辑错误 | 仅由数量比例推断当前阶段 | 基于实际工作流状态机 |
 | 角色/线索隐藏 | production 阶段后不显示 | 始终展示（后续剧集可能追加） |
@@ -79,7 +79,7 @@ class EpisodeMeta:
 ### `calculate_episode_stats()` 改动
 
 ```python
-# 之前返回（两个扁平字段）
+# 之前返回（两個扁平字段）
 {
     "storyboards_completed": int,
     "videos_completed": int,
@@ -134,7 +134,7 @@ def calculate_current_phase(project, episodes_stats: list[dict]) -> str:
 
 ```python
 def enrich_project(project_name, project):
-    # 1. 计算每集明细（集级状态），注入到每个 episode 对象
+    # 1. 计算每集明细（集级状态），注入到每個 episode 对象
     episodes_stats = []
     for ep in project["episodes"]:
         if ep.get("script_file"):
@@ -233,7 +233,7 @@ interface ProgressCategory {
 - `ep.storyboards_completed` → `ep.storyboards.completed`
 - `ep.videos_completed` → `ep.videos.completed`
 
-逻辑不变，沿用现有状态色点。
+逻辑不变，沿用現有状态色点。
 
 ---
 
@@ -243,7 +243,7 @@ interface ProgressCategory {
 |------|---------|
 | `lib/status_calculator.py` | 核心重写 |
 | `lib/script_models.py` | 更新 `EpisodeMeta` 类型定义 |
-| `tests/test_status_calculator.py` | 更新现有测试 + 新增用例 |
+| `tests/test_status_calculator.py` | 更新現有测试 + 新增用例 |
 | `frontend/src/types/project.ts` | 类型更新 |
 | `frontend/src/components/pages/ProjectsPage.tsx` | `ProjectCard` 展示逻辑 |
 | `frontend/src/components/layout/AssetSidebar.tsx` | 字段引用更新 |

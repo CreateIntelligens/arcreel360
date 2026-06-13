@@ -28,7 +28,7 @@ class TestProjectSymlink:
         projects_root.mkdir()
         profile_dir = tmp_path / "agent_runtime_profile"
         profile_dir.mkdir(parents=True)
-        (profile_dir / "CLAUDE.md").write_text("你是视频创作助手。")
+        (profile_dir / "CLAUDE.md").write_text("你是影片創作助手。")
 
         pm = ProjectManager(projects_root)
         pm.create_project("test-proj")
@@ -69,7 +69,7 @@ class TestProjectSymlink:
 
 class TestRepairClaudeSymlink:
     def _make_env(self, tmp_path):
-        """创建标准测试环境：projects/ 和 agent_runtime_profile/"""
+        """建立標準測試環境：projects/ 和 agent_runtime_profile/"""
         projects_root = tmp_path / "projects"
         projects_root.mkdir()
         profile_dir = tmp_path / "agent_runtime_profile"
@@ -81,7 +81,7 @@ class TestRepairClaudeSymlink:
         return pm, project_dir
 
     def test_repair_creates_missing_symlinks(self, tmp_path):
-        """缺失软连接时应新建。"""
+        """缺失軟連線時應新建。"""
         pm, project_dir = self._make_env(tmp_path)
 
         pm.repair_claude_symlink(project_dir)
@@ -90,9 +90,9 @@ class TestRepairClaudeSymlink:
         assert (project_dir / "CLAUDE.md").is_symlink()
 
     def test_repair_fixes_broken_symlink(self, tmp_path):
-        """损坏的软连接（is_symlink but not exists）应被删除并重建。"""
+        """損壞的軟連線（is_symlink but not exists）應被刪除並重建。"""
         pm, project_dir = self._make_env(tmp_path)
-        # 手动创建一个指向不存在路径的损坏软连接
+        # 手動建立一個指向不存在路徑的損壞軟連線
         broken = project_dir / ".claude"
         broken.symlink_to(Path("../../nonexistent/.claude"))
         assert broken.is_symlink() and not broken.exists()
@@ -103,9 +103,9 @@ class TestRepairClaudeSymlink:
         assert (project_dir / ".claude").exists()
 
     def test_repair_skips_valid_symlink(self, tmp_path):
-        """已正确的软连接不应被修改（readlink 值不变）。"""
+        """已正確的軟連線不應被修改（readlink 值不變）。"""
         pm, project_dir = self._make_env(tmp_path)
-        # 先建好正确软连接
+        # 先建好正確軟連線
         (project_dir / ".claude").symlink_to(Path("../../agent_runtime_profile/.claude"))
         original_target = Path((project_dir / ".claude").readlink())
 
@@ -114,27 +114,27 @@ class TestRepairClaudeSymlink:
         assert Path((project_dir / ".claude").readlink()) == original_target
 
     def test_repair_skips_when_profile_missing(self, tmp_path):
-        """agent_runtime_profile 不存在时静默跳过，不报错。"""
+        """agent_runtime_profile 不存在時靜默跳過，不報錯。"""
         projects_root = tmp_path / "projects"
         projects_root.mkdir()
         pm = ProjectManager(projects_root)
         project_dir = projects_root / "test-proj"
         project_dir.mkdir()
 
-        pm.repair_claude_symlink(project_dir)  # 不应抛异常
+        pm.repair_claude_symlink(project_dir)  # 不應拋異常
 
         assert not (project_dir / ".claude").exists()
 
 
 class TestRepairAllSymlinks:
     def test_repair_all_returns_stats(self, tmp_path):
-        """repair_all_symlinks 应返回含 created/repaired/skipped/errors 的字典。"""
+        """repair_all_symlinks 應返回含 created/repaired/skipped/errors 的字典。"""
         projects_root = tmp_path / "projects"
         projects_root.mkdir()
         profile_dir = tmp_path / "agent_runtime_profile"
         (profile_dir / ".claude").mkdir(parents=True)
         (profile_dir / "CLAUDE.md").write_text("prompt")
-        # 一个无软连接的老项目
+        # 一個無軟連線的老專案
         (projects_root / "old-proj").mkdir()
         pm = ProjectManager(projects_root)
 
@@ -144,10 +144,10 @@ class TestRepairAllSymlinks:
         assert "repaired" in stats
         assert "skipped" in stats
         assert "errors" in stats
-        assert stats["created"] == 2  # .claude 和 CLAUDE.md 各一条
+        assert stats["created"] == 2  # .claude 和 CLAUDE.md 各一條
 
     def test_repair_all_skips_hidden_dirs(self, tmp_path):
-        """以 . 开头的目录应跳过（如 .arcreel.db 所在目录）。"""
+        """以 . 開頭的目錄應跳過（如 .arcreel.db 所在目錄）。"""
         projects_root = tmp_path / "projects"
         projects_root.mkdir()
         (tmp_path / "agent_runtime_profile" / ".claude").mkdir(parents=True)

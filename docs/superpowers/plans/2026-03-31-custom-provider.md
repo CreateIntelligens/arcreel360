@@ -4,7 +4,7 @@
 
 **Goal:** 支持用户通过 base_url + api_key 接入任意 OpenAI/Google 兼容服务，同时修复 #189 中 3 项 OpenAI 预置供应商改进。
 
-**Architecture:** 平行轨道 — 自定义供应商有独立的 DB 表、Service、API 路由和前端区域，与预置供应商仅在 ConfigResolver（backend 选择）、system-config/options（模型下拉框）、UsageTracker（费用记录）三处汇合。Backend 层使用轻量包装类委托给现有 OpenAI/Gemini 后端。
+**Architecture:** 平行轨道 — 自定义供应商有独立的 DB 表、Service、API 路由和前端区域，与预置供应商仅在 ConfigResolver（backend 選择）、system-config/options（模型下拉框）、UsageTracker（费用记录）三处汇合。Backend 层使用轻量包装类委托给現有 OpenAI/Gemini 后端。
 
 **Tech Stack:** Python 3.12, SQLAlchemy Async ORM, FastAPI, Alembic, React 19, TypeScript, Tailwind CSS 4, Zustand
 
@@ -16,7 +16,7 @@
 - Modify: `lib/text_backends/openai.py`
 - Test: `tests/test_openai_text_backend.py`
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 写失敗测试**
 
 ```python
 # tests/test_openai_text_backend.py
@@ -38,7 +38,7 @@ def backend():
 
 
 async def test_instructor_fallback_on_structured_output_failure(backend):
-    """原生 response_format 失败时应回退到 Instructor。"""
+    """原生 response_format 失敗时应回退到 Instructor。"""
     from pydantic import BaseModel
 
     class TestSchema(BaseModel):
@@ -71,7 +71,7 @@ async def test_instructor_fallback_on_structured_output_failure(backend):
         mock_fallback.assert_called_once()
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_openai_text_backend.py::test_instructor_fallback_on_structured_output_failure -v`
 Expected: FAIL — `_instructor_fallback` 不存在
@@ -101,7 +101,7 @@ async def generate(self, request: TextGenerationRequest) -> TextGenerationResult
         response = await self._client.chat.completions.create(**kwargs)
     except Exception as exc:
         if request.response_schema and _is_schema_error(exc):
-            logger.warning("OpenAI 原生结构化输出失败，尝试 Instructor 降级: %s", exc)
+            logger.warning("OpenAI 原生结构化输出失敗，尝试 Instructor 降级: %s", exc)
             return await _instructor_fallback(self._client, self._model, request)
         raise
 
@@ -190,7 +190,7 @@ git commit -m "fix: OpenAI 文本后端 Instructor fallback 结构化输出降�
 - Modify: `lib/cost_calculator.py:362` — 已支持 quality 参数（无需改动）
 - Test: `tests/test_quality_propagation.py`
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 写失敗测试**
 
 ```python
 # tests/test_quality_propagation.py
@@ -217,7 +217,7 @@ def test_image_generation_result_quality_defaults_none():
     assert result.quality is None
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_quality_propagation.py -v`
 Expected: FAIL — `quality` 不是 `ImageGenerationResult` 的字段
@@ -310,7 +310,7 @@ git commit -m "fix: OpenAI 图片 quality 参数传递链 (#189)"
 - Modify: `lib/video_backends/openai.py:20-23` — 扩展 `_SIZE_MAP`
 - Test: `tests/test_openai_video_resolution.py`
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 写失敗测试**
 
 ```python
 # tests/test_openai_video_resolution.py
@@ -333,17 +333,17 @@ def test_default_fallback():
     assert _resolve_size("unknown", "unknown") == "720x1280"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_openai_video_resolution.py -v`
 Expected: FAIL — `_resolve_size` 不存在
 
 - [ ] **Step 3: 实现 resolution 映射**
 
-在 `lib/video_backends/openai.py` 中替换现有的 `_SIZE_MAP` 和 `generate()` 中的 size 逻辑：
+在 `lib/video_backends/openai.py` 中替换現有的 `_SIZE_MAP` 和 `generate()` 中的 size 逻辑：
 
 ```python
-# 替换现有的 _SIZE_MAP
+# 替换現有的 _SIZE_MAP
 _SIZE_MAP: dict[tuple[str, str], str] = {
     # (resolution, aspect_ratio) → size
     ("720p", "9:16"): "720x1280",
@@ -394,7 +394,7 @@ git commit -m "fix: OpenAI 视频 resolution 参数映射 (#189)"
 - Create: `alembic/versions/xxx_add_custom_provider_tables.py`（通过 autogenerate）
 - Test: `tests/test_custom_provider_models.py`
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 写失敗测试**
 
 ```python
 # tests/test_custom_provider_models.py
@@ -478,7 +478,7 @@ async def test_custom_provider_model_price_nullable(session):
     assert model.price_input is None
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_custom_provider_models.py -v`
 Expected: FAIL — `custom_provider` 模块不存在
@@ -498,7 +498,7 @@ from lib.db.base import Base, TimestampMixin
 
 
 class CustomProvider(TimestampMixin, Base):
-    """自定义供应商。每条记录代表用户添加的一个自定义供应商。"""
+    """自定义供应商。每条记录代表用户添加的一個自定义供应商。"""
 
     __tablename__ = "custom_provider"
 
@@ -573,7 +573,7 @@ git commit -m "feat: 自定义供应商 ORM 模型与数据库迁移"
 - Create: `lib/db/repositories/custom_provider_repo.py`
 - Test: `tests/test_custom_provider_repo.py`
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 写失敗测试**
 
 ```python
 # tests/test_custom_provider_repo.py
@@ -676,7 +676,7 @@ async def test_get_enabled_models_by_media_type(repo, session):
     assert text_models[0].model_id == "t1"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_custom_provider_repo.py -v`
 Expected: FAIL — `CustomProviderRepository` 不存在
@@ -854,7 +854,7 @@ git commit -m "feat: 自定义供应商 Repository 层"
 - Create: `lib/custom_provider/backends.py`
 - Test: `tests/test_custom_backends.py`
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 写失敗测试**
 
 ```python
 # tests/test_custom_backends.py
@@ -904,7 +904,7 @@ def test_custom_video_backend_properties():
     assert backend.model == "kling-v3"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_custom_backends.py -v`
 Expected: FAIL — `lib.custom_provider.backends` 不存在
@@ -1019,7 +1019,7 @@ git commit -m "feat: 自定义供应商 Backend 包装类"
 - Test: `tests/test_custom_provider_factory.py`
 - Test: `tests/test_model_discovery.py`
 
-- [ ] **Step 1: 写失败测试 — 工厂**
+- [ ] **Step 1: 写失敗测试 — 工厂**
 
 ```python
 # tests/test_custom_provider_factory.py
@@ -1072,7 +1072,7 @@ async def test_unknown_media_type_raises():
         create_custom_backend(provider=mock_provider, model_id="m", media_type="audio")
 ```
 
-- [ ] **Step 2: 写失败测试 — 模型发现**
+- [ ] **Step 2: 写失敗测试 — 模型发现**
 
 ```python
 # tests/test_model_discovery.py
@@ -1118,7 +1118,7 @@ async def test_discover_models_openai_format():
         assert result[1]["media_type"] == "video"
 ```
 
-- [ ] **Step 3: 运行测试确认失败**
+- [ ] **Step 3: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_custom_provider_factory.py tests/test_model_discovery.py -v`
 Expected: FAIL
@@ -1329,7 +1329,7 @@ git commit -m "feat: 自定义 Backend 工厂与模型发现"
 - Modify: `lib/text_backends/factory.py:11-40`
 - Test: `tests/test_custom_cost.py`
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 写失敗测试**
 
 ```python
 # tests/test_custom_cost.py
@@ -1380,7 +1380,7 @@ def test_custom_cost_null_price_returns_zero():
     assert amount == 0.0
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_custom_cost.py -v`
 Expected: FAIL — `_get_custom_model_price` 不存在
@@ -1466,7 +1466,7 @@ def _calculate_custom_cost(
 
 ```python
 async def _auto_resolve_backend(self, svc, media_type):
-    # ... 现有预置供应商查询 ...
+    # ... 現有预置供应商查询 ...
 
     # 查询自定义供应商
     from lib.db.repositories.custom_provider_repo import CustomProviderRepository
@@ -1479,10 +1479,10 @@ async def _auto_resolve_backend(self, svc, media_type):
                 if provider:
                     return f"custom-{provider.id}", model.model_id
 
-    raise ValueError(f"未找到可用的 {media_type} 供应商。请在「全局设置 → 供应商」页面配置至少一个供应商。")
+    raise ValueError(f"未找到可用的 {media_type} 供应商。请在「全局设置 → 供应商」页面配置至少一個供应商。")
 ```
 
-在 `lib/text_backends/factory.py` 中扩展 `create_text_backend_for_task`，在现有逻辑前添加自定义供应商处理：
+在 `lib/text_backends/factory.py` 中扩展 `create_text_backend_for_task`，在現有逻辑前添加自定义供应商处理：
 
 ```python
 async def create_text_backend_for_task(task_type, project_name=None):
@@ -1502,7 +1502,7 @@ async def create_text_backend_for_task(task_type, project_name=None):
                 raise ValueError(f"自定义供应商 {provider_id} 不存在")
             return create_custom_backend(provider=provider, model_id=model_id, media_type="text")
 
-    # ... 现有预置供应商逻辑 ...
+    # ... 現有预置供应商逻辑 ...
 ```
 
 - [ ] **Step 5: 运行测试确认通过**
@@ -1531,7 +1531,7 @@ git commit -m "feat: CostCalculator 自定义价格 + ConfigResolver 自定义�
 - Modify: `server/app.py:26,178`
 - Test: `tests/test_custom_providers_api.py`
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 写失敗测试**
 
 ```python
 # tests/test_custom_providers_api.py
@@ -1571,7 +1571,7 @@ async def app_with_db():
 
 
 def test_create_custom_provider(app_with_db):
-    # 这个测试验证 POST /api/v1/custom-providers 能创建供应商
+    # 这個测试验证 POST /api/v1/custom-providers 能创建供应商
     pass  # 将在 Step 3 后填充完整的 API 测试
 
 
@@ -1625,7 +1625,7 @@ git commit -m "feat: 自定义供应商 API 路由（CRUD + 模型发现 + 连�
 
 ---
 
-## Task 10: system-config/options 合并 + 用量统计 display_name
+## Task 10: system-config/options 合并 + 用量統計 display_name
 
 **Files:**
 - Modify: `server/routers/system_config.py:38-62` — `_build_options()` 追加自定义模型
@@ -1633,7 +1633,7 @@ git commit -m "feat: 自定义供应商 API 路由（CRUD + 模型发现 + 连�
 - Modify: `frontend/src/components/pages/settings/UsageStatsSection.tsx:97` — 使用 `display_name`
 - Test: `tests/test_system_config_options.py`
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 写失敗测试**
 
 ```python
 # tests/test_system_config_options.py
@@ -1691,7 +1691,7 @@ async def test_build_options_includes_custom_models(session):
 
 ```python
 async def _build_options(svc: ConfigService) -> dict[str, list[str]]:
-    # ... 现有代码 ...
+    # ... 現有代码 ...
 
     # 追加自定义供应商的模型
     from lib.db import async_session_factory
@@ -1719,7 +1719,7 @@ async def _build_options(svc: ConfigService) -> dict[str, list[str]]:
     }
 ```
 
-- [ ] **Step 3: 实现用量统计 display_name**
+- [ ] **Step 3: 实现用量統計 display_name**
 
 在 `lib/db/repositories/usage_repo.py` 的 `get_stats_grouped_by_provider()` 方法中，返回 stats 字典时，对 `custom-` 开头的 provider 查询 display_name：
 
@@ -1754,7 +1754,7 @@ Expected: PASS
 
 ```bash
 git add server/routers/system_config.py lib/db/repositories/usage_repo.py frontend/src/components/pages/settings/UsageStatsSection.tsx tests/test_system_config_options.py
-git commit -m "feat: system-config options 合并自定义模型 + 用量统计 display_name"
+git commit -m "feat: system-config options 合并自定义模型 + 用量統計 display_name"
 ```
 
 ---
@@ -1896,7 +1896,7 @@ git commit -m "feat: 前端自定义供应商 TypeScript 类型与 API 客户端
 新建/编辑表单，包含：
 - 基础信息（名称、API 格式下拉、Base URL、API Key）
 - 「获取模型列表」按钮 → 调用 `API.discoverModels()`
-- 模型列表编辑（勾选启用、修正媒体类型、标记默认、填写价格）
+- 模型列表编辑（勾選启用、修正媒体类型、标记默认、填写价格）
 - 「测试连接」按钮 → 调用 `API.testCustomConnection()`
 - 「保存」→ 一次性提交
 
@@ -1949,8 +1949,8 @@ Expected: PASS
 2. 点击「+ 添加自定义供应商」，填写 OpenAI 兼容中转站信息
 3. 点击「获取模型列表」，验证模型发现正常
 4. 修正媒体类型和价格，保存
-5. 在模型选择下拉框中看到自定义模型
-6. 在用量统计中看到 display_name
+5. 在模型選择下拉框中看到自定义模型
+6. 在用量統計中看到 display_name
 
 Run:
 ```bash

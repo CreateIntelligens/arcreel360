@@ -4,7 +4,7 @@
 
 **Goal:** 在分镜卡片文本列下半部分添加备注 textarea，失焦自动保存到剧集 JSON。
 
-**Architecture:** 在 `NarrationSegment` / `DramaScene` 模型中加 `note` 可选字段，复用现有 PATCH API 保存，前端 `TextColumn` 中渲染 textarea。
+**Architecture:** 在 `NarrationSegment` / `DramaScene` 模型中加 `note` 可選字段，复用現有 PATCH API 保存，前端 `TextColumn` 中渲染 textarea。
 
 **Tech Stack:** Python Pydantic, FastAPI, React, TypeScript, Tailwind CSS
 
@@ -165,12 +165,12 @@ function TextColumn({
     }
   };
 
-  // ... 现有的 narration/drama 渲染逻辑保持不变 ...
+  // ... 現有的 narration/drama 渲染逻辑保持不变 ...
   // 在 return 的 div 末尾追加备注区：
 
   return (
     <div className="flex flex-col gap-1.5 p-3">
-      {/* 现有原文/对话内容 */}
+      {/* 現有原文/对话内容 */}
       ...
 
       {/* 备注区 */}
@@ -230,7 +230,7 @@ Run: `cd frontend && pnpm dev`
 
 **Step 3: 手动验证**
 
-1. 打开浏览器，进入一个项目的分镜页面
+1. 打开浏览器，进入一個项目的分镜页面
 2. 在任意分镜卡片的文本列下方看到 "备注" 标签和 textarea
 3. 输入备注内容，点击其他地方（触发 blur）
 4. 刷新页面，确认备注内容已保存

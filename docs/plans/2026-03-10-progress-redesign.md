@@ -18,9 +18,9 @@
 - Modify: `lib/status_calculator.py:40-79`
 - Test: `tests/test_status_calculator.py`
 
-**Step 1: 写失败测试（新返回结构）**
+**Step 1: 写失敗测试（新返回结构）**
 
-在 `tests/test_status_calculator.py` 的 `TestStatusCalculator` 类中，将现有的 `test_calculate_episode_stats_statuses` 替换为：
+在 `tests/test_status_calculator.py` 的 `TestStatusCalculator` 类中，将現有的 `test_calculate_episode_stats_statuses` 替换为：
 
 ```python
 def test_calculate_episode_stats_statuses(self, tmp_path):
@@ -56,7 +56,7 @@ def test_calculate_episode_stats_statuses(self, tmp_path):
     assert in_prod["storyboards"] == {"total": 2, "completed": 1}
     assert in_prod["videos"] == {"total": 2, "completed": 0}
 
-    # completed：所有场景有视频
+    # completed：所有場景有视频
     completed = calc.calculate_episode_stats(
         "demo",
         {
@@ -71,7 +71,7 @@ def test_calculate_episode_stats_statuses(self, tmp_path):
     assert completed["videos"] == {"total": 1, "completed": 1}
 ```
 
-**Step 2: 运行确认失败**
+**Step 2: 运行确认失敗**
 
 ```bash
 cd .worktrees/progress-redesign
@@ -130,7 +130,7 @@ python -m pytest tests/test_status_calculator.py::TestStatusCalculator::test_cal
 python -m pytest tests/test_status_calculator.py -v
 ```
 
-记录失败项，Task 2 统一修复。
+记录失敗项，Task 2 统一修复。
 
 **Step 6: Commit**
 
@@ -147,9 +147,9 @@ git commit -m "refactor(status): calculate_episode_stats returns storyboards/vid
 - Modify: `lib/status_calculator.py`
 - Test: `tests/test_status_calculator.py`
 
-新增三个方法，替换 `calculate_project_progress()` 和旧的 `calculate_current_phase()`。
+新增三個方法，替换 `calculate_project_progress()` 和旧的 `calculate_current_phase()`。
 
-**Step 1: 写失败测试（新阶段枚举 + script_status）**
+**Step 1: 写失敗测试（新阶段枚举 + script_status）**
 
 在 `TestStatusCalculator` 中，将 `test_calculate_project_progress_and_phase` 替换为：
 
@@ -252,7 +252,7 @@ def test_calculate_project_status(self, tmp_path):
     }
 ```
 
-**Step 2: 运行确认失败**
+**Step 2: 运行确认失敗**
 
 ```bash
 python -m pytest tests/test_status_calculator.py -k "test_get_episode_script_status or test_calculate_current_phase or test_calculate_project_status" -v
@@ -325,7 +325,7 @@ def calculate_project_status(self, project_name: str, project: Dict) -> Dict:
     """
     project_dir = self.pm.get_project_path(project_name)
 
-    # 角色统计
+    # 角色統計
     chars = project.get('characters', {})
     chars_total = len(chars)
     chars_done = sum(
@@ -333,7 +333,7 @@ def calculate_project_status(self, project_name: str, project: Dict) -> Dict:
         if c.get('character_sheet') and (project_dir / c['character_sheet']).exists()
     )
 
-    # 线索统计（所有线索，不限 major）
+    # 线索統計（所有线索，不限 major）
     clues = project.get('clues', {})
     clues_total = len(clues)
     clues_done = sum(
@@ -400,7 +400,7 @@ python -m pytest tests/test_status_calculator.py -k "test_get_episode_script_sta
 python -m pytest tests/test_status_calculator.py -v
 ```
 
-若有旧测试失败（如 `test_calculate_project_progress_and_phase`），按新结构修复。
+若有旧测试失敗（如 `test_calculate_project_progress_and_phase`），按新结构修复。
 
 `test_calculate_project_progress_and_phase` 改为验证 `calculate_project_status`：
 - `status["current_phase"] == "completed"`（不是旧的 `"compose"`）

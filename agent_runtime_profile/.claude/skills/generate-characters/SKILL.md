@@ -1,33 +1,33 @@
 ---
 name: generate-characters
-description: 生成角色设计参考图（三视图）。当用户说"生成角色图"、"画角色设计"、想为新角色创建参考图、或有角色缺少 character_sheet 时使用。确保视频中角色形象一致。
+description: 生成角色設計參考圖（三檢視）。當使用者說"生成角色圖"、"畫角色設計"、想為新角色建立參考圖、或有角色缺少 character_sheet 時使用。確保影片中角色形象一致。
 ---
 
-# 生成角色设计图
+# 生成角色設計圖
 
-使用 Gemini 3 Pro Image API 创建角色设计图，确保整个视频中的视觉一致性。
+使用 Gemini 3 Pro Image API 建立角色設計圖，確保整個影片中的視覺一致性。
 
-> Prompt 编写原则详见 `.claude/references/content-modes.md` 的"Prompt 语言"章节。
+> Prompt 編寫原則詳見 `.claude/references/content-modes.md` 的"Prompt 語言"章節。
 
-## 角色描述编写指南
+## 角色描述編寫指南
 
-编写角色 `description` 时使用**叙事式写法**，不要罗列关键词。
+編寫角色 `description` 時使用**敘事式寫法**，不要羅列關鍵詞。
 
-**推荐**：
-> "二十出头的女子，身材纤细，鹅蛋脸上有一双清澈的杏眼，柳叶眉微蹙时带着几分忧郁。身着淡青色绣花罗裙，腰间系着同色丝带，显得端庄而不失灵动。"
+**推薦**：
+> "二十出頭的女子，身材纖細，鵝蛋臉上有一雙清澈的杏眼，柳葉眉微蹙時帶著幾分憂鬱。身著淡青色繡花羅裙，腰間繫著同色絲帶，顯得端莊而不失靈動。"
 
-**要点**：用连贯段落描述外貌、服装、气质，包含年龄、体态、面部特征、服饰细节。
+**要點**：用連貫段落描述外貌、服裝、氣質，包含年齡、體態、面部特徵、服飾細節。
 
-## 命令行用法
+## 命令列用法
 
 ```bash
-# 生成所有待处理的角色
+# 生成所有待處理的角色
 python .claude/skills/generate-characters/scripts/generate_character.py --all
 
-# 生成指定单个角色
+# 生成指定單個角色
 python .claude/skills/generate-characters/scripts/generate_character.py --character "{角色名}"
 
-# 生成指定多个角色
+# 生成指定多個角色
 python .claude/skills/generate-characters/scripts/generate_character.py --characters "{角色1}" "{角色2}" "{角色3}"
 
 # 列出待生成的角色
@@ -36,19 +36,19 @@ python .claude/skills/generate-characters/scripts/generate_character.py --list
 
 ## 工作流程
 
-1. **加载项目数据** — 从 project.json 找出缺少 `character_sheet` 的角色
-2. **生成角色设计** — 根据描述构建 prompt，调用脚本生成
-3. **审核检查点** — 展示每张设计图，用户可批准或要求重新生成
-4. **更新 project.json** — 更新 `character_sheet` 路径
+1. **載入專案資料** — 從 project.json 找出缺少 `character_sheet` 的角色
+2. **生成角色設計** — 根據描述構建 prompt，呼叫指令碼生成
+3. **稽核檢查點** — 展示每張設計圖，使用者可批准或要求生成
+4. **更新 project.json** — 更新 `character_sheet` 路徑
 
 ## Prompt 模板
 
 ```
-一张专业的角色设计参考图，{项目 style}。
+一張專業的角色設計參考圖，{專案 style}。
 
-角色「[角色名称]」的三视图设计稿。[角色描述 - 叙事式段落]
+角色「[角色名稱]」的三檢視設計稿。[角色描述 - 敘事式段落]
 
-三个等比例全身像水平排列在纯净浅灰背景上：左侧正面、中间四分之三侧面、右侧纯侧面轮廓。柔和均匀的摄影棚照明，无强烈阴影。
+三個等比例全身像水平排列在純淨淺灰背景上：左側正面、中間四分之三側面、右側純側面輪廓。柔和均勻的攝影棚照明，無強烈陰影。
 ```
 
-> 画风由项目的 `style` 字段决定，不使用固定的"漫画/动漫"描述。
+> 畫風由專案的 `style` 欄位決定，不使用固定的"漫畫/動漫"描述。

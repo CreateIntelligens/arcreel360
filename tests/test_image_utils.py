@@ -1,5 +1,5 @@
 # tests/test_image_utils.py
-"""image_utils 单元测试。"""
+"""image_utils 單元測試。"""
 
 from __future__ import annotations
 
@@ -12,17 +12,17 @@ from lib.image_utils import compress_image_bytes
 
 
 class TestCompressImageBytes:
-    """compress_image_bytes 测试。"""
+    """compress_image_bytes 測試。"""
 
     def _make_png(self, width: int, height: int) -> bytes:
-        """生成指定尺寸的 PNG 字节。"""
+        """生成指定尺寸的 PNG 位元組。"""
         img = Image.new("RGB", (width, height), color="red")
         buf = BytesIO()
         img.save(buf, format="PNG")
         return buf.getvalue()
 
     def test_small_image_unchanged_dimensions(self):
-        """小图（长边 < 2048）不缩放，但仍转为 JPEG。"""
+        """小圖（長邊 < 2048）不縮放，但仍轉為 JPEG。"""
         raw = self._make_png(800, 600)
         result = compress_image_bytes(raw)
         img = Image.open(BytesIO(result))
@@ -30,7 +30,7 @@ class TestCompressImageBytes:
         assert img.size == (800, 600)
 
     def test_large_image_resized(self):
-        """大图（长边 > 2048）缩放到长边 2048。"""
+        """大圖（長邊 > 2048）縮放到長邊 2048。"""
         raw = self._make_png(4096, 3072)
         result = compress_image_bytes(raw)
         img = Image.open(BytesIO(result))
@@ -39,7 +39,7 @@ class TestCompressImageBytes:
         assert img.size == (2048, 1536)
 
     def test_portrait_large_image(self):
-        """竖图大图也正确缩放。"""
+        """豎圖大圖也正確縮放。"""
         raw = self._make_png(2000, 4000)
         result = compress_image_bytes(raw)
         img = Image.open(BytesIO(result))
@@ -47,7 +47,7 @@ class TestCompressImageBytes:
         assert img.size == (1024, 2048)
 
     def test_rgba_converted_to_rgb(self):
-        """RGBA 图片转为 RGB（JPEG 不支持 alpha）。"""
+        """RGBA 圖片轉為 RGB（JPEG 不支援 alpha）。"""
         img = Image.new("RGBA", (100, 100), color=(255, 0, 0, 128))
         buf = BytesIO()
         img.save(buf, format="PNG")
@@ -56,7 +56,7 @@ class TestCompressImageBytes:
         assert out.mode == "RGB"
 
     def test_jpeg_input(self):
-        """JPEG 输入也能正常处理。"""
+        """JPEG 輸入也能正常處理。"""
         img = Image.new("RGB", (500, 500), color="blue")
         buf = BytesIO()
         img.save(buf, format="JPEG", quality=95)
@@ -65,7 +65,7 @@ class TestCompressImageBytes:
         assert out.format == "JPEG"
 
     def test_webp_input(self):
-        """WebP 输入也能正常处理。"""
+        """WebP 輸入也能正常處理。"""
         img = Image.new("RGB", (500, 500), color="green")
         buf = BytesIO()
         img.save(buf, format="WEBP")
@@ -74,12 +74,12 @@ class TestCompressImageBytes:
         assert out.format == "JPEG"
 
     def test_invalid_input_raises(self):
-        """非图片字节抛出 ValueError。"""
+        """非圖片位元組丟擲 ValueError。"""
         with pytest.raises(ValueError, match="Invalid image"):
             compress_image_bytes(b"not an image")
 
     def test_output_smaller_than_input(self):
-        """压缩后体积应显著减小。"""
+        """壓縮後體積應顯著減小。"""
         raw = self._make_png(3000, 2000)
         result = compress_image_bytes(raw)
         assert len(result) < len(raw)

@@ -2,6 +2,44 @@ import type { ContentBlock, Turn } from "@/types";
 import { cn } from "./utils";
 import { getRoleLabel } from "./utils";
 import { ContentBlockRenderer } from "./ContentBlockRenderer";
+import { ToolCallGroup } from "./ToolCallGroup";
+
+const TOOL_GROUP_MIN_SIZE = 2;
+
+type RenderItem =
+  | { kind: "single"; block: ContentBlock; index: number }
+  | { kind: "group"; blocks: ContentBlock[]; startIndex: number };
+
+function isGroupableToolUse(block: ContentBlock): boolean {
+  return block.type === "tool_use" && block.name !== "TodoWrite";
+}
+
+/**
+ * 將連續 ≥2 個非 TodoWrite tool_use blocks 合併為單一群組，避免洗版。
+ */
+function groupBlocks(blocks: ContentBlock[]): RenderItem[] {
+  const items: RenderItem[] = [];
+  let i = 0;
+  while (i < blocks.length) {
+    if (isGroupableToolUse(blocks[i])) {
+      let j = i + 1;
+      while (j < blocks.length && isGroupableToolUse(blocks[j])) j++;
+      const run = blocks.slice(i, j);
+      if (run.length >= TOOL_GROUP_MIN_SIZE) {
+        items.push({ kind: "group", blocks: run, startIndex: i });
+      } else {
+        run.forEach((block, offset) => {
+          items.push({ kind: "single", block, index: i + offset });
+        });
+      }
+      i = j;
+    } else {
+      items.push({ kind: "single", block: blocks[i], index: i });
+      i++;
+    }
+  }
+  return items;
+}
 
 // ---------------------------------------------------------------------------
 // ChatMessage – renders a full conversation turn (user, assistant, or system).
@@ -47,13 +85,20 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {getRoleLabel(messageType)}
       </div>
       <div className="text-sm text-slate-100 leading-6 min-w-0 overflow-hidden">
-        {blocks.map((block, index) => (
-          <ContentBlockRenderer
-            key={block.id ?? index}
-            block={block}
-            index={index}
-          />
-        ))}
+        {groupBlocks(blocks).map((item) =>
+          item.kind === "group" ? (
+            <ToolCallGroup
+              key={`group-${item.startIndex}`}
+              blocks={item.blocks}
+            />
+          ) : (
+            <ContentBlockRenderer
+              key={item.block.id ?? item.index}
+              block={item.block}
+              index={item.index}
+            />
+          ),
+        )}
       </div>
     </article>
   );

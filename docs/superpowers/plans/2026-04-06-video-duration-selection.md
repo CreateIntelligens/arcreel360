@@ -4,7 +4,7 @@
 
 **Goal:** 将视频时长和横竖屏从硬编码改为动态可配置，时长由视频模型能力决定，横竖屏与 content_mode 完全解耦。
 
-**Architecture:** 在现有 `ModelInfo` 上扩展 `supported_durations` 和 `duration_resolution_constraints` 字段，`CustomProviderModel` ORM 新增 `supported_durations` 列。项目级新增 `aspect_ratio`（顶层字符串）和 `default_duration` 字段。Prompt 构建器和 Agent 脚本动态注入时长/横竖屏参数。
+**Architecture:** 在現有 `ModelInfo` 上扩展 `supported_durations` 和 `duration_resolution_constraints` 字段，`CustomProviderModel` ORM 新增 `supported_durations` 列。项目级新增 `aspect_ratio`（顶层字符串）和 `default_duration` 字段。Prompt 构建器和 Agent 脚本动态注入时长/横竖屏参数。
 
 **Tech Stack:** Python (Pydantic, SQLAlchemy, FastAPI, Alembic), TypeScript (React, Tailwind)
 
@@ -36,8 +36,8 @@
 | `frontend/src/types/script.ts` | Modify | DurationSeconds 类型改 number |
 | `frontend/src/types/project.ts` | Modify | ProjectData 新增字段 |
 | `frontend/src/api.ts` | Modify | createProject 新增 aspectRatio，updateProject 放开 aspect_ratio |
-| `frontend/src/components/pages/CreateProjectModal.tsx` | Modify | 新增横竖屏选择器 |
-| `frontend/src/components/canvas/timeline/SegmentCard.tsx` | Modify | 动态时长选项 |
+| `frontend/src/components/pages/CreateProjectModal.tsx` | Modify | 新增横竖屏選择器 |
+| `frontend/src/components/canvas/timeline/SegmentCard.tsx` | Modify | 动态时长選項 |
 | `frontend/src/components/canvas/timeline/TimelineCanvas.tsx` | Modify | 直接读 project.aspect_ratio |
 | `tests/test_script_models.py` | Modify | 更新时长验证测试 |
 | `tests/test_prompt_builders.py` | Modify | 更新 storyboard_suffix 测试 |
@@ -100,7 +100,7 @@ class TestModelInfoDurations:
         assert mi.duration_resolution_constraints == {}
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_config_registry.py -v`
 Expected: FAIL（ModelInfo 没有 supported_durations 字段）
@@ -109,7 +109,7 @@ Expected: FAIL（ModelInfo 没有 supported_durations 字段）
 
 在 `lib/config/registry.py` 中：
 
-1. `ModelInfo` dataclass 新增两个字段：
+1. `ModelInfo` dataclass 新增两個字段：
 
 ```python
 @dataclass(frozen=True)
@@ -124,13 +124,13 @@ class ModelInfo:
 
 2. 为所有视频模型添加 `supported_durations` 和 `duration_resolution_constraints`：
 
-AI Studio 视频模型（3 个）:
+AI Studio 视频模型（3 個）:
 ```python
 supported_durations=[4, 6, 8],
 duration_resolution_constraints={"1080p": [8]},
 ```
 
-Vertex 视频模型（2 个）:
+Vertex 视频模型（2 個）:
 ```python
 supported_durations=[4, 6, 8],
 ```
@@ -213,7 +213,7 @@ def _model_to_response(m) -> ModelResponse:
         import json
         durations = json.loads(m.supported_durations)
     return ModelResponse(
-        ...,  # 现有字段保持不变
+        ...,  # 現有字段保持不变
         supported_durations=durations,
     )
 ```
@@ -270,7 +270,7 @@ def test_duration_accepts_any_positive_int_within_range(self):
         novel_text="原文",
         characters_in_segment=["姜月茴"],
         image_prompt=ImagePrompt(
-            scene="场景",
+            scene="場景",
             composition=Composition(shot_type="Medium Shot", lighting="暖光", ambiance="薄雾"),
         ),
         video_prompt=VideoPrompt(action="转身", camera_motion="Static", ambiance_audio="风声"),
@@ -287,7 +287,7 @@ def test_duration_rejects_out_of_range(self):
             novel_text="原文",
             characters_in_segment=["姜月茴"],
             image_prompt=ImagePrompt(
-                scene="场景",
+                scene="場景",
                 composition=Composition(shot_type="Medium Shot", lighting="暖光", ambiance="薄雾"),
             ),
             video_prompt=VideoPrompt(action="转身", camera_motion="Static", ambiance_audio="风声"),
@@ -300,7 +300,7 @@ def test_duration_rejects_out_of_range(self):
             novel_text="原文",
             characters_in_segment=["姜月茴"],
             image_prompt=ImagePrompt(
-                scene="场景",
+                scene="場景",
                 composition=Composition(shot_type="Medium Shot", lighting="暖光", ambiance="薄雾"),
             ),
             video_prompt=VideoPrompt(action="转身", camera_motion="Static", ambiance_audio="风声"),
@@ -312,7 +312,7 @@ def test_drama_scene_default_duration_is_8(self):
         scene_id="E1S01",
         characters_in_scene=["姜月茴"],
         image_prompt=ImagePrompt(
-            scene="场景",
+            scene="場景",
             composition=Composition(shot_type="Medium Shot", lighting="暖光", ambiance="薄雾"),
         ),
         video_prompt=VideoPrompt(action="前进", camera_motion="Static", ambiance_audio="雨声"),
@@ -320,7 +320,7 @@ def test_drama_scene_default_duration_is_8(self):
     assert scene.duration_seconds == 8
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_script_models.py -v`
 Expected: `test_duration_accepts_any_positive_int_within_range` FAIL（DurationSeconds 拒绝 10）
@@ -329,7 +329,7 @@ Expected: `test_duration_accepts_any_positive_int_within_range` FAIL（DurationS
 
 在 `lib/script_models.py` 中：
 
-1. 删除整个 `DurationSeconds` 类（第 16-38 行）
+1. 删除整個 `DurationSeconds` 类（第 16-38 行）
 2. 移除不再需要的 import：`GetCoreSchemaHandler`, `GetJsonSchemaHandler`, `JsonSchemaValue`, `core_schema`
 3. 修改 `NarrationSegment.duration_seconds`:
 ```python
@@ -337,7 +337,7 @@ duration_seconds: int = Field(ge=1, le=60, description="片段时长（秒）")
 ```
 4. 修改 `DramaScene.duration_seconds`:
 ```python
-duration_seconds: int = Field(default=8, ge=1, le=60, description="场景时长（秒）")
+duration_seconds: int = Field(default=8, ge=1, le=60, description="場景时长（秒）")
 ```
 5. 修改 `DramaScene.image_prompt` 的 Field description（移除硬编码的"16:9 横屏"）：
 ```python
@@ -352,7 +352,7 @@ Expected: ALL PASS
 - [ ] **Step 5: 运行全量测试确认无回归**
 
 Run: `uv run python -m pytest -x`
-Expected: 无新增失败（可能有 test_prompt_builders_script.py 的 `16:9` 断言失败，后续 Task 修复）
+Expected: 无新增失敗（可能有 test_prompt_builders_script.py 的 `16:9` 断言失敗，后续 Task 修复）
 
 - [ ] **Step 6: 提交**
 
@@ -400,7 +400,7 @@ class TestGetAspectRatio:
         assert generation_tasks.get_aspect_ratio(project, "clues") == "16:9"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_generation_tasks_service.py::TestGetAspectRatio -v`
 Expected: `test_reads_top_level_aspect_ratio` FAIL（当前逻辑把 aspect_ratio 当 dict 处理）
@@ -629,7 +629,7 @@ def test_build_drama_prompt_landscape(self):
     assert "横屏构图" in prompt
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_prompt_builders.py tests/test_prompt_builders_script.py -v`
 Expected: FAIL（函数签名不匹配）
@@ -666,8 +666,8 @@ def _format_duration_constraint(supported_durations: list[int], default_duration
     """根据参数生成时长约束描述。"""
     durations_str = ", ".join(str(d) for d in supported_durations)
     if default_duration is not None:
-        return f"时长：从 [{durations_str}] 秒中选择，默认使用 {default_duration} 秒"
-    return f"时长：从 [{durations_str}] 秒中选择，根据内容节奏自行决定"
+        return f"时长：从 [{durations_str}] 秒中選择，默认使用 {default_duration} 秒"
+    return f"时长：从 [{durations_str}] 秒中選择，根据内容节奏自行决定"
 
 
 def _format_aspect_ratio_desc(aspect_ratio: str) -> str:
@@ -718,12 +718,12 @@ def build_drama_prompt(
 - `"时长：4、6 或 8 秒（默认 8 秒）"` → `{_format_duration_constraint(supported_durations or [4, 6, 8], default_duration)}`
 - `"16:9 横屏构图"` → `{_format_aspect_ratio_desc(aspect_ratio)}`
 - `"确保在指定时长（4/6/8秒）内可完成"` → `"确保在指定时长内可完成"`
-- `"使用场景表中的时长（4、6 或 8），默认为 8"` → `"使用场景表中的时长"`
+- `"使用場景表中的时长（4、6 或 8），默认为 8"` → `"使用場景表中的时长"`
 - `"适合 16:9 横屏动画呈现"` → `f"适合{_format_aspect_ratio_desc(aspect_ratio)}动画呈现"`
 
 - [ ] **Step 5: 更新 script_generator.py 调用方**
 
-在 `lib/script_generator.py` 中，`generate` 和 `build_prompt` 方法里两处调用 `build_narration_prompt` / `build_drama_prompt` 的地方，都新增三个参数：
+在 `lib/script_generator.py` 中，`generate` 和 `build_prompt` 方法里两处调用 `build_narration_prompt` / `build_drama_prompt` 的地方，都新增三個参数：
 
 ```python
 supported_durations=self.project_json.get("_supported_durations"),
@@ -740,7 +740,7 @@ def _resolve_aspect_ratio(self) -> str:
     return "9:16" if self.content_mode == "narration" else "16:9"
 ```
 
-注意：`_supported_durations` 是一个由调用方注入的临时字段（由 generation_tasks 服务在调用脚本生成前设置），或者 ScriptGenerator 在 `__init__` 中从全局配置中解析。这里先用项目字段，如果不存在则传 `None`（Prompt 构建器会 fallback 到 `[4, 6, 8]`）。
+注意：`_supported_durations` 是一個由调用方注入的临时字段（由 generation_tasks 服务在调用脚本生成前设置），或者 ScriptGenerator 在 `__init__` 中从全局配置中解析。这里先用项目字段，如果不存在则传 `None`（Prompt 构建器会 fallback 到 `[4, 6, 8]`）。
 
 - [ ] **Step 6: 运行测试确认通过**
 
@@ -848,8 +848,8 @@ duration_str = validate_duration(duration, supported)
 |------|---------------------------|-----------------|
 | 数据结构 | `segments` 数组 | `scenes` 数组 |
 | 画面比例 | 项目配置（默认 9:16 竖屏） | 项目配置（默认 16:9 横屏） |
-| 默认时长 | 项目配置（默认 4 秒/片段） | 项目配置（默认 8 秒/场景） |
-| 时长可选 | 由视频模型能力决定 | 由视频模型能力决定 |
+| 默认时长 | 项目配置（默认 4 秒/片段） | 项目配置（默认 8 秒/場景） |
+| 时长可選 | 由视频模型能力决定 | 由视频模型能力决定 |
 ```
 
 - [ ] **Step 5: 更新 agent_runtime_profile/CLAUDE.md**
@@ -861,7 +861,7 @@ duration_str = validate_duration(duration, supported)
 - **视频比例**：由项目 `aspect_ratio` 配置决定，无需在 prompt 中指定
   - 说书+画面模式默认：**9:16 竖屏**
   - 剧集动画模式默认：16:9 横屏
-- **单片段/场景时长**：由视频模型能力和项目 `default_duration` 配置决定
+- **单片段/場景时长**：由视频模型能力和项目 `default_duration` 配置决定
   - 说书+画面模式默认：**4 秒**
   - 剧集动画模式默认：8 秒
 ```
@@ -963,12 +963,12 @@ git commit -m "feat: 前端类型和 API 层适配动态时长和 aspect_ratio"
 
 ---
 
-### Task 8: 前端 UI — 项目创建横竖屏选择
+### Task 8: 前端 UI — 项目创建横竖屏選择
 
 **Files:**
 - Modify: `frontend/src/components/pages/CreateProjectModal.tsx`
 
-- [ ] **Step 1: 新增横竖屏选择器**
+- [ ] **Step 1: 新增横竖屏選择器**
 
 在 `frontend/src/components/pages/CreateProjectModal.tsx` 中：
 
@@ -977,7 +977,7 @@ git commit -m "feat: 前端类型和 API 层适配动态时长和 aspect_ratio"
 const [aspectRatio, setAspectRatio] = useState<"9:16" | "16:9">("9:16");
 ```
 
-2. 在 content_mode 选择器之后、style 选择器之前，新增 Aspect Ratio 选择器：
+2. 在 content_mode 選择器之后、style 選择器之前，新增 Aspect Ratio 選择器：
 ```tsx
 {/* Aspect Ratio */}
 <div>
@@ -1033,18 +1033,18 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add frontend/src/components/pages/CreateProjectModal.tsx
-git commit -m "feat: 项目创建表单新增横竖屏选择器"
+git commit -m "feat: 项目创建表单新增横竖屏選择器"
 ```
 
 ---
 
-### Task 9: 前端 UI — SegmentCard 动态时长选项
+### Task 9: 前端 UI — SegmentCard 动态时长選項
 
 **Files:**
 - Modify: `frontend/src/components/canvas/timeline/SegmentCard.tsx:164`
 - Modify: `frontend/src/components/canvas/timeline/TimelineCanvas.tsx:67-70`
 
-- [ ] **Step 1: SegmentCard 动态时长选项**
+- [ ] **Step 1: SegmentCard 动态时长選項**
 
 在 `frontend/src/components/canvas/timeline/SegmentCard.tsx` 中：
 
@@ -1094,7 +1094,7 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add frontend/src/components/canvas/timeline/SegmentCard.tsx frontend/src/components/canvas/timeline/TimelineCanvas.tsx
-git commit -m "feat: SegmentCard 动态时长选项 + TimelineCanvas 读取 project.aspect_ratio"
+git commit -m "feat: SegmentCard 动态时长選項 + TimelineCanvas 读取 project.aspect_ratio"
 ```
 
 ---
@@ -1137,4 +1137,4 @@ git commit -m "fix: 全量测试和 lint 修复"
 
 - **项目设置页面**：修改 `aspect_ratio` 和 `default_duration` 的 UI（后端已支持 PATCH）、修改 aspect_ratio 时的警告提示
 - **视频模型切换联动**：切换视频模型时自动重置 `default_duration`（需要前端 store 监听逻辑）
-- **SegmentCard 时长选项数据源**：当前 `durationOptions` prop 已就绪，需要从 providers API 或项目 store 中解析当前视频模型的 `supported_durations` 并传入
+- **SegmentCard 时长選項数据源**：当前 `durationOptions` prop 已就绪，需要从 providers API 或项目 store 中解析当前视频模型的 `supported_durations` 并传入

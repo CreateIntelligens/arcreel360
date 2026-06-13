@@ -37,11 +37,13 @@ class _FakeSessionManager:
         status: str = "running",
         replay_messages: list[dict] | None = None,
         pending_questions: list[dict] | None = None,
+        history_messages: list[dict] | None = None,
     ):
         self.call_log = call_log
         self.status = status
         self.replay_messages = replay_messages or []
         self.pending_questions = pending_questions or []
+        self.history_messages = history_messages or []
         self.last_queue: asyncio.Queue | None = None
 
     async def get_status(self, session_id: str):
@@ -66,6 +68,16 @@ class _FakeSessionManager:
     async def get_pending_questions_snapshot(self, session_id: str):
         self.call_log.append(("get_pending_questions_snapshot", session_id))
         return list(self.pending_questions)
+
+    async def read_history_messages(self, session_id: str):
+        self.call_log.append(("read_history_messages", session_id))
+        return list(self.history_messages)
+
+    def has_live_session(self, session_id: str) -> bool:
+        return True
+
+    def get_live_status(self, session_id: str):
+        return self.status
 
 
 def _parse_sse_event(sse_event: ServerSentEvent) -> tuple[str, dict]:
@@ -107,8 +119,9 @@ class TestAssistantServiceStreaming:
         await stream.aclose()
 
         subscribe_idx = call_log.index(("subscribe", "session-1", True))
-        read_raw_idx = call_log.index(("read_raw_messages", "session-1"))
-        assert subscribe_idx < read_raw_idx
+        # service 现在通过 session_manager.read_history_messages 拉历史（不再走 transcript_adapter）
+        read_history_idx = call_log.index(("read_history_messages", "session-1"))
+        assert subscribe_idx < read_history_idx
 
     async def test_stream_replay_overflow_closes_stream_immediately(self, tmp_path):
         service = AssistantService(project_root=tmp_path)
@@ -186,9 +199,9 @@ class TestAssistantServiceStreaming:
                 "question_id": "aq-1",
                 "questions": [
                     {
-                        "header": "风格",
-                        "question": "选择一种风格",
-                        "options": [{"label": "悬疑", "description": "更紧张"}],
+                        "header": "風格",
+                        "question": "選擇一種風格",
+                        "options": [{"label": "懸疑", "description": "更緊張"}],
                     }
                 ],
             }
@@ -289,7 +302,7 @@ class TestAssistantServiceStreaming:
 
         service.meta_store = _FakeMetaStore(meta)
         service.transcript_adapter = _FakeTranscriptAdapter(call_log, history_raw=history)
-        service.session_manager = _FakeSessionManager(call_log, status="completed")
+        service.session_manager = _FakeSessionManager(call_log, status="completed", history_messages=history)
 
         stream = service.stream_events("session-1")
         first = await anext(stream)
@@ -418,7 +431,9 @@ class TestAssistantServiceStreaming:
 
         service.meta_store = _FakeMetaStore(meta)
         service.transcript_adapter = _FakeTranscriptAdapter([], history_raw=history)
-        service.session_manager = _FakeSessionManager([], status="running", replay_messages=buffer)
+        service.session_manager = _FakeSessionManager(
+            [], status="running", replay_messages=buffer, history_messages=history
+        )
 
         projector = await service._build_projector(meta, "session-1")
         # local echo should be dropped, so only the real transcript user turn exists
@@ -457,7 +472,9 @@ class TestAssistantServiceStreaming:
 
         service.meta_store = _FakeMetaStore(meta)
         service.transcript_adapter = _FakeTranscriptAdapter([], history_raw=history)
-        service.session_manager = _FakeSessionManager([], status="running", replay_messages=buffer)
+        service.session_manager = _FakeSessionManager(
+            [], status="running", replay_messages=buffer, history_messages=history
+        )
 
         projector = await service._build_projector(meta, "session-1")
         # R1 user + R1 assistant + R2 echo (kept because R1 is an older round)
@@ -597,7 +614,9 @@ class TestAssistantServiceStreaming:
 
         service.meta_store = _FakeMetaStore(meta)
         service.transcript_adapter = _FakeTranscriptAdapter([], history_raw=history)
-        service.session_manager = _FakeSessionManager([], status="running", replay_messages=buffer)
+        service.session_manager = _FakeSessionManager(
+            [], status="running", replay_messages=buffer, history_messages=history
+        )
 
         projector = await service._build_projector(meta, "session-1")
         # R1 user + R1 assistant + R2 echo + R2 assistant = 4 turns
@@ -633,7 +652,9 @@ class TestAssistantServiceStreaming:
 
         service.meta_store = _FakeMetaStore(meta)
         service.transcript_adapter = _FakeTranscriptAdapter([], history_raw=history)
-        service.session_manager = _FakeSessionManager([], status="running", replay_messages=buffer)
+        service.session_manager = _FakeSessionManager(
+            [], status="running", replay_messages=buffer, history_messages=history
+        )
 
         projector = await service._build_projector(meta, "session-1")
         # Echo deduped → 1 user (from transcript) + 1 assistant (from buffer)
@@ -708,6 +729,7 @@ class TestAssistantServiceStreaming:
             call_log,
             status="running",
             replay_messages=stale_buffer,
+            history_messages=history,
         )
 
         payload = await service.get_snapshot("session-1")
@@ -757,6 +779,7 @@ class TestAssistantServiceStreaming:
             call_log,
             status="running",
             replay_messages=stale_buffer,
+            history_messages=history,
         )
 
         payload = await service.get_snapshot("session-1")
@@ -810,7 +833,9 @@ class TestAssistantServiceStreaming:
         ]
         service.meta_store = _FakeMetaStore(meta)
         service.transcript_adapter = _FakeTranscriptAdapter(call_log, history_raw=history)
-        service.session_manager = _FakeSessionManager(call_log, status="running", replay_messages=buffer)
+        service.session_manager = _FakeSessionManager(
+            call_log, status="running", replay_messages=buffer, history_messages=history
+        )
 
         payload = await service.get_snapshot("session-1")
         turns = payload.get("turns", [])
@@ -907,6 +932,7 @@ class TestAssistantServiceStreaming:
             call_log,
             status="completed",
             replay_messages=[],  # buffer pruned
+            history_messages=history,
         )
 
         payload = await service.get_snapshot("session-1")
@@ -958,7 +984,9 @@ class TestAssistantServiceStreaming:
 
         service.meta_store = _FakeMetaStore(meta)
         service.transcript_adapter = _FakeTranscriptAdapter([], history_raw=history)
-        service.session_manager = _FakeSessionManager([], status="running", replay_messages=buffer)
+        service.session_manager = _FakeSessionManager(
+            [], status="running", replay_messages=buffer, history_messages=history
+        )
 
         projector = await service._build_projector(meta, "session-1")
 
@@ -1007,7 +1035,9 @@ class TestAssistantServiceStreaming:
 
         service.meta_store = _FakeMetaStore(meta)
         service.transcript_adapter = _FakeTranscriptAdapter([], history_raw=history)
-        service.session_manager = _FakeSessionManager([], status="completed", replay_messages=buffer)
+        service.session_manager = _FakeSessionManager(
+            [], status="completed", replay_messages=buffer, history_messages=history
+        )
 
         projector = await service._build_projector(meta, "session-1")
 
@@ -1055,7 +1085,9 @@ class TestAssistantServiceStreaming:
 
         service.meta_store = _FakeMetaStore(meta)
         service.transcript_adapter = _FakeTranscriptAdapter([], history_raw=history)
-        service.session_manager = _FakeSessionManager([], status="running", replay_messages=buffer)
+        service.session_manager = _FakeSessionManager(
+            [], status="running", replay_messages=buffer, history_messages=history
+        )
 
         projector = await service._build_projector(meta, "session-1")
 

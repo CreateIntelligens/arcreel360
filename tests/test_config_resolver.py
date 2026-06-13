@@ -9,7 +9,7 @@ from lib.db.base import Base
 
 
 async def _make_session():
-    """创建内存 SQLite 数据库并返回 (factory, engine)。"""
+    """建立記憶體 SQLite 資料庫並返回 (factory, engine)。"""
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -32,7 +32,7 @@ def _make_ready_provider(name: str, media_types: list[str]) -> ProviderStatus:
 
 
 class _FakeConfigService:
-    """最小化的 ConfigService fake，只实现 resolver 需要的方法。"""
+    """最小化的 ConfigService fake，只實現 resolver 需要的方法。"""
 
     def __init__(
         self,
@@ -65,31 +65,31 @@ class _FakeConfigService:
 
 
 class TestVideoGenerateAudio:
-    """验证 video_generate_audio 的默认值、全局配置、项目级覆盖优先级。"""
+    """驗證 video_generate_audio 的預設值、全域性配置、專案級覆蓋優先順序。"""
 
     async def test_default_is_false_when_db_empty(self, tmp_path):
-        """DB 无值时应返回 False（不是 True）。"""
+        """DB 無值時應返回 False（不是 True）。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={})
         result = await resolver._resolve_video_generate_audio(fake_svc, project_name=None)
         assert result is False
 
     async def test_global_true(self, tmp_path):
-        """DB 中值为 "true" 时返回 True。"""
+        """DB 中值為 "true" 時返回 True。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={"video_generate_audio": "true"})
         result = await resolver._resolve_video_generate_audio(fake_svc, project_name=None)
         assert result is True
 
     async def test_global_false(self, tmp_path):
-        """DB 中值为 "false" 时返回 False。"""
+        """DB 中值為 "false" 時返回 False。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={"video_generate_audio": "false"})
         result = await resolver._resolve_video_generate_audio(fake_svc, project_name=None)
         assert result is False
 
     async def test_bool_parsing_variants(self, tmp_path):
-        """验证各种布尔字符串的解析。"""
+        """驗證各種布林字串的解析。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         for val, expected in [("TRUE", True), ("1", True), ("yes", True), ("0", False), ("no", False), ("", False)]:
             fake_svc = _FakeConfigService(settings={"video_generate_audio": val} if val else {})
@@ -97,7 +97,7 @@ class TestVideoGenerateAudio:
             assert result is expected, f"Failed for {val!r}: got {result}"
 
     async def test_project_override_true_over_global_false(self, tmp_path):
-        """项目级覆盖 True 优先于全局 False。"""
+        """專案級覆蓋 True 優先於全域性 False。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={"video_generate_audio": "false"})
         with patch("lib.config.resolver.get_project_manager") as mock_pm:
@@ -106,7 +106,7 @@ class TestVideoGenerateAudio:
         assert result is True
 
     async def test_project_override_false_over_global_true(self, tmp_path):
-        """项目级覆盖 False 优先于全局 True。"""
+        """專案級覆蓋 False 優先於全域性 True。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={"video_generate_audio": "true"})
         with patch("lib.config.resolver.get_project_manager") as mock_pm:
@@ -115,14 +115,14 @@ class TestVideoGenerateAudio:
         assert result is False
 
     async def test_project_none_skips_override(self, tmp_path):
-        """project_name=None 时不读取项目配置。"""
+        """project_name=None 時不讀取專案配置。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={"video_generate_audio": "true"})
         result = await resolver._resolve_video_generate_audio(fake_svc, project_name=None)
         assert result is True
 
     async def test_project_override_string_value(self, tmp_path):
-        """项目级覆盖值为字符串时也能正确解析。"""
+        """專案級覆蓋值為字串時也能正確解析。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={"video_generate_audio": "true"})
         with patch("lib.config.resolver.get_project_manager") as mock_pm:
@@ -132,44 +132,44 @@ class TestVideoGenerateAudio:
 
 
 class TestDefaultBackends:
-    """验证 video/image 后端解析：显式值 vs auto-resolve。"""
+    """驗證 video/image 後端解析：顯式值 vs auto-resolve。"""
 
     async def test_video_backend_explicit(self):
-        """DB 有显式值时直接返回。"""
+        """DB 有顯式值時直接返回。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(
             settings={"default_video_backend": "ark/doubao-seedance-1-5-pro"},
         )
         result = await resolver._resolve_default_video_backend(fake_svc, None)
-        assert result == ("ark", "doubao-seedance-1-5-pro")
+        assert result == ("byteplus", "doubao-seedance-1-5-pro")
 
     async def test_video_backend_auto_resolve(self):
-        """DB 无值时走 auto-resolve，选第一个 ready 供应商的默认 video 模型。"""
+        """DB 無值時走 auto-resolve，選第一個 ready 供應商的預設 video 模型。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={})
-        # auto-resolve 会在 PROVIDER_REGISTRY 中找到 ready 供应商，不会走到 custom provider 分支
+        # auto-resolve 會在 PROVIDER_REGISTRY 中找到 ready 供應商，不會走到 custom provider 分支
         factory, engine = await _make_session()
         try:
             async with factory() as session:
                 result = await resolver._resolve_default_video_backend(fake_svc, session)
-            assert result[0] in ("gemini-aistudio", "gemini-vertex", "ark", "grok")
+            assert result[0] in ("gemini-aistudio", "gemini-vertex", "byteplus", "grok")
         finally:
             await engine.dispose()
 
     async def test_video_backend_auto_resolve_no_ready_provider(self):
-        """无 ready 供应商且无自定义供应商时抛出 ValueError。"""
+        """無 ready 供應商且無自定義供應商時丟擲 ValueError。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={}, ready_providers=[])
         factory, engine = await _make_session()
         try:
             async with factory() as session:
-                with pytest.raises(ValueError, match="未找到可用的 video 供应商"):
+                with pytest.raises(ValueError, match="未找到可用的 video 供應商"):
                     await resolver._resolve_default_video_backend(fake_svc, session)
         finally:
             await engine.dispose()
 
     async def test_image_backend_explicit(self):
-        """DB 有显式值时直接返回。"""
+        """DB 有顯式值時直接返回。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(
             settings={"default_image_backend": "grok/grok-2-image"},
@@ -178,32 +178,32 @@ class TestDefaultBackends:
         assert result == ("grok", "grok-2-image")
 
     async def test_image_backend_auto_resolve(self):
-        """DB 无值时走 auto-resolve。"""
+        """DB 無值時走 auto-resolve。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={})
         factory, engine = await _make_session()
         try:
             async with factory() as session:
                 result = await resolver._resolve_default_image_backend(fake_svc, session)
-            assert result[0] in ("gemini-aistudio", "gemini-vertex", "ark", "grok")
+            assert result[0] in ("gemini-aistudio", "gemini-vertex", "byteplus", "grok")
         finally:
             await engine.dispose()
 
     async def test_image_backend_auto_resolve_no_ready_provider(self):
-        """无 ready 供应商且无自定义供应商时抛出 ValueError。"""
+        """無 ready 供應商且無自定義供應商時丟擲 ValueError。"""
         resolver = ConfigResolver.__new__(ConfigResolver)
         fake_svc = _FakeConfigService(settings={}, ready_providers=[])
         factory, engine = await _make_session()
         try:
             async with factory() as session:
-                with pytest.raises(ValueError, match="未找到可用的 image 供应商"):
+                with pytest.raises(ValueError, match="未找到可用的 image 供應商"):
                     await resolver._resolve_default_image_backend(fake_svc, session)
         finally:
             await engine.dispose()
 
 
 class TestProviderConfig:
-    """验证供应商配置方法委托给 ConfigService。"""
+    """驗證供應商配置方法委託給 ConfigService。"""
 
     async def test_provider_config(self):
         factory, engine = await _make_session()
@@ -229,10 +229,10 @@ class TestProviderConfig:
 
 
 class TestSessionReuse:
-    """验证 session() 上下文管理器的 session 复用行为。"""
+    """驗證 session() 上下文管理器的 session 複用行為。"""
 
     async def test_session_context_manager_reuses_single_session(self):
-        """resolver.session() 下多次调用只创建 1 个 session。"""
+        """resolver.session() 下多次呼叫只建立 1 個 session。"""
         factory, engine = await _make_session()
         try:
             call_count = 0
@@ -246,7 +246,7 @@ class TestSessionReuse:
             resolver = ConfigResolver(factory)
             fake_backend = ("gemini-aistudio", "test-model")
 
-            # 不使用 session()：每次调用创建新 session
+            # 不使用 session()：每次呼叫建立新 session
             call_count = 0
             with (
                 patch.object(resolver, "_session_factory", side_effect=counting_factory),
@@ -255,9 +255,9 @@ class TestSessionReuse:
             ):
                 await resolver.default_video_backend()
                 await resolver.default_image_backend()
-            assert call_count == 2, f"不使用 session() 应创建 2 个 session，实际 {call_count}"
+            assert call_count == 2, f"不使用 session() 應建立 2 個 session，實際 {call_count}"
 
-            # 使用 session()：只创建 1 个 session
+            # 使用 session()：只建立 1 個 session
             call_count = 0
             with patch.object(resolver, "_session_factory", side_effect=counting_factory):
                 async with resolver.session() as r:
@@ -269,13 +269,13 @@ class TestSessionReuse:
                         await r.default_video_backend()
                         await r.default_image_backend()
                         await r.video_generate_audio()
-            # session() 自身创建 1 个，内部调用复用 bound session 不再创建
-            assert call_count == 1, f"使用 session() 应只创建 1 个 session，实际 {call_count}"
+            # session() 自身建立 1 個，內部呼叫複用 bound session 不再建立
+            assert call_count == 1, f"使用 session() 應只建立 1 個 session，實際 {call_count}"
         finally:
             await engine.dispose()
 
     async def test_bound_resolver_shares_session_object(self):
-        """bound resolver 的 _open_session 返回同一个 session 对象。"""
+        """bound resolver 的 _open_session 返回同一個 session 物件。"""
         factory, engine = await _make_session()
         try:
             resolver = ConfigResolver(factory)
@@ -292,7 +292,7 @@ class TestSessionReuse:
             await engine.dispose()
 
     async def test_unbound_resolver_creates_separate_sessions(self):
-        """未绑定的 resolver 每次 _open_session 创建不同 session。"""
+        """未繫結的 resolver 每次 _open_session 建立不同 session。"""
         factory, engine = await _make_session()
         try:
             resolver = ConfigResolver(factory)

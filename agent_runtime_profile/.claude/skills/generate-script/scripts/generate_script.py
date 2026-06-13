@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-generate_script.py - 使用 Gemini 生成 JSON 剧本
+generate_script.py - 使用 Gemini 生成 JSON 劇本
 
 用法:
     python generate_script.py --episode <N>
@@ -16,8 +16,10 @@ import argparse
 import sys
 from pathlib import Path
 
-# 允许从仓库任意工作目录直接运行该脚本
-PROJECT_ROOT = Path(__file__).resolve().parents[4]  # .claude/skills/generate-script/scripts -> repo root
+# 允許從倉庫任意工作目錄直接執行該指令碼
+PROJECT_ROOT = (
+    Path(__file__).resolve().parents[5]
+)  # agent_runtime_profile/.claude/skills/generate-script/scripts -> repo root
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -27,7 +29,7 @@ from lib.script_generator import ScriptGenerator
 
 def main():
     parser = argparse.ArgumentParser(
-        description="使用 Gemini 生成 JSON 剧本",
+        description="使用 Gemini 生成 JSON 劇本",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
@@ -37,25 +39,25 @@ def main():
         """,
     )
 
-    parser.add_argument("--episode", "-e", type=int, required=True, help="剧集编号")
+    parser.add_argument("--episode", "-e", type=int, required=True, help="劇集編號")
 
     parser.add_argument(
         "--output",
         "-o",
         type=str,
         default=None,
-        help="输出文件路径（默认: scripts/episode_N.json）",
+        help="輸出檔案路徑（預設: scripts/episode_N.json）",
     )
 
-    parser.add_argument("--dry-run", action="store_true", help="仅显示 Prompt，不实际调用 API")
+    parser.add_argument("--dry-run", action="store_true", help="僅顯示 Prompt，不實際呼叫 API")
 
     args = parser.parse_args()
 
-    # 构建项目路径
+    # 構建專案路徑
     pm, project_name = ProjectManager.from_cwd()
     project_path = pm.get_project_path(project_name)
 
-    # 检查中间文件是否存在（根据 content_mode 确定文件名）
+    # 檢查中間檔案是否存在（根據 content_mode 確定檔名）
     import json as _json
 
     project_json_path = project_path / "project.json"
@@ -64,7 +66,7 @@ def main():
         try:
             content_mode = _json.loads(project_json_path.read_text(encoding="utf-8")).get("content_mode", "narration")
         except Exception:
-            pass  # 读取或解析失败时降级使用默认值 "narration"
+            pass  # 讀取或解析失敗時降級使用預設值 "narration"
 
     drafts_path = project_path / "drafts" / f"episode_{args.episode}"
     if content_mode == "drama":
@@ -75,8 +77,8 @@ def main():
         step1_hint = "片段拆分（Step 1）"
 
     if not step1_path.exists():
-        print(f"❌ 未找到 Step 1 文件: {step1_path}")
-        print(f"   请先完成 {step1_hint}")
+        print(f"❌ 未找到 Step 1 檔案: {step1_path}")
+        print(f"   請先完成 {step1_hint}")
         sys.exit(1)
 
     try:
@@ -84,14 +86,14 @@ def main():
             # dry-run 不需要 client
             generator = ScriptGenerator(project_path)
             print("=" * 60)
-            print("DRY RUN - 以下是将发送给 Gemini 的 Prompt:")
+            print("DRY RUN - 以下是將傳送給 Gemini 的 Prompt:")
             print("=" * 60)
             prompt = generator.build_prompt(args.episode)
             print(prompt)
             print("=" * 60)
             return
 
-        # 实际生成（异步）
+        # 實際生成（非同步）
         import asyncio
 
         async def _run():
@@ -104,13 +106,13 @@ def main():
 
         result_path = asyncio.run(_run())
 
-        print(f"\n✅ 剧本生成完成: {result_path}")
+        print(f"\n✅ 劇本生成完成: {result_path}")
 
     except FileNotFoundError as e:
-        print(f"❌ 文件错误: {e}")
+        print(f"❌ 檔案錯誤: {e}")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ 生成失败: {e}")
+        print(f"❌ 生成失敗: {e}")
         import traceback
 
         traceback.print_exc()

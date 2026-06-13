@@ -5,6 +5,7 @@ import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from lib.db.base import Base
+from server.agent_runtime import session_hooks
 from server.agent_runtime import session_manager as sm_mod
 from server.agent_runtime.session_manager import ManagedSession
 from server.agent_runtime.session_store import SessionMetaStore
@@ -203,7 +204,7 @@ class TestSessionManagerMore:
         # Non-AskUserQuestion tools should be denied (whitelist fallback)
         result = await allow_cb("Read", {"x": 1}, None)
         assert isinstance(result, _FakeDeny)
-        assert "未授权" in result.message
+        assert "未授權" in result.message
         # AskUserQuestion still handled
         result2 = await allow_cb("AskUserQuestion", {"questions": []}, None)
         assert result2.updated_input == {"questions": []}
@@ -308,7 +309,11 @@ class TestSessionManagerMore:
             meta_store=meta_store,
         )
 
-        hook = mgr._build_file_access_hook(own_project)
+        hook = session_hooks.build_file_access_hook(
+            own_project,
+            mgr._PATH_TOOLS,
+            mgr._is_path_allowed,
+        )
 
         # Read own project file — allowed (within project_cwd)
         result = await hook(
@@ -364,7 +369,11 @@ class TestSessionManagerMore:
             meta_store=meta_store,
         )
 
-        hook = mgr._build_file_access_hook(own_project)
+        hook = session_hooks.build_file_access_hook(
+            own_project,
+            mgr._PATH_TOOLS,
+            mgr._is_path_allowed,
+        )
 
         # Write own project file — allowed
         result = await hook(
@@ -402,7 +411,11 @@ class TestSessionManagerMore:
             meta_store=meta_store,
         )
 
-        hook = mgr._build_file_access_hook(own_project)
+        hook = session_hooks.build_file_access_hook(
+            own_project,
+            mgr._PATH_TOOLS,
+            mgr._is_path_allowed,
+        )
 
         # Bash — not a path tool, hook continues
         result = await hook(
@@ -432,7 +445,11 @@ class TestSessionManagerMore:
             meta_store=meta_store,
         )
 
-        hook = mgr._build_file_access_hook(own_project)
+        hook = session_hooks.build_file_access_hook(
+            own_project,
+            mgr._PATH_TOOLS,
+            mgr._is_path_allowed,
+        )
 
         # Write .py in project dir — denied
         result = await hook(
@@ -522,7 +539,11 @@ class TestSessionManagerMore:
             meta_store=meta_store,
         )
 
-        hook = mgr._build_file_access_hook(own_project)
+        hook = session_hooks.build_file_access_hook(
+            own_project,
+            mgr._PATH_TOOLS,
+            mgr._is_path_allowed,
+        )
 
         # Read agent_runtime_profile/CLAUDE.md — allowed (readonly dir)
         result = await hook(
@@ -556,7 +577,11 @@ class TestSessionManagerMore:
         )
         monkeypatch.setattr(sm_mod.SessionManager, "_CLAUDE_PROJECTS_DIR", claude_home)
 
-        hook = mgr._build_file_access_hook(own_project)
+        hook = session_hooks.build_file_access_hook(
+            own_project,
+            mgr._PATH_TOOLS,
+            mgr._is_path_allowed,
+        )
         return hook, own_project, claude_home, engine
 
     @pytest.mark.asyncio
@@ -700,7 +725,7 @@ class TestJsonValidationHook:
         """Helper: invoke the JSON validation hook callback directly."""
         from pathlib import Path
 
-        hook_fn = manager._build_json_validation_hook(
+        hook_fn = session_hooks.build_json_validation_hook(
             Path(project_cwd) if project_cwd else Path("/tmp"),
         )
         input_data = {
@@ -746,7 +771,7 @@ class TestJsonValidationHook:
         )
         assert result["hookSpecificOutput"]["permissionDecision"] == "deny"
         assert (
-            "无效 JSON" in result["hookSpecificOutput"]["permissionDecisionReason"]
+            "無效 JSON" in result["hookSpecificOutput"]["permissionDecisionReason"]
             or "JSON" in result["hookSpecificOutput"]["permissionDecisionReason"]
         )
 
@@ -882,7 +907,7 @@ class TestJsonValidationHook:
             },
         )
         assert result["hookSpecificOutput"]["permissionDecision"] == "deny"
-        assert "弯引号" in result["hookSpecificOutput"]["permissionDecisionReason"]
+        assert "彎引號" in result["hookSpecificOutput"]["permissionDecisionReason"]
 
     async def test_edit_curly_quotes_old_only_is_allowed(self, tmp_path):
         """If only old_string has curly quotes but new_string is clean,
@@ -918,7 +943,7 @@ class TestJsonValidationHook:
             },
         )
         assert result["hookSpecificOutput"]["permissionDecision"] == "deny"
-        assert "弯引号" in result["hookSpecificOutput"]["permissionDecisionReason"]
+        assert "彎引號" in result["hookSpecificOutput"]["permissionDecisionReason"]
 
 
 class TestJsonPostValidationHook:
@@ -944,7 +969,7 @@ class TestJsonPostValidationHook:
     ):
         from pathlib import Path
 
-        hook_fn = manager._build_json_post_validation_hook(
+        hook_fn = session_hooks.build_json_post_validation_hook(
             Path(project_cwd) if project_cwd else Path("/tmp"),
             json_backups if json_backups is not None else {},
         )
@@ -997,7 +1022,7 @@ class TestJsonPostValidationHook:
 
         # Should report the issue via additionalContext
         assert "additionalContext" in result.get("hookSpecificOutput", {})
-        assert "回滚" in result["hookSpecificOutput"]["additionalContext"]
+        assert "回滾" in result["hookSpecificOutput"]["additionalContext"]
 
         # File should be restored
         assert json_file.read_text() == original_content
@@ -1021,8 +1046,8 @@ class TestJsonPostValidationHook:
         )
 
         ctx = result.get("hookSpecificOutput", {}).get("additionalContext", "")
-        assert "无法恢复" in ctx
-        assert "回滚" not in ctx
+        assert "無法恢復" in ctx
+        assert "回滾" not in ctx
 
     # --- Non-.json file → skip ---
 

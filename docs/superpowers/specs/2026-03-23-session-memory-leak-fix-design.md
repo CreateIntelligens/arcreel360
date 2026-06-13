@@ -2,7 +2,7 @@
 
 ## 背景
 
-Claude SDK 子进程每个占用约 250MB 内存。当前 `SessionManager` 对 `idle` 状态的会话不执行任何清理，导致子进程永驻内存。在多会话场景下内存持续累积，最终 OOM。
+Claude SDK 子进程每個占用约 250MB 内存。当前 `SessionManager` 对 `idle` 状态的会话不执行任何清理，导致子进程永驻内存。在多会话場景下内存持续累积，最终 OOM。
 
 ### 根因
 
@@ -92,7 +92,7 @@ if final_status != "running":
 
 ```python
 async def _disconnect_session(self, session_id: str) -> None:
-    """安全断开并移除一个会话，处理 consumer_task 和 connect_lock。"""
+    """安全断开并移除一個会话，处理 consumer_task 和 connect_lock。"""
     managed = self.sessions.get(session_id)
     if managed is None:
         return
@@ -136,7 +136,7 @@ async def _ensure_capacity(self) -> None:
 
     # 所有会话都在 running → 拒绝
     raise SessionCapacityError(
-        f"当前有{len(active)}个正在进行的会话，已达到最大上限，请稍后重试"
+        f"当前有{len(active)}個正在进行的会话，已达到最大上限，请稍后重试"
     )
 ```
 
@@ -146,7 +146,7 @@ async def _ensure_capacity(self) -> None:
 
 ```json
 HTTP 503
-{"detail": "当前有{len(running)}个正在进行的会话，已达到最大上限，请稍后重试"}
+{"detail": "当前有{len(running)}個正在进行的会话，已达到最大上限，请稍后重试"}
 ```
 
 `SessionCapacityError` 定义为自定义异常，放在 `server/agent_runtime/` 下。
@@ -178,7 +178,7 @@ async def _patrol_once(self) -> None:
 
 ### 配置读取
 
-SessionManager 新增两个方法，遵循已有的 `refresh_config()` 模式——每次调用创建短生命周期的 DB session + ConfigService，避免持有过期的长连接：
+SessionManager 新增两個方法，遵循已有的 `refresh_config()` 模式——每次调用创建短生命周期的 DB session + ConfigService，避免持有过期的长连接：
 
 ```python
 async def _get_idle_ttl(self) -> int:
@@ -198,7 +198,7 @@ async def _get_max_concurrent(self) -> int:
 
 **注意**：
 - 不在 `SessionManager.__init__()` 中存储 `ConfigService` 实例属性，因为 `ConfigService` 依赖请求级的 `AsyncSession`，长期持有会导致 session 过期。
-- `_ensure_capacity()` 每次只淘汰一个 idle 会话。如果管理员动态调低 `max_concurrent`（如 10 → 3），超出的会话不会立即全部清理，而是由后续请求逐个淘汰 + TTL/巡检兜底。这是有意为之的渐进清理策略。
+- `_ensure_capacity()` 每次只淘汰一個 idle 会话。如果管理员动态调低 `max_concurrent`（如 10 → 3），超出的会话不会立即全部清理，而是由后续请求逐個淘汰 + TTL/巡检兜底。这是有意为之的渐进清理策略。
 
 ### 后端配置 API 扩展
 
@@ -217,7 +217,7 @@ agent_max_concurrent_sessions: Optional[int] = None     # 范围 1-20
 
 #### GET 响应
 
-新增这两个字段，值从 `ConfigService.get_setting()` 读取，无值时返回默认值（10 和 5）。
+新增这两個字段，值从 `ConfigService.get_setting()` 读取，无值时返回默认值（10 和 5）。
 
 ### 前端 UI
 
@@ -232,7 +232,7 @@ agent_max_concurrent_sessions: number;
 
 #### AgentConfigTab UI
 
-在现有"模型配置"之后，新增默认折叠的"高级设置"区块：
+在現有"模型配置"之后，新增默认折叠的"高级设置"区块：
 
 ```
 ┌─ 智能体配置 ─────────────────────────────────────┐
@@ -256,7 +256,7 @@ agent_max_concurrent_sessions: number;
 ```
 
 - 输入框 `type="number"`，带 `min`/`max` 约束
-- 与现有字段共享同一个"保存"按钮和 `isDirty` 检查
+- 与現有字段共享同一個"保存"按钮和 `isDirty` 检查
 - 不在 `config-status-store` 中添加缺失项检查（有默认值，非必填）
 
 ## 涉及文件
@@ -265,7 +265,7 @@ agent_max_concurrent_sessions: number;
 |------|------|
 | `server/agent_runtime/session_manager.py` | 核心：idle TTL、LRU 淘汰、巡检循环 |
 | `server/agent_runtime/service.py` | 透传 SessionCapacityError，无需注入 ConfigService |
-| `server/routers/system_config.py` | 新增两个配置字段的 PATCH/GET |
+| `server/routers/system_config.py` | 新增两個配置字段的 PATCH/GET |
 | `server/routers/assistant.py` | 捕获 SessionCapacityError → 503 |
 | `server/routers/agent_chat.py` | 捕获 SessionCapacityError → 503 |
 | `frontend/src/types/system.ts` | 新增类型字段 |

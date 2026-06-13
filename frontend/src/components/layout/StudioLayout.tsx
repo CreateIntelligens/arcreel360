@@ -23,7 +23,7 @@ export function StudioLayout({ children }: StudioLayoutProps) {
   const assistantPanelOpen = useAppStore((s) => s.assistantPanelOpen);
   const toggleAssistantPanel = useAppStore((s) => s.toggleAssistantPanel);
 
-  // 进入工作区时连接任务 SSE 流
+  // 進入工作區時連線任務 SSE 流
   useTasksSSE(currentProjectName);
   useProjectEventsSSE(currentProjectName);
 
@@ -44,7 +44,7 @@ export function StudioLayout({ children }: StudioLayoutProps) {
             minWidth: assistantPanelOpen ? "22.5rem" : "0",
           }}
         >
-          {/* 始终渲染但在收起时隐藏，保持状态 */}
+          {/* 始終渲染但在收起時隱藏，保持狀態 */}
           <div
             className={`h-full transition-opacity duration-200 ${
               assistantPanelOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -55,7 +55,7 @@ export function StudioLayout({ children }: StudioLayoutProps) {
         </div>
       </div>
 
-      {/* 悬浮助手球 — 收起时固定在右上角 */}
+      {/* 懸浮助手球 — 收起時固定在右上角 */}
       <button
         type="button"
         onClick={toggleAssistantPanel}
@@ -65,8 +65,8 @@ export function StudioLayout({ children }: StudioLayoutProps) {
             : "cursor-pointer scale-100 opacity-100"
         }`}
         style={{ transitionDelay: assistantPanelOpen ? "0ms" : "200ms" }}
-        title="展开助手面板"
-        aria-label="展开助手面板"
+        title="展開助手面板"
+        aria-label="展開助手面板"
       >
         <Bot className="h-5 w-5 text-white" />
       </button>

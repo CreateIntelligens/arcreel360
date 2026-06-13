@@ -1,4 +1,4 @@
-"""图片生成服务层公共 API。"""
+"""圖片生成服務層公共 API。"""
 
 from lib.image_backends.base import (
     ImageBackend,
@@ -21,13 +21,9 @@ __all__ = [
 ]
 # Backend auto-registration
 from lib.image_backends.gemini import GeminiImageBackend
-from lib.providers import PROVIDER_ARK, PROVIDER_GEMINI
+from lib.providers import PROVIDER_GEMINI
 
 register_backend(PROVIDER_GEMINI, GeminiImageBackend)
-
-from lib.image_backends.ark import ArkImageBackend
-
-register_backend(PROVIDER_ARK, ArkImageBackend)
 
 from lib.image_backends.grok import GrokImageBackend
 from lib.providers import PROVIDER_GROK

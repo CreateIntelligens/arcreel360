@@ -76,7 +76,7 @@ class TestCharactersRouter:
 
             delete_resp = client.delete("/api/v1/projects/demo/characters/Bob")
             assert delete_resp.status_code == 200
-            assert "已删除" in delete_resp.json()["message"]
+            assert "已刪除" in delete_resp.json()["message"]
 
     def test_error_mapping(self, monkeypatch):
         fake_pm = _FakePM()
@@ -95,3 +95,20 @@ class TestCharactersRouter:
 
             missing_delete = client.delete("/api/v1/projects/demo/characters/Nope")
             assert missing_delete.status_code == 404
+
+    def test_batch_add_characters(self, monkeypatch):
+        fake_pm = _FakePM()
+        with _client(monkeypatch, fake_pm) as client:
+            resp = client.post(
+                "/api/v1/projects/demo/characters/batch_create",
+                json={
+                    "items": [
+                        {"name": "Bob", "description": "new char 1", "voice_style": "calm"},
+                        {"name": "Charlie", "description": "new char 2", "voice_style": "loud"},
+                    ]
+                },
+            )
+            assert resp.status_code == 200
+            chars = resp.json()["characters"]
+            assert chars["Bob"]["description"] == "new char 1"
+            assert chars["Charlie"]["description"] == "new char 2"

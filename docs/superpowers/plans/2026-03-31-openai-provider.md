@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为 ArcReel 新增 OpenAI 为第五个预置供应商，支持文本（GPT-5.4）、图片（GPT Image 1.5）、视频（Sora 2）三种媒体类型。
+**Goal:** 为 ArcReel 新增 OpenAI 为第五個预置供应商，支持文本（GPT-5.4）、图片（GPT Image 1.5）、视频（Sora 2）三种媒体类型。
 
-**Architecture:** 新增 `lib/openai_shared.py` 共享客户端工厂，三个独立 Backend（`OpenAITextBackend`、`OpenAIImageBackend`、`OpenAIVideoBackend`）各自实现对应 Protocol，通过现有 Registry 模式注册。费用计算、连接测试、工厂集成均为最小侵入式修改。
+**Architecture:** 新增 `lib/openai_shared.py` 共享客户端工厂，三個独立 Backend（`OpenAITextBackend`、`OpenAIImageBackend`、`OpenAIVideoBackend`）各自实现对应 Protocol，通过現有 Registry 模式注册。费用计算、连接测试、工厂集成均为最小侵入式修改。
 
 **Tech Stack:** OpenAI Python SDK 2.30.0, AsyncOpenAI, pytest
 
@@ -22,7 +22,7 @@
 
 - [ ] **Step 1: 在 `lib/providers.py` 添加 OpenAI 常量**
 
-在文件末尾现有常量旁添加：
+在文件末尾現有常量旁添加：
 
 ```python
 PROVIDER_OPENAI = "openai"
@@ -113,7 +113,7 @@ Expected: `OpenAI ['image', 'text', 'video'] 7`
 
 ```bash
 git add lib/providers.py lib/config/registry.py
-git commit -m "feat: 注册 OpenAI 为第五个预置供应商"
+git commit -m "feat: 注册 OpenAI 为第五個预置供应商"
 ```
 
 ---
@@ -334,7 +334,7 @@ class TestOpenAITextBackend:
         call_kwargs = mock_client.chat.completions.create.call_args[1]
         user_msg = call_kwargs["messages"][-1]
         assert isinstance(user_msg["content"], list)
-        # 应有 image_url 和 text 两个 content part
+        # 应有 image_url 和 text 两個 content part
         types = [part["type"] for part in user_msg["content"]]
         assert "image_url" in types
         assert "text" in types
@@ -380,7 +380,7 @@ class TestOpenAITextBackend:
         assert result.output_tokens is None
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_openai_text_backend.py -v`
 
@@ -726,7 +726,7 @@ class TestOpenAIImageBackend:
                 assert call_kwargs["quality"] == expected_quality, f"size={img_size}"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_openai_image_backend.py -v`
 
@@ -1038,7 +1038,7 @@ class TestOpenAIVideoBackend:
                 prompt="Bad content",
                 output_path=output_path,
             )
-            with pytest.raises(RuntimeError, match="Sora 视频生成失败"):
+            with pytest.raises(RuntimeError, match="Sora 视频生成失敗"):
                 await backend.generate(request)
 
     async def test_duration_mapping(self, tmp_path: Path):
@@ -1090,7 +1090,7 @@ class TestOpenAIVideoBackend:
                 assert call_kwargs["size"] == expected_size, f"aspect={aspect}"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_openai_video_backend.py -v`
 
@@ -1177,7 +1177,7 @@ class OpenAIVideoBackend:
         video = await self._client.videos.create_and_poll(**kwargs)
 
         if video.status == "failed":
-            raise RuntimeError(f"Sora 视频生成失败: {video.error}")
+            raise RuntimeError(f"Sora 视频生成失敗: {video.error}")
 
         content = await self._client.videos.download_content(video.id)
         request.output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1336,7 +1336,7 @@ class TestOpenAICost:
         assert amount == pytest.approx(1.20)
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_cost_calculator.py::TestOpenAICost -v`
 
@@ -1524,17 +1524,17 @@ _TEST_DISPATCH: dict[str, Callable[[dict[str, str]], ConnectionTestResponse]] = 
 from lib.providers import PROVIDER_ARK, PROVIDER_GEMINI, PROVIDER_GROK, PROVIDER_OPENAI
 ```
 
-在 `_PROVIDER_ID_TO_BACKEND` 字典中**添加一行**（注意：不要替换整个字典，保留已有条目）：
+在 `_PROVIDER_ID_TO_BACKEND` 字典中**添加一行**（注意：不要替换整個字典，保留已有条目）：
 
 ```python
-# 在现有字典末尾添加：
+# 在現有字典末尾添加：
     PROVIDER_OPENAI: PROVIDER_OPENAI,
 ```
 
 在 `_DEFAULT_VIDEO_RESOLUTION` 字典中添加 OpenAI 条目：
 
 ```python
-# 在现有字典末尾添加：
+# 在現有字典末尾添加：
     PROVIDER_OPENAI: "720p",
 ```
 

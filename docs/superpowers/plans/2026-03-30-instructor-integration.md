@@ -66,10 +66,10 @@
 Run: `uv sync`
 Expected: 成功安装 instructor 及其依赖
 
-- [ ] **Step 4: 验证现有测试不受影响**
+- [ ] **Step 4: 验证現有测试不受影响**
 
 Run: `uv run python -m pytest tests/test_text_backends/ -v`
-Expected: 全部 PASS（registry 改动不影响现有测试，因为测试 mock 了 Ark 客户端）
+Expected: 全部 PASS（registry 改动不影响現有测试，因为测试 mock 了 Ark 客户端）
 
 - [ ] **Step 5: 提交**
 
@@ -108,7 +108,7 @@ class SampleModel(BaseModel):
 
 class TestGenerateStructuredViaInstructor:
     def test_returns_json_and_tokens(self):
-        """正确返回 JSON 文本和 token 统计。"""
+        """正确返回 JSON 文本和 token 統計。"""
         mock_client = MagicMock()
         sample = SampleModel(name="Alice", age=30)
         mock_completion = SimpleNamespace(
@@ -172,7 +172,7 @@ class TestGenerateStructuredViaInstructor:
             )
 
     def test_handles_none_usage(self):
-        """completion.usage 为 None 时返回 None token 统计。"""
+        """completion.usage 为 None 时返回 None token 統計。"""
         mock_client = MagicMock()
         sample = SampleModel(name="Charlie", age=35)
         mock_completion = SimpleNamespace(usage=None)
@@ -197,7 +197,7 @@ class TestGenerateStructuredViaInstructor:
         assert output_tokens is None
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_text_backends/test_instructor_support.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'lib.text_backends.instructor_support'`
@@ -271,11 +271,11 @@ git commit -m "feat: 添加 instructor_support 模块，提供结构化输出降
 
 ```python
 class TestCapabilityAwareStructured:
-    """测试基于模型能力的结构化输出路径选择。"""
+    """测试基于模型能力的结构化输出路径選择。"""
 
     @pytest.fixture
     def backend_no_structured(self, mock_ark):
-        """创建一个模型不支持原生 structured_output 的 backend。"""
+        """创建一個模型不支持原生 structured_output 的 backend。"""
         mock_client = MagicMock()
         mock_ark.return_value = mock_client
         # 使用默认模型 doubao-seed-2-0-lite-260215，registry 中已移除 structured_output
@@ -285,7 +285,7 @@ class TestCapabilityAwareStructured:
 
     @pytest.fixture
     def backend_with_structured(self, mock_ark):
-        """创建一个模型支持原生 structured_output 的 backend（模拟）。"""
+        """创建一個模型支持原生 structured_output 的 backend（模拟）。"""
         mock_client = MagicMock()
         mock_ark.return_value = mock_client
         b = ArkTextBackend(api_key="k", model="mock-model-with-structured")
@@ -349,7 +349,7 @@ class TestCapabilityAwareStructured:
         assert b._supports_native_structured is False
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_text_backends/test_ark.py::TestCapabilityAwareStructured -v`
 Expected: FAIL — `AttributeError: 'ArkTextBackend' object has no attribute '_supports_native_structured'`
@@ -482,7 +482,7 @@ class ArkTextBackend:
 
 注意：`_generate_vision`（lines 86-119）、`_build_messages`（lines 121-126）、`_parse_chat_response`（lines 128-138）保持不变，不在此处重复。
 
-- [ ] **Step 4: 更新现有 capabilities 测试**
+- [ ] **Step 4: 更新現有 capabilities 测试**
 
 `tests/test_text_backends/test_ark.py` 中的 `TestProperties.test_capabilities` 需要更新，因为默认模型不再有 `STRUCTURED_OUTPUT`：
 

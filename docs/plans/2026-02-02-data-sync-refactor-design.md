@@ -4,7 +4,7 @@
 
 解决 `project.json` 和 `scripts/episode_N.json` 之间的数据同步问题，采用**混合模式**：
 - **写时同步**：核心元数据在写入时自动同步
-- **读时计算**：统计字段由 API 实时计算返回
+- **读时计算**：統計字段由 API 实时计算返回
 
 ## 问题分析
 
@@ -16,7 +16,7 @@
 ### 根本原因
 
 - Agent 直接使用 Write 工具写 JSON，绕过了 `ProjectManager`
-- 统计字段存储在 JSON 中而非实时计算
+- 統計字段存储在 JSON 中而非实时计算
 - 存在冗余的中间层字段（`characters_in_episode`、`clues_in_episode`）
 
 ## 架构设计
@@ -40,7 +40,7 @@
 │   ProjectManager    │    │      StatusCalculator（新增）    │
 │ - 只负责读写 JSON   │    │ - 计算 scenes_count             │
 │ - 写时同步元数据    │    │ - 计算 progress.*               │
-│ - 不再维护统计字段  │    │ - 计算 current_phase            │
+│ - 不再维护統計字段  │    │ - 计算 current_phase            │
 └─────────────────────┘    │ - 计算 duration_seconds          │
                            └─────────────────────────────────┘
 ```
@@ -61,7 +61,7 @@
 |------|------|---------|
 | `episodes[].scenes_count` | API 响应 | len(scenes/segments) |
 | `episodes[].status` | API 响应 | 根据资源状态推断 |
-| `status.progress.*` | API 响应 | 遍历资源实时统计 |
+| `status.progress.*` | API 响应 | 遍历资源实时統計 |
 | `status.current_phase` | API 响应 | 基于 progress 推断 |
 | `metadata.total_scenes` | API 响应 | len(scenes/segments) |
 | `metadata.estimated_duration_seconds` | API 响应 | sum(duration_seconds) |
@@ -110,7 +110,7 @@ def sync_episode_from_script(self, project_name: str, script_filename: str) -> D
         episode_entry = {'episode': episode_num}
         episodes.append(episode_entry)
 
-    # 同步核心元数据（不包含统计字段）
+    # 同步核心元数据（不包含統計字段）
     episode_entry['title'] = episode_title
     episode_entry['script_file'] = script_file
 
@@ -128,7 +128,7 @@ def sync_episode_from_script(self, project_name: str, script_filename: str) -> D
 # lib/project_manager.py
 
 def save_script(self, project_name: str, script: Dict, filename: str) -> Path:
-    # ... 现有保存逻辑 ...
+    # ... 現有保存逻辑 ...
 
     # 新增：自动同步到 project.json
     if self.project_exists(project_name):
@@ -149,17 +149,17 @@ from lib.project_manager import ProjectManager
 
 
 class StatusCalculator:
-    """状态和统计字段的实时计算器"""
+    """状态和統計字段的实时计算器"""
 
     def __init__(self, project_manager: ProjectManager):
         self.pm = project_manager
 
     def calculate_episode_stats(self, project_name: str, script: Dict) -> Dict:
-        """计算单个剧集的统计信息"""
+        """计算单個剧集的統計信息"""
         content_mode = script.get('content_mode', 'narration')
         items = script.get('segments' if content_mode == 'narration' else 'scenes', [])
 
-        # 统计资源完成情况
+        # 統計资源完成情况
         storyboard_done = sum(
             1 for i in items
             if i.get('generated_assets', {}).get('storyboard_image')
@@ -191,7 +191,7 @@ class StatusCalculator:
         project = self.pm.load_project(project_name)
         project_dir = self.pm.get_project_path(project_name)
 
-        # 角色统计
+        # 角色統計
         chars = project.get('characters', {})
         chars_total = len(chars)
         chars_done = sum(
@@ -199,7 +199,7 @@ class StatusCalculator:
             if c.get('character_sheet') and (project_dir / c['character_sheet']).exists()
         )
 
-        # 线索统计
+        # 线索統計
         clues = project.get('clues', {})
         clues_total = len([c for c in clues.values() if c.get('importance') == 'major'])
         clues_done = sum(
@@ -207,7 +207,7 @@ class StatusCalculator:
             if c.get('clue_sheet') and (project_dir / c['clue_sheet']).exists()
         )
 
-        # 分镜/视频统计（遍历所有剧本）
+        # 分镜/视频統計（遍历所有剧本）
         sb_total, sb_done, vid_total, vid_done = 0, 0, 0, 0
 
         for ep in project.get('episodes', []):
@@ -270,7 +270,7 @@ class StatusCalculator:
             'current_phase': current_phase
         }
 
-        # 为每个 episode 注入计算字段
+        # 为每個 episode 注入计算字段
         for ep in project.get('episodes', []):
             script_file = ep.get('script_file', '').replace('scripts/', '')
             if script_file:
@@ -377,7 +377,7 @@ async def get_project(name: str):
 # lib/data_validator.py - 修改验证逻辑
 
 def validate_episode(self, project_name: str, episode_file: str) -> ValidationResult:
-    # ... 现有代码 ...
+    # ... 現有代码 ...
 
     # 删除 characters_in_episode 和 clues_in_episode 验证
     # 改为直接验证 scene/segment 级别引用
@@ -495,7 +495,7 @@ pm.sync_episode_from_script('{project_name}', 'episode_{n}.json')
 
 | 文件 | 修改类型 | 内容 |
 |------|---------|------|
-| `lib/status_calculator.py` | 新增 | 实时计算统计字段 |
+| `lib/status_calculator.py` | 新增 | 实时计算統計字段 |
 | `lib/project_manager.py` | 修改 | 新增 `sync_episode_from_script()`，`save_script()` 调用同步 |
 | `lib/data_validator.py` | 修改 | 移除 episode 级别引用验证，改为直接验证 scene 级别 |
 | `webui/server/routers/projects.py` | 修改 | 使用 `StatusCalculator` 注入计算字段 |
@@ -503,12 +503,12 @@ pm.sync_episode_from_script('{project_name}', 'episode_{n}.json')
 | `.claude/agents/novel-to-storyboard-script.md` | 修改 | 移除冗余字段，添加同步步骤 |
 | `CLAUDE.md` | 修改 | 更新数据结构说明 |
 
-## 迁移脚本（可选）
+## 迁移脚本（可選）
 
 ```python
 # scripts/migrate_clean_redundant_fields.py
 
-"""清理现有项目中的冗余字段"""
+"""清理現有项目中的冗余字段"""
 
 import json
 from pathlib import Path
@@ -565,6 +565,6 @@ if __name__ == "__main__":
 2. **修改 `lib/project_manager.py`** - 添加同步方法
 3. **修改 `webui/server/routers/projects.py`** - 使用计算器
 4. **修改 Agent 指令** - 添加同步步骤
-5. **运行迁移脚本** - 清理现有数据
+5. **运行迁移脚本** - 清理現有数据
 6. **修改 `lib/data_validator.py`** - 简化验证逻辑
 7. **更新 `CLAUDE.md`** - 文档同步

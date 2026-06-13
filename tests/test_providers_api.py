@@ -1,8 +1,8 @@
 """
-供应商配置管理 API 测试。
+供應商配置管理 API 測試。
 
-通过 TestClient + dependency_overrides 测试 GET/PATCH/POST /api/v1/providers 端点，
-无需实际数据库或应用启动。
+透過 TestClient + dependency_overrides 測試 GET/PATCH/POST /api/v1/providers 端點，
+無需實際資料庫或應用啟動。
 """
 
 from __future__ import annotations
@@ -19,15 +19,15 @@ from server.dependencies import get_config_service
 from server.routers import providers
 
 # ---------------------------------------------------------------------------
-# 测试应用工厂
+# 測試應用工廠
 # ---------------------------------------------------------------------------
 
 
 def _make_app(mock_svc: ConfigService) -> FastAPI:
-    """创建绑定 mock ConfigService 的最小 FastAPI 应用。"""
+    """建立繫結 mock ConfigService 的最小 FastAPI 應用。"""
     app = FastAPI()
 
-    # 覆盖 get_config_service，直接注入 mock 服务
+    # 覆蓋 get_config_service，直接注入 mock 服務
     app.dependency_overrides[get_config_service] = lambda: mock_svc
 
     app.include_router(providers.router, prefix="/api/v1")
@@ -39,7 +39,7 @@ def _make_client(mock_svc: ConfigService) -> TestClient:
 
 
 # ---------------------------------------------------------------------------
-# GET /providers — 供应商列表
+# GET /providers — 供應商列表
 # ---------------------------------------------------------------------------
 
 
@@ -60,9 +60,9 @@ class TestListProviders:
                     missing_keys=[],
                 ),
                 ProviderStatus(
-                    name="ark",
-                    display_name="火山方舟",
-                    description="Ark video and image",
+                    name="byteplus",
+                    display_name="BytePlus ModelArk",
+                    description="BytePlus ModelArk video and image",
                     status="unconfigured",
                     media_types=["video", "image"],
                     capabilities=["text_to_video"],
@@ -110,12 +110,12 @@ class TestListProviders:
 
 
 # ---------------------------------------------------------------------------
-# GET /providers/{id}/config — 单个供应商配置
+# GET /providers/{id}/config — 單個供應商配置
 # ---------------------------------------------------------------------------
 
 
 def _make_session_app() -> tuple[FastAPI, AsyncMock]:
-    """创建只覆盖 session 依赖的基础应用，供需要进一步 patch 的测试使用。"""
+    """建立只覆蓋 session 依賴的基礎應用，供需要進一步 patch 的測試使用。"""
     app = FastAPI()
     mock_session = AsyncMock()
 
@@ -187,7 +187,7 @@ class TestGetProviderConfig:
         assert isinstance(body["fields"], list)
 
     def test_credential_fields_not_in_response(self):
-        """api_key / base_url / credentials_path 不应出现在 fields 中。"""
+        """api_key / base_url / credentials_path 不應出現在 fields 中。"""
         app, _ = _make_session_app()
         with (
             patch("server.routers.providers.ConfigService", return_value=self._mock_svc_ready()),
@@ -201,7 +201,7 @@ class TestGetProviderConfig:
         assert "credentials_path" not in field_keys
 
     def test_optional_non_credential_field_present(self):
-        """非凭证 optional key（如 image_rpm）应出现在 fields 中。"""
+        """非憑證 optional key（如 image_rpm）應出現在 fields 中。"""
         app, _ = _make_session_app()
         with (
             patch("server.routers.providers.ConfigService", return_value=self._mock_svc_ready()),
@@ -240,7 +240,7 @@ class TestGetProviderConfig:
 
 
 def _make_patch_app(mock_svc_instance: ConfigService) -> FastAPI:
-    """创建用于 PATCH 端点测试的应用，通过 patch ConfigService 构造函数注入 mock。"""
+    """建立用於 PATCH 端點測試的應用，透過 patch ConfigService 建構函式注入 mock。"""
     app = FastAPI()
     mock_session = AsyncMock()
     mock_session.commit = AsyncMock()
@@ -348,7 +348,7 @@ class TestPatchProviderConfig:
 
 
 # ---------------------------------------------------------------------------
-# POST /providers/{id}/test — 连接测试
+# POST /providers/{id}/test — 連線測試
 # ---------------------------------------------------------------------------
 
 
@@ -382,7 +382,7 @@ class TestTestProviderConnection:
         return providers.ConnectionTestResponse(
             success=True,
             available_models=["model-a"],
-            message="连接成功",
+            message="連線成功",
         )
 
     def test_returns_200(self):
@@ -418,7 +418,7 @@ class TestTestProviderConnection:
         body = resp.json()
         assert body["success"] is True
         assert body["available_models"] == ["model-a"]
-        assert body["message"] == "连接成功"
+        assert body["message"] == "連線成功"
 
     def test_success_false_when_no_credential(self):
         app, _ = _make_session_app()
@@ -430,7 +430,7 @@ class TestTestProviderConnection:
                 resp = client.post("/api/v1/providers/gemini-aistudio/test")
         body = resp.json()
         assert body["success"] is False
-        assert "凭证" in body["message"]
+        assert "憑證" in body["message"]
 
     def test_response_has_required_fields(self):
         app, _ = _make_session_app()
@@ -463,7 +463,7 @@ class TestTestProviderConnection:
         assert "API key invalid" in body["message"]
 
     def test_specific_credential_id(self):
-        """使用 credential_id 参数测试特定凭证。"""
+        """使用 credential_id 引數測試特定憑證。"""
         repo = MagicMock(spec=CredentialRepository)
         cred = self._fake_cred()
         repo.get_by_id = AsyncMock(return_value=cred)

@@ -1,18 +1,18 @@
 [
   {
-    "query": "我有一部都市悬疑小说，大概5万字，想做成竖屏短视频发抖音，从头开始帮我弄吧",
+    "query": "我有一部都市懸疑小說，大概5萬字，想做成豎屏短影片發抖音，從頭開始幫我弄吧",
     "should_trigger": true
   },
   {
-    "query": "继续，角色应该提取完了，接下来该干嘛",
+    "query": "繼續，角色應該提取完了，接下來該幹嘛",
     "should_trigger": true
   },
   {
-    "query": "帮我把 source 目录里那个仙侠小说做成视频吧，说书模式，每集大概1000字",
+    "query": "幫我把 source 目錄裡那個仙俠小說做成影片吧，說書模式，每集大概1000字",
     "should_trigger": true
   },
   {
-    "query": "我上次做到一半的那个项目 my_novel_01，帮我看看进度到哪了",
+    "query": "我上次做到一半的那個專案 my_novel_01，幫我看看進度到哪了",
     "should_trigger": true
   },
   {
@@ -20,55 +20,55 @@
     "should_trigger": true
   },
   {
-    "query": "开个新项目叫 test_romance，我待会上传小说文本",
+    "query": "開個新專案叫 test_romance，我待會上傳小說文字",
     "should_trigger": true
   },
   {
-    "query": "帮我看看现在有哪些项目，以及各自做到什么进度了",
+    "query": "幫我看看現在有哪些專案，以及各自做到什麼進度了",
     "should_trigger": true
   },
   {
-    "query": "把我那个古装剧本拆成每集800字，然后自动跑完后面所有流程",
+    "query": "把我那個古裝劇本拆成每集800字，然後自動跑完後面所有流程",
     "should_trigger": true
   },
   {
-    "query": "第3集的分镜图有几张角色脸不对，帮我单独重新生成 E3S02 和 E3S05",
+    "query": "第3集的分鏡圖有幾張角色臉不對，幫我單獨生成 E3S02 和 E3S05",
     "should_trigger": false
   },
   {
-    "query": "视频生成到一半中断了，帮我用 --resume 继续第2集",
+    "query": "影片生成到一半中斷了，幫我用 --resume 繼續第2集",
     "should_trigger": false
   },
   {
-    "query": "帮我给最终视频加一段片头和片尾",
+    "query": "幫我給最終影片加一段片頭和片尾",
     "should_trigger": false
   },
   {
-    "query": "project.json 里的 content_mode 字段是什么意思？narration 和 drama 有什么区别",
+    "query": "project.json 裡的 content_mode 欄位是什麼意思？narration 和 drama 有什麼區別",
     "should_trigger": false
   },
   {
-    "query": "帮我修一下 lib/script_generator.py 里的 _parse_response 方法，JSON 解析有 bug",
+    "query": "幫我修一下 lib/script_generator.py 裡的 _parse_response 方法，JSON 解析有 bug",
     "should_trigger": false
   },
   {
-    "query": "帮我看看 generate_storyboard.py 脚本的 --scene-ids 参数是怎么实现的",
+    "query": "幫我看看 generate_storyboard.py 指令碼的 --scene-ids 引數是怎麼實現的",
     "should_trigger": false
   },
   {
-    "query": "数据库迁移报错了，alembic upgrade head 执行失败",
+    "query": "資料庫遷移報錯了，alembic upgrade head 執行失敗",
     "should_trigger": false
   },
   {
-    "query": "前端 zustand store 里的 useProjectStore 状态更新有延迟，帮我看看",
+    "query": "前端 zustand store 裡的 useProjectStore 狀態更新有延遲，幫我看看",
     "should_trigger": false
   },
   {
-    "query": "帮我写个新的 API endpoint，让用户可以批量删除项目",
+    "query": "幫我寫個新的 API endpoint，讓使用者可以批次刪除專案",
     "should_trigger": false
   },
   {
-    "query": "给第1集所有角色重新画设计图，上次生成的风格不统一",
+    "query": "給第1集所有角色重新畫設計圖，上次生成的風格不統一",
     "should_trigger": false
   }
 ]

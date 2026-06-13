@@ -13,7 +13,7 @@ from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
-ProjectChangeSource = Literal["webui", "worker", "filesystem"]
+ProjectChangeSource = Literal["webui", "worker", "agent", "filesystem"]
 ProjectChangeListener = Callable[[str, ProjectChangeSource, tuple[str, ...]], None]
 ProjectChangeBatch = dict[str, Any]
 ProjectChangeBatchListener = Callable[
@@ -60,7 +60,7 @@ def emit_project_change_hint(
         try:
             listener(project_name, resolved_source, paths)
         except Exception:
-            logger.exception("项目变更 hint listener 执行失败")
+            logger.exception("專案變更 hint listener 執行失敗")
 
 
 def register_project_change_listener(
@@ -98,7 +98,7 @@ def emit_project_change_batch(
         try:
             listener(project_name, resolved_source, payload)
         except Exception:
-            logger.exception("项目变更 batch listener 执行失败")
+            logger.exception("專案變更 batch listener 執行失敗")
 
 
 def register_project_change_batch_listener(

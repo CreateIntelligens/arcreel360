@@ -105,7 +105,7 @@ git commit -m "refactor: add User model and Mixin base classes (TimestampMixin, 
 
 ---
 
-### Task 2: 现有模型应用 Mixin
+### Task 2: 現有模型应用 Mixin
 
 **Files:**
 - Modify: `lib/db/models/task.py` — 应用 UserOwnedMixin
@@ -120,7 +120,7 @@ git commit -m "refactor: add User model and Mixin base classes (TimestampMixin, 
 修改 `lib/db/models/task.py`：
 - 导入 `UserOwnedMixin` from `lib.db.base`
 - `Task(Base)` → `Task(UserOwnedMixin, Base)`
-- Task 保留现有的 `queued_at`/`updated_at`，不用 TimestampMixin
+- Task 保留現有的 `queued_at`/`updated_at`，不用 TimestampMixin
 
 注意：TaskEvent 和 WorkerLease 不加 Mixin。
 
@@ -213,11 +213,11 @@ class BaseRepository:
 - `class TaskRepository:` → `class TaskRepository(BaseRepository):`
 - 删除 `__init__` 中的 `self.session = session`（继承自 BaseRepository）
 - 在以下方法的查询构建处插入 `stmt = self._scope_query(stmt, Task)`：
-  - `list_tasks`: 注意有 `count_stmt` 和 `items_stmt` 两个 select，**两个都需要**插入 `_scope_query`
+  - `list_tasks`: 注意有 `count_stmt` 和 `items_stmt` 两個 select，**两個都需要**插入 `_scope_query`
   - `get`: 在 `stmt = select(Task).where(Task.task_id == task_id)` 之后
   - `get_stats`: 在 `select(...).select_from(Task)` 之后插入
   - `get_recent_tasks_snapshot`: 在 `stmt = select(Task)` 之后
-- TaskEvent 查询方法（`get_events_since`、`get_latest_event_id`）：开源版 `_scope_query` 是 no-op，这两个方法**暂不插入 _scope_query**。在方法上添加注释说明多用户模式下需要通过 JOIN Task 过滤或 override 这两个方法
+- TaskEvent 查询方法（`get_events_since`、`get_latest_event_id`）：开源版 `_scope_query` 是 no-op，这两個方法**暂不插入 _scope_query**。在方法上添加注释说明多用户模式下需要通过 JOIN Task 过滤或 override 这两個方法
 - `claim_next`: 使用原生 SQL，`_scope_query` 无法拦截。在方法上添加注释标记 `# NOTE: 多用户模式下需要 override 此方法以加入 user_id 过滤`
 - **修改 `_task_to_dict` 函数**：在返回的 dict 中添加 `"user_id": task.user_id` 字段，确保下游能读取 task 的 user_id
 
@@ -329,7 +329,7 @@ async def enqueue(
 
 - [ ] **Step 2: UsageRepository.start_call 添加 user_id**
 
-修改方法签名，在所有现有参数之后添加：
+修改方法签名，在所有現有参数之后添加：
 ```python
     user_id: str = "default",
 ```
@@ -354,9 +354,9 @@ async def create(self, *, name: str, key_hash: str, key_prefix: str, expires_at:
 
 在创建 ApiKey 实例时，传入 `user_id=user_id`。
 
-- [ ] **Step 5: 更新现有测试适配新签名**
+- [ ] **Step 5: 更新現有测试适配新签名**
 
-检查并修复受影响的测试文件中调用这些方法的地方。由于 `user_id` 默认值为 `"default"`，大部分现有测试无需修改。需重点检查：
+检查并修复受影响的测试文件中调用这些方法的地方。由于 `user_id` 默认值为 `"default"`，大部分現有测试无需修改。需重点检查：
 - `tests/test_task_repo.py`
 - `tests/test_usage_repo.py`
 - `tests/test_session_repo.py`
@@ -469,7 +469,7 @@ git commit -m "refactor: return CurrentUserInfo from auth instead of dict"
 - Modify: `server/routers/auth.py`
 - Test: 全部 router 测试
 
-此 Task 为**机械替换**，每个路由文件的模式相同：
+此 Task 为**机械替换**，每個路由文件的模式相同：
 
 1. 将 `from server.auth import get_current_user` 改为 `from server.auth import CurrentUser`（如果也用了 flexible 版本，同时导入 `CurrentUserFlexible`）
 2. 路由函数参数中 `_user: Annotated[dict, Depends(get_current_user)]` → `_user: CurrentUser`
@@ -482,19 +482,19 @@ git commit -m "refactor: return CurrentUserInfo from auth instead of dict"
 - `server/routers/projects.py:152` — `current_user["sub"]` → `current_user.sub`
 - `server/routers/auth.py:66` — `current_user["sub"]` → `current_user.sub`
 
-`projects.py` 有 ~13 个路由，`auth.py` 有 ~1 个路由。
+`projects.py` 有 ~13 個路由，`auth.py` 有 ~1 個路由。
 
 - [ ] **Step 2: 迁移 generate.py**
 
-~4 个路由。
+~4 個路由。
 
 - [ ] **Step 3: 迁移 assistant.py（含 flexible）**
 
-~9 个路由，其中 SSE 端点使用 `get_current_user_flexible`。
+~9 個路由，其中 SSE 端点使用 `get_current_user_flexible`。
 
 - [ ] **Step 4: 迁移 tasks.py（含 flexible）**
 
-~4 个路由，task stream SSE 使用 `get_current_user_flexible`。
+~4 個路由，task stream SSE 使用 `get_current_user_flexible`。
 
 - [ ] **Step 5: 迁移 project_events.py（含 flexible）**
 
@@ -675,7 +675,7 @@ git commit -m "feat: add users table and user_id fields via migration"
 ### Task 9: 全量回归测试 + 清理
 
 **Files:**
-- 可能修改：任何因回归失败需要修复的文件
+- 可能修改：任何因回归失敗需要修复的文件
 
 - [ ] **Step 1: 运行全部测试套件**
 
@@ -694,7 +694,7 @@ Expected: 输出 "OK"
 
 - [ ] **Step 4: 修复任何回归问题**
 
-如有测试失败，逐个修复并重新运行。
+如有测试失敗，逐個修复并重新运行。
 
 - [ ] **Step 5: 最终提交（如有修复）**
 

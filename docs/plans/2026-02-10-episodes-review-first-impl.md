@@ -249,7 +249,7 @@ function renderEpisodes(extraProps = {}) {
 
 test("ProjectEpisodes should render review empty state when no selection", () => {
     const html = renderEpisodes();
-    assert.ok(html.includes("点击任意场景的视频缩略图开始审片"));
+    assert.ok(html.includes("点击任意場景的视频缩略图开始审片"));
 });
 
 test("ProjectEpisodes should use compact 5-column scene grid", () => {
@@ -282,7 +282,7 @@ function EpisodeReviewPanel({
     if (!reviewTarget) {
         return html`
             <article className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-sm text-slate-300">点击任意场景的视频缩略图开始审片</p>
+                <p className="text-sm text-slate-300">点击任意場景的视频缩略图开始审片</p>
             </article>
         `;
     }
@@ -298,7 +298,7 @@ function EpisodeReviewPanel({
                         src=${videoUrl}
                         controls
                         className="w-full aspect-video rounded-lg bg-black object-contain"
-                        onError=${() => onReviewMediaError("视频加载失败，可重试生成")}
+                        onError=${() => onReviewMediaError("视频加载失敗，可重试生成")}
                     ></video>
                 </div>
                 <div className="space-y-2">
@@ -400,7 +400,7 @@ import { getReviewSelectionResult } from "../src/react/pages/workspace-page.js";
 test("getReviewSelectionResult should reject items without video", () => {
     const result = getReviewSelectionResult(scripts, { scriptFile: "episode_1.json", itemId: "E1S02" }, {});
     assert.equal(result.ok, false);
-    assert.equal(result.error, "该场景暂无可播放视频");
+    assert.equal(result.error, "该場景暂无可播放视频");
 });
 
 test("getSafeReviewSelection should clear selection when script data is removed", () => {
@@ -426,10 +426,10 @@ Expected: FAIL because `getReviewSelectionResult` is not implemented.
 export function getReviewSelectionResult(currentScripts, selectedReview, uploadedStoryboardMap = {}) {
     const target = buildReviewTargetFromSelection(currentScripts, selectedReview, uploadedStoryboardMap);
     if (!target) {
-        return { ok: false, error: "找不到对应片段/场景", target: null };
+        return { ok: false, error: "找不到对应片段/場景", target: null };
     }
     if (!target.videoPath) {
-        return { ok: false, error: "该场景暂无可播放视频", target };
+        return { ok: false, error: "该場景暂无可播放视频", target };
     }
     return { ok: true, error: "", target };
 }

@@ -7,7 +7,7 @@ SegmentCard 是分镜板的核心卡片组件，渲染于 TimelineCanvas 的虚�
 **Goals:**
 - 让用户在卡片头部直接切换分镜时长（4/6/8s），剧集总时长随之联动
 - 在卡片头部展示关联线索的图片缩略图，与角色头像栈并排
-- 悬停浮窗统一增加类型标签，区分"角色"与"场景/道具"
+- 悬停浮窗统一增加类型标签，区分"角色"与"場景/道具"
 
 **Non-Goals:**
 - 不修改后端 API 或数据模型
@@ -16,23 +16,23 @@ SegmentCard 是分镜板的核心卡片组件，渲染于 TimelineCanvas 的虚�
 
 ## Decisions
 
-### 决策 1：时长选择器使用 Popover 而非点击循环
+### 决策 1：时长選择器使用 Popover 而非点击循环
 
-**选择**：点击时长徽章弹出 Popover，列出 4s / 6s / 8s 三个按钮，当前值高亮。
+**選择**：点击时长徽章弹出 Popover，列出 4s / 6s / 8s 三個按钮，当前值高亮。
 
-**理由**：直接循环切换（4→6→8→4）不直观，用户无法一次看到全部选项。Popover 复用已有的 `Popover` 组件，实现代价低，且与项目中其他弹出交互风格一致。
+**理由**：直接循环切换（4→6→8→4）不直观，用户无法一次看到全部選項。Popover 复用已有的 `Popover` 组件，实现代价低，且与项目中其他弹出交互风格一致。
 
-**备选方案**：行内三段 Segmented Control（始终可见）——占用水平空间，在头部宽度有限时会挤压 ID 徽章和头像区。
+**备選方案**：行内三段 Segmented Control（始终可见）——占用水平空间，在头部宽度有限时会挤压 ID 徽章和头像区。
 
-### 决策 2：时长变更通过现有 onUpdatePrompt 通道传递
+### 决策 2：时长变更通过現有 onUpdatePrompt 通道传递
 
-**选择**：调用 `onUpdatePrompt(segmentId, "duration_seconds", newValue)`，复用 `StudioCanvasRouter` → `API.updateSegment` / `API.updateScene` → `refreshProject()` 的完整链路。
+**選择**：调用 `onUpdatePrompt(segmentId, "duration_seconds", newValue)`，复用 `StudioCanvasRouter` → `API.updateSegment` / `API.updateScene` → `refreshProject()` 的完整链路。
 
 **理由**：无需增加新 prop 或新 callback，后端 PATCH 接口已支持 `duration_seconds`，总时长在 `refreshProject()` 后从 segments 重新聚合。
 
 ### 决策 3：ClueStack 作为独立组件，与 AvatarStack 并排
 
-**选择**：新建 `ClueStack.tsx`（位于 `frontend/src/components/ui/`），不修改 AvatarStack 的泛化能力。SegmentCard 头部布局为：AvatarStack（角色）在左，竖线分隔，ClueStack（线索）在右。
+**選择**：新建 `ClueStack.tsx`（位于 `frontend/src/components/ui/`），不修改 AvatarStack 的泛化能力。SegmentCard 头部布局为：AvatarStack（角色）在左，竖线分隔，ClueStack（线索）在右。
 
 **理由**：角色与线索语义不同（角色有 character_sheet，线索有 clue_sheet；hover 浮窗内容不同），强行合并会增加 AvatarStack 的复杂度。复制 AvatarStack 的结构模式（图片 + 首字母 fallback + hover popover + overflow badge）成本低且互不干扰。
 
@@ -40,7 +40,7 @@ SegmentCard 是分镜板的核心卡片组件，渲染于 TimelineCanvas 的虚�
 
 ### 决策 4：浮窗类型标签统一样式
 
-角色浮窗（AvatarPopover）在名称右侧新增 `角色` 标签（indigo）；线索浮窗依据 `Clue.type` 显示 `场景`（amber）或 `道具`（emerald）。两者均为小型 Badge，保持浮窗内容结构不变。
+角色浮窗（AvatarPopover）在名称右侧新增 `角色` 标签（indigo）；线索浮窗依据 `Clue.type` 显示 `場景`（amber）或 `道具`（emerald）。两者均为小型 Badge，保持浮窗内容结构不变。
 
 ## Risks / Trade-offs
 

@@ -1,3 +1,8 @@
+.antigravitycli/
+.claude/scheduled_tasks.lock
+pgdata/
+frontend/.pnpm-store
+
 # Python
 __pycache__/
 *.py[cod]
@@ -28,8 +33,7 @@ env/
 Thumbs.db
 
 # Project specific
-projects
-projects/*
+/projects/*
 vertex_keys/*
 !vertex_keys/.gitkeep
 
@@ -61,9 +65,11 @@ CLAUDE.local.md
 .codex/
 
 # Frontend build artifacts
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/*.tsbuildinfo
 
 # Git backup
 .git.backup

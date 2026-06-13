@@ -19,7 +19,7 @@ description: 项目发版流程：询问版本步进类型，更新前后端版�
 
 ### 2. 更新版本号
 
-同时修改两个文件（版本号始终保持一致）：
+同时修改两個文件（版本号始终保持一致）：
 
 | 文件 | 位置 | 格式 |
 |------|------|------|
@@ -36,7 +36,7 @@ uv lock
 
 ### 4. 提交
 
-将三个文件（`pyproject.toml`、`frontend/package.json`、`uv.lock`）加入暂存区并提交：
+将三個文件（`pyproject.toml`、`frontend/package.json`、`uv.lock`）加入暂存区并提交：
 
 ```
 chore: bump version to X.Y.Z

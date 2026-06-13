@@ -19,8 +19,7 @@ def _project_payload(content_mode: str = "narration") -> dict:
         },
         "clues": {
             "玉佩": {
-                "type": "prop",
-                "description": "关键线索",
+                "description": "關鍵線索",
                 "importance": "major",
             }
         },
@@ -37,7 +36,7 @@ class TestDataValidator:
 
         assert result.valid
         assert result.errors == []
-        assert "验证通过" in str(result)
+        assert "驗證透過" in str(result)
 
     def test_validate_project_reports_missing_and_invalid_fields(self, tmp_path):
         project_dir = tmp_path / "projects" / "demo"
@@ -50,7 +49,6 @@ class TestDataValidator:
                 "characters": {"A": []},
                 "clues": {
                     "X": {
-                        "type": "bad",
                         "description": "",
                         "importance": "wrong",
                     }
@@ -63,8 +61,8 @@ class TestDataValidator:
         assert not result.valid
         assert any("title" in error for error in result.errors)
         assert any("content_mode" in error for error in result.errors)
-        assert any("角色 'A' 数据格式错误" in error for error in result.errors)
-        assert any("type 值无效" in error for error in result.errors)
+        assert any("角色 'A' 資料格式錯誤" in error for error in result.errors)
+        assert any("importance 值無效" in error for error in result.errors)
 
     def test_validate_episode_narration_success_with_warnings(self, tmp_path):
         project_dir = tmp_path / "projects" / "demo"
@@ -134,7 +132,7 @@ class TestDataValidator:
                         "duration_seconds": 5,
                         "novel_text": "",
                         "characters_in_segment": ["未知角色"],
-                        "clues_in_segment": ["未知线索"],
+                        "clues_in_segment": ["未知線索"],
                         "image_prompt": "",
                         "video_prompt": "",
                     }
@@ -145,11 +143,11 @@ class TestDataValidator:
         result = DataValidator(projects_root=str(tmp_path / "projects")).validate_episode("demo", "episode_1.json")
 
         assert not result.valid
-        assert any("episode (整数)" in error for error in result.errors)
-        assert any("segment_id 格式错误" in error for error in result.errors)
-        assert any("duration_seconds 值无效" in error for error in result.errors)
-        assert any("不存在于 project.json 的角色" in error for error in result.errors)
-        assert any("不存在于 project.json 的线索" in error for error in result.errors)
+        assert any("episode (整數)" in error for error in result.errors)
+        assert any("segment_id 格式錯誤" in error for error in result.errors)
+        assert any("duration_seconds 值無效" in error for error in result.errors)
+        assert any("不存在於 project.json 的角色" in error for error in result.errors)
+        assert any("不存在於 project.json 的線索" in error for error in result.errors)
 
     def test_validate_episode_drama_mode(self, tmp_path):
         project_dir = tmp_path / "projects" / "demo"
@@ -163,7 +161,7 @@ class TestDataValidator:
                 "scenes": [
                     {
                         "scene_id": "E2S01",
-                        "scene_type": "剧情",
+                        "scene_type": "劇情",
                         "duration_seconds": 8,
                         "characters_in_scene": ["姜月茴"],
                         "clues_in_scene": ["玉佩"],
@@ -180,4 +178,4 @@ class TestDataValidator:
     def test_validate_helpers_on_missing_files(self, tmp_path):
         result = validate_project("missing", projects_root=str(tmp_path / "projects"))
         assert not result.valid
-        assert any("无法加载 project.json" in error for error in result.errors)
+        assert any("無法載入 project.json" in error for error in result.errors)

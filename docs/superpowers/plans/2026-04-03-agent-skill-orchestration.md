@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 修复 agent_runtime_profile/ 中的 11 个问题——准确性错误、架构缺陷、信息冗余、路径不一致。
+**Goal:** 修复 agent_runtime_profile/ 中的 11 個问题——准确性错误、架构缺陷、信息冗余、路径不一致。
 
 **Architecture:** 新建 `generate-assets` agent 替代模糊的 "general-purpose subagent"，重写 manga-workflow 阶段 5-8 的 dispatch 逻辑并支持并行，统一脚本调用路径为 settings.json allow 规则格式，消除 CLAUDE.md / Persona Prompt 间的信息重复。
 
@@ -78,7 +78,7 @@ name: generate-assets
 description: "统一资产生成 subagent。接收任务清单（资产类型、脚本命令、验证方式），按序执行生成脚本，返回结构化摘要。用于角色设计、线索设计、分镜图、视频生成。"
 ---
 
-你是一个聚焦的资产生成执行器。你的唯一职责是按主 agent 提供的任务清单执行脚本，并报告结果。
+你是一個聚焦的资产生成执行器。你的唯一职责是按主 agent 提供的任务清单执行脚本，并报告结果。
 
 ## 任务定义
 
@@ -102,7 +102,7 @@ description: "统一资产生成 subagent。接收任务清单（资产类型、
 
 按主 agent 提供的命令逐条执行：
 - 使用 Bash 工具运行每条命令
-- 如果某条命令失败，**记录错误信息，继续执行后续命令**
+- 如果某条命令失敗，**记录错误信息，继续执行后续命令**
 - 不跳过、不自行决定跳过任何命令
 - 不执行主 agent 未列出的额外命令
 
@@ -116,7 +116,7 @@ description: "统一资产生成 subagent。接收任务清单（资产类型、
 
 - **DONE**：全部命令执行成功，验证通过
 - **DONE_WITH_CONCERNS**：全部完成但有异常（如生成结果可能存在质量问题）
-- **PARTIAL**：部分成功，部分失败
+- **PARTIAL**：部分成功，部分失敗
 - **BLOCKED**：无法执行（前置条件不满足，如缺少 project.json 或依赖文件）
 
 摘要格式：
@@ -130,7 +130,7 @@ description: "统一资产生成 subagent。接收任务清单（资产类型、
 | 项目 | 状态 | 备注 |
 |------|------|------|
 | {项1} | ✅ 成功 | |
-| {项2} | ❌ 失败 | {错误原因} |
+| {项2} | ❌ 失敗 | {错误原因} |
 
 {如果是 DONE_WITH_CONCERNS，列出 concerns}
 {如果是 BLOCKED，说明阻塞原因和建议}
@@ -140,7 +140,7 @@ description: "统一资产生成 subagent。接收任务清单（资产类型、
 
 - 不做主 agent 未要求的额外操作
 - 不等待用户确认，完成即返回
-- 单条命令失败不阻断整体流程，全部执行完后统一报告
+- 单条命令失敗不阻断整体流程，全部执行完后统一报告
 ```
 
 - [ ] **Step 2: 验证文件可被发现**
@@ -165,7 +165,7 @@ git commit -m "feat: 新建 generate-assets 统一资产生成 subagent 定义"
 
 - [ ] **Step 1: 替换内容模式对比表为引用**
 
-将 `CLAUDE.md` 第 38-66 行的完整内容模式章节（`## 内容模式` 标题和两个子节）替换为简短引用：
+将 `CLAUDE.md` 第 38-66 行的完整内容模式章节（`## 内容模式` 标题和两個子节）替换为简短引用：
 
 ```diff
 -## 内容模式
@@ -177,7 +177,7 @@ git commit -m "feat: 新建 generate-assets 统一资产生成 subagent 定义"
 -| content_mode | `narration` | `drama` |
 -| 内容形式 | 严格保留小说原文，不改编 | 小说改编为剧本 |
 -| 数据结构 | `segments` 数组 | `scenes` 数组 |
--| 默认时长 | 4 秒/片段 | 8 秒/场景 |
+-| 默认时长 | 4 秒/片段 | 8 秒/場景 |
 -| 对白来源 | 后期人工配音（小说原文） | 演员对话 |
 -| 视频 Prompt | 仅包含角色对话（如有），无旁白 | 包含对话、旁白、音效 |
 -| 画面比例 | 9:16 竖屏（分镜图+视频） | 16:9 横屏 |
@@ -221,7 +221,7 @@ git commit -m "feat: 新建 generate-assets 统一资产生成 subagent 定义"
 重写工作流概览章节，反映新的阶段编号和并行 dispatch：
 
 ```diff
- `/manga-workflow` 编排 skill 按以下阶段自动推进（每个阶段完成后等待用户确认）：
+ `/manga-workflow` 编排 skill 按以下阶段自动推进（每個阶段完成后等待用户确认）：
 
  1. **项目设置**：创建项目、上传小说、生成项目概述
  2. **全局角色/线索设计** → dispatch `analyze-characters-clues` subagent
@@ -237,8 +237,8 @@ git commit -m "feat: 新建 generate-assets 统一资产生成 subagent 定义"
 +7. **分镜图生成** → dispatch `generate-assets` subagent
 +8. **视频生成** → dispatch `generate-assets` subagent
 
--工作流支持**灵活入口**：状态检测自动定位到第一个未完成的阶段，支持中断后恢复。
-+工作流支持**灵活入口**：状态检测自动定位到第一个未完成的阶段，支持中断后恢复。
+-工作流支持**灵活入口**：状态检测自动定位到第一個未完成的阶段，支持中断后恢复。
++工作流支持**灵活入口**：状态检测自动定位到第一個未完成的阶段，支持中断后恢复。
 +视频生成完成后，用户可在 Web 端导出为剪映草稿。
 ```
 
@@ -288,13 +288,13 @@ git commit -m "fix: 修正 CLAUDE.md agent 名称、去除重复内容模式表�
  4. scripts/episode_{N}.json 不存在？ → **阶段 4**
 -5. 有角色缺少 character_sheet？ → **阶段 5**
 -6. 有 importance=major 线索缺少 clue_sheet？ → **阶段 6**
--7. 有场景缺少分镜图？ → **阶段 7**
--8. 有场景缺少视频？ → **阶段 8**
+-7. 有場景缺少分镜图？ → **阶段 7**
+-8. 有場景缺少视频？ → **阶段 8**
 -9. 全部完成 → **阶段 9**
 +5. 有角色缺少 character_sheet？ → **阶段 5**（与阶段 6 可并行）
 +6. 有 importance=major 线索缺少 clue_sheet？ → **阶段 6**（与阶段 5 可并行）
-+7. 有场景缺少分镜图？ → **阶段 7**
-+8. 有场景缺少视频？ → **阶段 8**
++7. 有場景缺少分镜图？ → **阶段 7**
++8. 有場景缺少视频？ → **阶段 8**
 +9. 全部完成 → 工作流结束，引导用户在 Web 端导出剪映草稿
 ```
 
@@ -332,7 +332,7 @@ git commit -m "fix: 修正 CLAUDE.md agent 名称、去除重复内容模式表�
 ```markdown
 ## 阶段 5+6：角色设计 + 线索设计（可并行）
 
-两个任务互不依赖，**同时 dispatch 两个 `generate-assets` subagent**（如果两者都需要）。
+两個任务互不依赖，**同时 dispatch 两個 `generate-assets` subagent**（如果两者都需要）。
 
 ### subagent A — 角色设计
 
@@ -364,14 +364,14 @@ dispatch `generate-assets` subagent：
   验证方式：重新读取 project.json，检查对应线索的 clue_sheet 字段
 ```
 
-如果只有其中一个需要执行，只 dispatch 对应的一个。
-两个 subagent 全部返回后，合并摘要展示给用户，进入阶段间确认。
+如果只有其中一個需要执行，只 dispatch 对应的一個。
+两個 subagent 全部返回后，合并摘要展示给用户，进入阶段间确认。
 
 ---
 
 ## 阶段 7：分镜图生成
 
-**触发**：有场景缺少分镜图
+**触发**：有場景缺少分镜图
 
 **dispatch `generate-assets` subagent**：
 
@@ -382,14 +382,14 @@ dispatch `generate-assets` subagent：
   项目路径：projects/{project_name}/
   脚本命令：
     python .claude/skills/generate-storyboard/scripts/generate_storyboard.py episode_{N}.json
-  验证方式：重新读取 scripts/episode_{N}.json，检查各场景的 storyboard_image 字段
+  验证方式：重新读取 scripts/episode_{N}.json，检查各場景的 storyboard_image 字段
 ```
 
 ---
 
 ## 阶段 8：视频生成
 
-**触发**：有场景缺少视频
+**触发**：有場景缺少视频
 
 **dispatch `generate-assets` subagent**：
 
@@ -400,7 +400,7 @@ dispatch `generate-assets` subagent：
   项目路径：projects/{project_name}/
   脚本命令：
     python .claude/skills/generate-video/scripts/generate_video.py episode_{N}.json --episode {N}
-  验证方式：重新读取 scripts/episode_{N}.json，检查各场景的 video_clip 字段
+  验证方式：重新读取 scripts/episode_{N}.json，检查各場景的 video_clip 字段
 ```
 ```
 
@@ -426,7 +426,7 @@ git commit -m "feat: 重写 manga-workflow 阶段 5-8，引入 generate-assets d
 
 ---
 
-### Task 5: 修正 agent 定义（3 个文件）
+### Task 5: 修正 agent 定义（3 個文件）
 
 **Files:**
 - Modify: `agent_runtime_profile/.claude/agents/analyze-characters-clues.md:60`
@@ -491,7 +491,7 @@ git commit -m "fix: 统一 agent 定义中的脚本调用路径，修正 add_cha
 
 ---
 
-### Task 6: 修正 skill SKILL.md（4 个文件）
+### Task 6: 修正 skill SKILL.md（4 個文件）
 
 **Files:**
 - Modify: `agent_runtime_profile/.claude/skills/generate-storyboard/SKILL.md`
@@ -514,7 +514,7 @@ git commit -m "fix: 统一 agent 定义中的脚本调用路径，修正 add_cha
 替换为统一使用 `--scene-ids` 并添加说明：
 
 ```markdown
-# 为多个场景重新生成
+# 为多個場景生成
 python .claude/skills/generate-storyboard/scripts/generate_storyboard.py script.json --scene-ids E1S01 E1S02
 ```
 
@@ -572,13 +572,13 @@ git commit -m "fix: 统一 skill SKILL.md 中的 reference 路径和脚本调用
      _PERSONA_PROMPT = """\
  ## 身份
 
- 你是 ArcReel 智能体，一个专业的 AI 视频内容创作助手。你的职责是将小说转化为可发布的短视频内容。
+ 你是 ArcReel 智能体，一個专业的 AI 视频内容创作助手。你的职责是将小说转化为可发布的短视频内容。
 
  ## 行为准则
 
 -- 回答用户必须使用中文
  - 主动引导用户完成视频创作工作流，而不仅仅被动回答问题
- - 遇到不确定的创作决策时，向用户提出选项并给出建议，而不是自行决定
+ - 遇到不确定的创作决策时，向用户提出選項并给出建议，而不是自行决定
  - 涉及多步骤任务时，使用 TodoWrite 跟踪进度并向用户汇报
 -- 你是用户的视频制作搭档，专业、友善、高效
 -
@@ -587,8 +587,8 @@ git commit -m "fix: 统一 skill SKILL.md 中的 reference 路径和脚本调用
 -你是编排中枢，通过 dispatch 聚焦 subagent 完成各阶段任务：
 -
 -- 小说分析、剧本生成等重上下文任务，通过分发 subagent 完成，subagent 自行读取所需文件，不要直接调用 Read 工具读取
--- 每个 subagent 完成一个聚焦任务并返回摘要，你负责展示结果并获取用户确认
--- 使用 /manga-workflow skill 中的决策树来确定下一步分发哪个 subagent"""
+-- 每個 subagent 完成一個聚焦任务并返回摘要，你负责展示结果并获取用户确认
+-- 使用 /manga-workflow skill 中的决策树来确定下一步分发哪個 subagent"""
 +- 你是用户的视频制作搭档，专业、友善、高效"""
 ```
 

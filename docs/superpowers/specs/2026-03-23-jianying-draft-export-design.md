@@ -14,7 +14,7 @@
 - 按集导出，视频素材在时间线上顺序排列
 - 说书模式附带字幕轨（`novel_text`）
 - 素材自包含：ZIP 内含草稿 JSON + 视频文件
-- 复用现有下载 token + 浏览器原生下载机制
+- 复用現有下载 token + 浏览器原生下载机制
 - 用户通过弹窗填写剪映草稿目录，后端生成路径正确的 `draft_content.json`
 
 ### 非目标
@@ -27,7 +27,7 @@
 
 ---
 
-## 技术选型
+## 技术選型
 
 **pyJianYingDraft**（`pyjianyingdraft>=0.2.6`）：2800+ Star 的成熟社区库，API 简洁，pip 可安装，与 ArcReel Python 后端一致。系统依赖 `mediainfo`（Docker 中需 `apt-get install`）。
 
@@ -37,13 +37,13 @@
 
 ### 端点
 
-#### 1. 签发 token — 复用现有端点
+#### 1. 签发 token — 复用現有端点
 
 ```
 POST /api/v1/projects/{name}/export/token
 ```
 
-直接复用现有导出 token 端点（`create_download_token`，`purpose="download"`）。前端获取 token 后构造剪映草稿专用的下载 URL 即可，无需新增 token 端点。
+直接复用現有导出 token 端点（`create_download_token`，`purpose="download"`）。前端获取 token 后构造剪映草稿专用的下载 URL 即可，无需新增 token 端点。
 
 #### 2. 导出草稿 ZIP（新增端点）
 
@@ -61,14 +61,14 @@ GET /api/v1/projects/{name}/export/jianying-draft
 
 错误码：
 
-| 状态码 | 场景 |
+| 状态码 | 場景 |
 |--------|------|
 | 404 | 项目或集数不存在 |
 | 422 | 该集无已完成视频 / draft_path 为空或含控制字符 |
 | 401 | token 过期或无效 |
 | 403 | token 与项目不匹配 |
 
-认证方式：GET 端点**不加** `Depends(get_current_user)`，在函数体内手动验证 `download_token` 参数（与现有 `export_project_archive` 相同模式）。
+认证方式：GET 端点**不加** `Depends(get_current_user)`，在函数体内手动验证 `download_token` 参数（与現有 `export_project_archive` 相同模式）。
 
 ---
 
@@ -128,15 +128,15 @@ if content_mode == "narration":
 
 ### 入口
 
-在现有 `ExportScopeDialog` 弹窗中新增第三个选项：**"导出为剪映草稿"**。
+在現有 `ExportScopeDialog` 弹窗中新增第三個選項：**"导出为剪映草稿"**。
 
-选择后展开额外表单：
+選择后展开额外表单：
 
-#### 1. 集数选择（下拉框）
+#### 1. 集数選择（下拉框）
 
 - 数据源：`project.episodes[]`
 - 仅列出有已完成视频的集
-- 仅一集时自动选中，不显示下拉
+- 仅一集时自动選中，不显示下拉
 
 #### 2. 剪映草稿目录（文本输入框）
 
@@ -153,20 +153,20 @@ if content_mode == "narration":
 
 ### ExportScopeDialog 改造
 
-现有组件是简单的两按钮选择器（"仅当前版本"/"全部数据"），选择即触发 `onSelect(scope)`。改造为：
+現有组件是简单的两按钮選择器（"仅当前版本"/"全部数据"），選择即触发 `onSelect(scope)`。改造为：
 
 1. 扩展 `ExportScope` 类型：新增 `"jianying-draft"` 值
-2. 选择"导出为剪映草稿"后，弹窗从"选择模式"切换到"表单模式"，展开集数下拉 + 草稿目录输入框
+2. 選择"导出为剪映草稿"后，弹窗从"選择模式"切换到"表单模式"，展开集数下拉 + 草稿目录输入框
 3. 剪映导出走独立回调 `onJianyingExport(episode, draftPath)`，不复用 `onSelect`
 4. 组件内部需要接收 `episodes` prop（或从 store 读取）来填充集数下拉
-5. 状态机：选择模式 → 表单模式 → 导出中（按钮禁用）→ 完成（关闭弹窗）
+5. 状态机：選择模式 → 表单模式 → 导出中（按钮禁用）→ 完成（关闭弹窗）
 
 ### API 层
 
 在 `frontend/src/api.ts` 新增：
 
 ```typescript
-// 复用现有 requestExportToken，无需新方法
+// 复用現有 requestExportToken，无需新方法
 getJianyingDraftDownloadUrl(projectName: string, episode: number, draftPath: string, token: string): string
 ```
 
@@ -187,8 +187,8 @@ getJianyingDraftDownloadUrl(projectName: string, episode: number, draftPath: str
 
 ### 用户使用流程
 
-1. 工作台 → "导出 ZIP" → 选 "导出为剪映草稿"
-2. 选集数 + 填写剪映草稿目录（localStorage 自动回填）
+1. 工作台 → "导出 ZIP" → 選 "导出为剪映草稿"
+2. 選集数 + 填写剪映草稿目录（localStorage 自动回填）
 3. 点击导出，浏览器下载 ZIP
 4. 将 ZIP 解压到填写的剪映草稿目录中
 5. 打开剪映，草稿列表出现该项目，时间线已排好视频 + 字幕
@@ -226,12 +226,12 @@ json_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
 ## 错误处理
 
-| 场景 | 处理 |
+| 場景 | 处理 |
 |------|------|
 | 集数不存在 | 404 + "第 N 集不存在" |
 | 该集无已完成视频 | 422 + "请先生成视频" |
 | 视频文件缺失（script 有记录但文件不在） | 跳过该片段，仅导出存在的视频 |
-| pyjianyingdraft 生成失败 | 500 + 日志记录，返回友好错误 |
+| pyjianyingdraft 生成失敗 | 500 + 日志记录，返回友好错误 |
 | draft_path 为空、含控制字符、或超过 1024 字符 | 422 + "请提供有效的剪映草稿目录路径" |
 
 ---
@@ -256,7 +256,7 @@ RUN apt-get update && apt-get install -y mediainfo && rm -rf /var/lib/apt/lists/
 ## 测试策略
 
 - **单元测试**：mock 视频文件（用 `imageio` 生成短视频），验证 `draft_content.json` 结构正确、路径替换正确、字幕轨存在（narration 模式）
-- **路由集成测试**：复用现有 `test_projects_archive_routes.py` 模式，测试 token 签发 + ZIP 下载 + 错误码
+- **路由集成测试**：复用現有 `test_projects_archive_routes.py` 模式，测试 token 签发 + ZIP 下载 + 错误码
 
 ---
 
@@ -266,7 +266,7 @@ RUN apt-get update && apt-get install -y mediainfo && rm -rf /var/lib/apt/lists/
 |------|------|
 | 剪映格式无官方文档，更新可能不兼容 | pyJianYingDraft 社区活跃，通常数周内跟进；锁定版本号 |
 | 剪映 6+ 草稿加密 | 仅影响读取已有草稿，创建新草稿不受影响 |
-| ZIP 体积大（数十个视频片段） | 浏览器原生下载支持进度显示；硬链接避免实际复制 |
+| ZIP 体积大（数十個视频片段） | 浏览器原生下载支持进度显示；硬链接避免实际复制 |
 | 临时目录堆积 | `BackgroundTask` 响应完成后立即清理 |
 | pymediainfo 需系统 mediainfo | Docker 中一行 apt-get 即可 |
 

@@ -272,7 +272,7 @@ class TestProjectArchiveService:
         with pytest.raises(ProjectArchiveValidationError) as exc_info:
             service.import_project_archive(archive_path, uploaded_filename="broken.zip")
 
-        assert exc_info.value.detail == "导入包校验失败"
+        assert exc_info.value.detail == "匯入包校驗失敗"
         assert any("project.json" in error for error in exc_info.value.errors)
 
     def test_import_rejects_missing_script_reference(self, tmp_path):
@@ -403,7 +403,7 @@ class TestProjectArchiveService:
             )
 
         assert exc_info.value.status_code == 409
-        assert exc_info.value.detail == "检测到项目编号冲突"
+        assert exc_info.value.detail == "檢測到專案編號衝突"
         assert exc_info.value.extra["conflict_project_name"] == "demo"
 
     def test_import_overwrite_replaces_existing_project(self, tmp_path):
@@ -595,7 +595,7 @@ class TestProjectArchiveService:
         with pytest.raises(ProjectArchiveValidationError) as exc_info:
             service.import_project_archive(archive_path, uploaded_filename="missing-clue.zip")
 
-        assert any("不存在于 project.json 的线索" in error for error in exc_info.value.errors)
+        assert any("不存在於 project.json 的線索" in error for error in exc_info.value.errors)
         assert exc_info.value.extra["diagnostics"]["blocking"]
 
     def test_export_dirty_project_emits_diagnostics_and_repairs_snapshot(self, tmp_path):
@@ -668,17 +668,17 @@ class TestProjectArchiveService:
 
 class TestExportScope:
     def _create_project_with_versions(self, pm: ProjectManager) -> Path:
-        """创建带有 versions 历史的项目"""
+        """建立帶有 versions 歷史的專案"""
         project_dir = _create_project(pm)
 
-        # 添加版本历史文件
+        # 新增版本歷史檔案
         _write_bytes(project_dir / "versions" / "storyboards" / "E1S01_v1.png", b"png-v1")
         _write_bytes(project_dir / "versions" / "storyboards" / "E1S01_v2.png", b"png-v2")
         _write_bytes(project_dir / "versions" / "videos" / "E1S01_v1.mp4", b"mp4-v1")
         _write_bytes(project_dir / "versions" / "characters" / "Hero_v1.png", b"char-v1")
         _write_bytes(project_dir / "versions" / "clues" / "Key_v1.png", b"clue-v1")
 
-        # 创建 versions/versions.json
+        # 建立 versions/versions.json
         versions_data = {
             "storyboards": {
                 "E1S01": {
@@ -727,16 +727,16 @@ class TestExportScope:
 
         with zipfile.ZipFile(archive_path) as archive:
             names = set(archive.namelist())
-            # 历史版本文件不应包含
+            # 歷史版本檔案不應包含
             assert "demo/versions/storyboards/E1S01_v1.png" not in names
             assert "demo/versions/storyboards/E1S01_v2.png" not in names
             assert "demo/versions/videos/E1S01_v1.mp4" not in names
             assert "demo/versions/characters/Hero_v1.png" not in names
             assert "demo/versions/clues/Key_v1.png" not in names
-            # 主资源应保留
+            # 主資源應保留
             assert "demo/storyboards/scene_E1S01.png" in names
             assert "demo/videos/scene_E1S01.mp4" in names
-            # versions.json 应保留（裁剪后）
+            # versions.json 應保留（裁剪後）
             assert "demo/versions/versions.json" in names
 
     def test_export_scope_current_trims_versions_json(self, tmp_path):
@@ -748,12 +748,12 @@ class TestExportScope:
 
         with zipfile.ZipFile(archive_path) as archive:
             versions_content = json.loads(archive.read("demo/versions/versions.json"))
-            # storyboards.E1S01 应只保留 version 3
+            # storyboards.E1S01 應只保留 version 3
             sb_versions = versions_content["storyboards"]["E1S01"]["versions"]
             assert len(sb_versions) == 1
             assert sb_versions[0]["version"] == 3
             assert sb_versions[0]["prompt"] == "p3"
-            # videos.E1S01 应只保留 version 2
+            # videos.E1S01 應只保留 version 2
             vid_versions = versions_content["videos"]["E1S01"]["versions"]
             assert len(vid_versions) == 1
             assert vid_versions[0]["version"] == 2

@@ -3,9 +3,10 @@ import { FileText, Edit3, Save, X, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { API } from "@/api";
 import { useAppStore } from "@/stores/app-store";
+import { useConfirm } from "@/hooks/useConfirm";
 
 // ---------------------------------------------------------------------------
-// SourceFileViewer — 源文件预览/编辑组件
+// SourceFileViewer — 原始檔預覽/編輯元件
 // ---------------------------------------------------------------------------
 
 interface SourceFileViewerProps {
@@ -15,13 +16,14 @@ interface SourceFileViewerProps {
 
 export function SourceFileViewer({ projectName, filename }: SourceFileViewerProps) {
   const [, setLocation] = useLocation();
+  const confirm = useConfirm();
   const [content, setContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // 加载文件内容
+  // 載入檔案內容
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -44,7 +46,7 @@ export function SourceFileViewer({ projectName, filename }: SourceFileViewerProp
     return () => { cancelled = true; };
   }, [projectName, filename]);
 
-  // 保存文件
+  // 儲存檔案
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
@@ -52,23 +54,27 @@ export function SourceFileViewer({ projectName, filename }: SourceFileViewerProp
       setContent(editContent);
       setEditing(false);
     } catch {
-      // 可以添加 toast 提示
+      // 可以新增 toast 提示
     } finally {
       setSaving(false);
     }
   }, [projectName, filename, editContent]);
 
-  // 删除文件
+  // 刪除檔案
   const handleDelete = useCallback(async () => {
-    if (!confirm(`確定要刪除檔案「${filename}」嗎？此操作無法復原。`)) return;
+    const ok = await confirm({
+      message: `確定要刪除檔案「${filename}」嗎？此操作無法復原。`,
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await API.deleteSourceFile(projectName, filename);
       useAppStore.getState().invalidateSourceFiles();
       setLocation("/");
     } catch {
-      // 可以添加 toast 提示
+      // 可以新增 toast 提示
     }
-  }, [projectName, filename, setLocation]);
+  }, [projectName, filename, setLocation, confirm]);
 
   if (loading) {
     return (

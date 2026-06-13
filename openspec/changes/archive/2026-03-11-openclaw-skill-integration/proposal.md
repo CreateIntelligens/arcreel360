@@ -4,22 +4,22 @@ OpenClaw 是 2026 年最热门的开源 AI Agent 平台（GitHub 247k+ stars）�
 
 ## What Changes
 
-- 新增 API Key 认证模式：在现有 OAuth2 认证基础上，增加 `Authorization: Bearer <API_KEY>` 认证方式，复用现有 API 端点
+- 新增 API Key 认证模式：在現有 OAuth2 认证基础上，增加 `Authorization: Bearer <API_KEY>` 认证方式，复用現有 API 端点
 - 新增 API Key 管理功能：前端提供 Token 生成页面，后端提供 CRUD 接口
-- 新增同步 Agent 对话端点：现有助手 API 基于 SSE 流式，需提供一个同步请求-响应接口供 OpenClaw 调用
+- 新增同步 Agent 对话端点：現有助手 API 基于 SSE 流式，需提供一個同步请求-响应接口供 OpenClaw 调用
 - 编写 OpenClaw AgentSkill 定义文件（`skill.md`），参考 Zopia 格式描述可用工具与调用方式
 
 ## Capabilities
 
 ### New Capabilities
 
-- `api-key-auth`: API Key 生成、管理与 Bearer Token 认证机制，作为现有认证系统的补充认证模式
-- `sync-agent-chat`: 同步 Agent 对话端点，封装现有 SSE 流式助手为请求-响应模式
+- `api-key-auth`: API Key 生成、管理与 Bearer Token 认证机制，作为現有认证系统的补充认证模式
+- `sync-agent-chat`: 同步 Agent 对话端点，封装現有 SSE 流式助手为请求-响应模式
 - `openclaw-skill-def`: OpenClaw AgentSkill 规范的 Skill 定义文件，描述工作流与可用 API
 
 ### Modified Capabilities
 
-（无需修改现有 capability 的需求定义，仅在认证中间件层兼容新的 API Key 模式）
+（无需修改現有 capability 的需求定义，仅在认证中间件层兼容新的 API Key 模式）
 
 ## Impact
 

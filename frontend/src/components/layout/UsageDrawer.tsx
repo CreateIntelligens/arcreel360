@@ -6,7 +6,7 @@ import { Popover } from "@/components/ui/Popover";
 import type { CallType } from "@/types/provider";
 
 // ---------------------------------------------------------------------------
-// UsageDrawer — 费用明细抽屉面板
+// UsageDrawer — 費用明細抽屜面板
 // ---------------------------------------------------------------------------
 
 interface UsageDrawerProps {
@@ -27,7 +27,7 @@ export function UsageDrawer({ open, onClose, projectName, anchorRef }: UsageDraw
   const { stats, calls, total, page, pageSize, setStats, setCalls, setPage, setLoading } = useUsageStore();
   const [callsLoading, setCallsLoading] = useState(false);
 
-  // 加载费用统计
+  // 載入費用統計
   useEffect(() => {
     if (!open) return;
     setLoading(true);
@@ -39,7 +39,7 @@ export function UsageDrawer({ open, onClose, projectName, anchorRef }: UsageDraw
       .finally(() => setLoading(false));
   }, [open, projectName, setStats, setLoading]);
 
-  // 加载调用记录
+  // 載入呼叫記錄
   const loadCalls = useCallback(() => {
     setCallsLoading(true);
     API.getUsageCalls({

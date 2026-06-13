@@ -24,13 +24,13 @@ def config_service(session: AsyncSession) -> ConfigService:
 
 async def test_get_all_providers_status_empty(config_service: ConfigService):
     statuses = await config_service.get_all_providers_status()
-    assert len(statuses) == 5
+    assert len(statuses) == 6
     for s in statuses:
         assert s.status == "unconfigured"
 
 
 async def test_provider_becomes_ready(config_service: ConfigService, session: AsyncSession):
-    # 新逻辑：status 由凭证表中的活跃凭证决定，而不是 ProviderConfig 表
+    # 新邏輯：status 由憑證表中的活躍憑證決定，而不是 ProviderConfig 表
     cred_repo = CredentialRepository(session)
     await cred_repo.create("gemini-aistudio", "default", api_key="AIza-test")
     await session.flush()
@@ -60,10 +60,17 @@ async def test_system_settings(config_service: ConfigService):
 
 
 async def test_get_default_video_backend(config_service: ConfigService):
-    await config_service.set_setting("default_video_backend", "ark/doubao-seedance-1-5-pro-251215")
+    await config_service.set_setting("default_video_backend", "byteplus/doubao-seedance-2-0-260128")
     provider_id, model_id = await config_service.get_default_video_backend()
-    assert provider_id == "ark"
-    assert model_id == "doubao-seedance-1-5-pro-251215"
+    assert provider_id == "byteplus"
+    assert model_id == "doubao-seedance-2-0-260128"
+
+
+async def test_legacy_ark_default_video_backend_normalizes_to_byteplus(config_service: ConfigService):
+    await config_service.set_setting("default_video_backend", "ark/doubao-seedance-2-0-260128")
+    provider_id, model_id = await config_service.get_default_video_backend()
+    assert provider_id == "byteplus"
+    assert model_id == "doubao-seedance-2-0-260128"
 
 
 async def test_get_default_backend_fallback(config_service: ConfigService):

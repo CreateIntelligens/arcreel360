@@ -7,13 +7,13 @@
 
 ## 概述
 
-基于 StoryCraft 项目的 Prompt 工程实践，对我们项目的 `image_prompt` 和 `video_prompt` 进行结构化改造，并引入固定风格选项系统。
+基于 StoryCraft 项目的 Prompt 工程实践，对我们项目的 `image_prompt` 和 `video_prompt` 进行结构化改造，并引入固定风格選項系统。
 
 ### 改进目标
 
 1. **结构化 Prompt 模板** - 将自由文本改为结构化字段
 2. **YAML 格式传递** - 转换为 YAML 格式传给 Gemini/Veo API
-3. **固定风格选项** - 将自由填写的风格改为预设选项
+3. **固定风格選項** - 将自由填写的风格改为预设選項
 4. **统一 negative_prompt** - 标准化禁止生成的元素
 
 ---
@@ -39,14 +39,14 @@
 
 | 字段 | 类型 | 说明 |
 |-----|------|------|
-| `scene` | string | 场景描述，包含环境、物品、氛围 |
-| `composition.shot_type` | enum | 镜头类型，从预设选项中选择 |
+| `scene` | string | 場景描述，包含环境、物品、氛围 |
+| `composition.shot_type` | enum | 镜头类型，从预设選項中選择 |
 | `composition.lighting` | string | 光线描述（光源、色温、阴影） |
 | `composition.ambiance` | string | 氛围描述（色调、情绪、环境效果） |
 
 > **注意**：
-> - **Style（风格）** 由项目级 `project.json` 的 `style` 字段统一决定，不在每个 segment 中重复
-> - **角色和线索** 通过现有的 `characters_in_segment` / `clues_in_segment` 字段引用，不在 imagePrompt 中重复
+> - **Style（风格）** 由项目级 `project.json` 的 `style` 字段统一决定，不在每個 segment 中重复
+> - **角色和线索** 通过現有的 `characters_in_segment` / `clues_in_segment` 字段引用，不在 imagePrompt 中重复
 
 ### 1.2 videoPrompt 结构
 
@@ -71,17 +71,17 @@
 | 字段 | 类型 | 说明 |
 |-----|------|------|
 | `action` | string | 动作描述，明确说明主体在做什么 |
-| `camera_motion` | enum | 摄像机运动，从预设选项中选择 |
+| `camera_motion` | enum | 摄像机运动，从预设選項中選择 |
 | `ambiance_audio` | string | 环境音效描述（仅 diegetic sound，不含音乐） |
 | `dialogue` | array | 对话列表，每条包含 speaker 和 line |
 
 ---
 
-## 二、预设选项定义
+## 二、预设選項定义
 
 ### 2.1 Style（视觉风格）
 
-| 选项 | 说明 |
+| 選項 | 说明 |
 |-----|------|
 | `Photographic` | 写实摄影风格 |
 | `Anime` | 日式动漫风格 |
@@ -89,7 +89,7 @@
 
 ### 2.2 shot_type（镜头类型）
 
-| 选项 | 中文 | 说明 |
+| 選項 | 中文 | 说明 |
 |-----|------|------|
 | `Extreme Close-up` | 大特写 | 面部局部或物体细节 |
 | `Close-up` | 特写 | 面部或重要物体 |
@@ -98,12 +98,12 @@
 | `Medium Long Shot` | 中远景 | 头部到膝盖 |
 | `Long Shot` | 远景 | 全身可见 |
 | `Extreme Long Shot` | 大远景 | 角色在环境中很小 |
-| `Over-the-shoulder` | 过肩镜头 | 从一个角色肩后看另一个角色 |
+| `Over-the-shoulder` | 过肩镜头 | 从一個角色肩后看另一個角色 |
 | `Point-of-view` | 主观镜头 | 从角色视角看 |
 
 ### 2.3 camera_motion（摄像机运动）
 
-| 选项 | 中文 | 说明 |
+| 選項 | 中文 | 说明 |
 |-----|------|------|
 | `Static` | 静止 | 摄像机固定不动 |
 | `Pan Left` | 左摇 | 摄像机水平向左转动 |
@@ -298,7 +298,7 @@ def generate_video(
 }
 ```
 
-仅允许预设选项：`Photographic` | `Anime` | `3D Animation`
+仅允许预设選項：`Photographic` | `Anime` | `3D Animation`
 
 ---
 
@@ -353,7 +353,7 @@ For each segment, generate a video_prompt object with the following structure:
 | Phase 2 | 更新 negative_prompt 默认值 | `lib/gemini_client.py` |
 | Phase 3 | 更新 Agent System Prompt | `.claude/commands/novel-to-narration-script.md`, `.claude/commands/novel-to-storyboard-script.md` |
 | Phase 4 | 更新分镜生成脚本以使用 YAML | `generate_storyboard.py`, `generate_video.py` |
-| Phase 5 | 更新 WebUI 风格选择器 | `webui/` 相关文件 |
+| Phase 5 | 更新 WebUI 风格選择器 | `webui/` 相关文件 |
 
 ---
 
@@ -365,7 +365,7 @@ For each segment, generate a video_prompt object with the following structure:
 
 1. 更新 Agent System Prompt，输出结构化格式
 2. 更新分镜/视频生成脚本，解析结构化 Prompt 并转换为 YAML
-3. 现有项目剧本需重新生成或手动迁移
+3. 現有项目剧本需生成或手动迁移
 
 ---
 

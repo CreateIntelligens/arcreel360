@@ -75,10 +75,17 @@ export interface NarrationSegment {
   novel_text: string;
   characters_in_segment: string[];
   clues_in_segment: string[];
+  scene_in_segment?: string | null;
   image_prompt: ImagePrompt | string;
   video_prompt: VideoPrompt | string;
+  image_backend?: string | null;
+  video_backend?: string | null;
+  image_size?: string | null;
+  video_resolution?: string | null;
   transition_to_next: TransitionType;
   note?: string;
+  reference_image?: string | null;
+  storyboard_sheet?: string | null;
   generated_assets?: GeneratedAssets;
 }
 
@@ -87,12 +94,21 @@ export interface DramaScene {
   duration_seconds: DurationSeconds;
   segment_break: boolean;
   scene_type: string;
+  scene_description?: string;
+  narration_text?: string;
   characters_in_scene: string[];
   clues_in_scene: string[];
+  scene_in_scene?: string | null;
   image_prompt: ImagePrompt | string;
   video_prompt: VideoPrompt | string;
+  image_backend?: string | null;
+  video_backend?: string | null;
+  image_size?: string | null;
+  video_resolution?: string | null;
   transition_to_next: TransitionType;
   note?: string;
+  reference_image?: string | null;
+  storyboard_sheet?: string | null;
   generated_assets?: GeneratedAssets;
 }
 

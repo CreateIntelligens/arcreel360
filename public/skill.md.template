@@ -1,47 +1,47 @@
 # ArcReel Skill
 
-ArcReel 是一个 AI 视频生成平台，将小说转化为短视频。通过此 Skill，你可以使用自然语言对话来调用 ArcReel 的项目管理和内容创作能力。
+ArcReel 是一個 AI 影片生成平臺，將小說轉化為短影片。透過此 Skill，你可以使用自然語言對話來呼叫 ArcReel 的專案管理和內容創作能力。
 
-## 认证
+## 認證
 
-所有 API 请求需要在 Header 中传递 API Key：
+所有 API 請求需要在 Header 中傳遞 API Key：
 
 ```
 Authorization: Bearer arc-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-API Key 可从 ArcReel 设置页面的「API Keys」管理区获取。
+API Key 可從 ArcReel 設定頁面的「API Keys」管理區取得。
 
 ## 工作流
 
-推荐的完整创作工作流：
+推薦的完整創作工作流：
 
-1. **创建项目**：`POST {{BASE_URL}}/api/v1/projects`
-2. **上传小说内容并生成概述**：`POST {{BASE_URL}}/api/v1/projects/{name}/source`
-3. **多轮 Agent 对话**（创作剧本、分镜等）：`POST {{BASE_URL}}/api/v1/agent/chat`
-4. **查看生成结果**：`GET {{BASE_URL}}/api/v1/projects/{name}`
+1. **建立專案**：`POST {{BASE_URL}}/api/v1/projects`
+2. **上傳小說內容並生成概述**：`POST {{BASE_URL}}/api/v1/projects/{name}/source`
+3. **多輪 Agent 對話**（創作劇本、分鏡等）：`POST {{BASE_URL}}/api/v1/agent/chat`
+4. **查看生成結果**：`GET {{BASE_URL}}/api/v1/projects/{name}`
 
-## 工具定义
+## 工具定義
 
-### 1. 项目列表
+### 1. 專案列表
 
-列出所有现有项目。
+列出所有現有專案。
 
-- **端点**：`GET {{BASE_URL}}/api/v1/projects`
-- **认证**：需要 Bearer Token
+- **端點**：`GET {{BASE_URL}}/api/v1/projects`
+- **認證**：需要 Bearer Token
 
 ```bash
 curl {{BASE_URL}}/api/v1/projects \
   -H "Authorization: Bearer <API_KEY>"
 ```
 
-- **响应示例**：
+- **回應範例**：
 ```json
 {
   "projects": [
     {
       "name": "my-novel",
-      "title": "我的小说",
+      "title": "我的小說",
       "scenes_count": 12,
       "status": "ready"
     }
@@ -49,47 +49,47 @@ curl {{BASE_URL}}/api/v1/projects \
 }
 ```
 
-### 2. 创建项目
+### 2. 建立專案
 
-创建新的视频创作项目。
+建立新的影片創作專案。
 
-- **端点**：`POST {{BASE_URL}}/api/v1/projects`
-- **认证**：需要 Bearer Token
+- **端點**：`POST {{BASE_URL}}/api/v1/projects`
+- **認證**：需要 Bearer Token
 
 ```bash
 curl -X POST {{BASE_URL}}/api/v1/projects \
   -H "Authorization: Bearer <API_KEY>" \
   -H "Content-Type: application/json" \
-  -d '{"name": "project-id", "title": "项目标题"}'
+  -d '{"name": "project-id", "title": "專案標題"}'
 ```
 
-- **响应**：201，返回项目详情
+- **回應**：201，返回專案詳情
 
-### 3. 上传小说内容并生成概述（新项目必须）
+### 3. 上傳小說內容並生成概述（新專案必須）
 
-将小说内容传入项目，并自动触发 AI 分析生成概述。支持两种方式：**直接提交文本** 或 **上传文件**。
+將小說內容傳入專案，並自動觸發 AI 分析生成概述。支援兩種方式：**直接提交文字** 或 **上傳檔案**。
 
-- **端点**：`POST {{BASE_URL}}/api/v1/projects/{name}/source`
-- **认证**：需要 Bearer Token
+- **端點**：`POST {{BASE_URL}}/api/v1/projects/{name}/source`
+- **認證**：需要 Bearer Token
 - **Content-Type**：`multipart/form-data`
-- **表单字段**：
+- **表單欄位**：
 
-| 字段 | 类型 | 说明 |
+| 欄位 | 類型 | 說明 |
 |------|------|------|
-| `content` | string（文本字段） | 小说文本内容，与 `file` 二选一，最大 200000 字符 |
-| `file` | file（文件字段） | 上传 .txt/.md 文件，文件名自动取自原始文件名，与 `content` 二选一 |
-| `generate_overview` | bool | 是否自动生成概述，默认 `true` |
+| `content` | string（文字欄位） | 小說文字內容，與 `file` 二選一，最大 200000 字元 |
+| `file` | file（檔案欄位） | 上傳 .txt/.md 檔案，檔名自動取自原始檔名，與 `content` 二選一 |
+| `generate_overview` | bool | 是否自動生成概述，預設 `true` |
 
-**方式 A：提交文本内容**（文件自动命名为 `novel.txt`）
+**方式 A：提交文字內容**（檔案自動命名為 `novel.txt`）
 
 ```bash
 curl -X POST {{BASE_URL}}/api/v1/projects/my-novel/source \
   -H "Authorization: Bearer <API_KEY>" \
-  -F "content=第一章\n\n这是小说的正文内容……" \
+  -F "content=第一章\n\n這是小說的正文內容……" \
   -F "generate_overview=true"
 ```
 
-**方式 B：上传文件**（文件名取自上传文件）
+**方式 B：上傳檔案**（檔名取自上傳檔案）
 
 ```bash
 curl -X POST {{BASE_URL}}/api/v1/projects/my-novel/source \
@@ -98,67 +98,67 @@ curl -X POST {{BASE_URL}}/api/v1/projects/my-novel/source \
   -F "generate_overview=true"
 ```
 
-- **响应示例**：
+- **回應範例**：
 ```json
 {
   "success": true,
   "filename": "my-novel.txt",
   "chars": 12345,
   "overview": {
-    "synopsis": "一个关于……的故事",
-    "genre": "悬疑",
-    "theme": "人性与救赎",
-    "world_setting": "现代都市"
+    "synopsis": "一個關於……的故事",
+    "genre": "懸疑",
+    "theme": "人性與救贖",
+    "world_setting": "現代都市"
   }
 }
 ```
-  - 若 `generate_overview=false`，响应中无 `overview` 字段
-  - 若概述生成失败，响应包含 `overview: null` 和 `overview_error` 说明，文件仍写入成功
+  - 若 `generate_overview=false`，回應中無 `overview` 欄位
+  - 若概述生成失敗，回應包含 `overview: null` 和 `overview_error` 說明，檔案仍寫入成功
 
-### 4. 获取项目详情
+### 4. 取得專案詳情
 
-获取项目的完整信息，包括已生成的剧本和分镜状态。
+取得專案的完整資訊，包括已生成的劇本和分鏡狀態。
 
-- **端点**：`GET {{BASE_URL}}/api/v1/projects/{name}`
-- **认证**：需要 Bearer Token
+- **端點**：`GET {{BASE_URL}}/api/v1/projects/{name}`
+- **認證**：需要 Bearer Token
 
 ```bash
 curl {{BASE_URL}}/api/v1/projects/my-novel \
   -H "Authorization: Bearer <API_KEY>"
 ```
 
-- **响应示例**：
+- **回應範例**：
 ```json
 {
   "project": {
     "name": "my-novel",
-    "title": "我的小说",
+    "title": "我的小說",
     "synopsis": "...",
     "status": "ready"
   }
 }
 ```
 
-### 5. 更新项目设置
+### 5. 更新專案設定
 
-修改项目配置（标题、风格等）。
+修改專案配置（標題、風格等）。
 
-- **端点**：`PATCH {{BASE_URL}}/api/v1/projects/{name}`
-- **认证**：需要 Bearer Token
+- **端點**：`PATCH {{BASE_URL}}/api/v1/projects/{name}`
+- **認證**：需要 Bearer Token
 
 ```bash
 curl -X PATCH {{BASE_URL}}/api/v1/projects/my-novel \
   -H "Authorization: Bearer <API_KEY>" \
   -H "Content-Type: application/json" \
-  -d '{"title": "新标题"}'
+  -d '{"title": "新標題"}'
 ```
 
-### 6. Agent 对话（剧本与创作）
+### 6. Agent 對話（劇本與創作）
 
-向 ArcReel AI Agent 发送消息，Agent 可执行剧本生成、分镜创作、视频生成等复杂任务。
+向 ArcReel AI Agent 發送訊息，Agent 可執行劇本生成、分鏡創作、影片生成等複雜任務。
 
-- **端点**：`POST {{BASE_URL}}/api/v1/agent/chat`
-- **认证**：需要 Bearer Token
+- **端點**：`POST {{BASE_URL}}/api/v1/agent/chat`
+- **認證**：需要 Bearer Token
 
 ```bash
 curl -X POST {{BASE_URL}}/api/v1/agent/chat \
@@ -166,62 +166,62 @@ curl -X POST {{BASE_URL}}/api/v1/agent/chat \
   -H "Content-Type: application/json" \
   -d '{
     "project_name": "my-novel",
-    "message": "帮我为第一章生成剧本，风格要偏向悬疑",
+    "message": "幫我為第一章生成劇本，風格要偏向懸疑",
     "session_id": null
   }'
 ```
 
-  - `project_name`：项目 ID（必填）
-  - `message`：发送给 Agent 的消息（必填）
-  - `session_id`：会话 ID，传入已有 ID 可继续多轮对话，不传则创建新会话
+  - `project_name`：專案 ID（必填）
+  - `message`：發送給 Agent 的訊息（必填）
+  - `session_id`：會話 ID，傳入已有 ID 可繼續多輪對話，不傳則建立新會話
 
-- **响应示例**：
+- **回應範例**：
 ```json
 {
   "session_id": "sess-abc123",
-  "reply": "好的，我已经为第一章生成了悬疑风格的剧本...",
+  "reply": "好的，我已經為第一章生成了懸疑風格的劇本...",
   "status": "completed"
 }
 ```
-  - `status` 可能为：`completed`（成功）、`timeout`（超时，含部分响应）、`error`（出错）
+  - `status` 可能為：`completed`（成功）、`timeout`（逾時，含部分回應）、`error`（出錯）
 
-## 使用示例
+## 使用範例
 
-### 从小说文本到视频项目（推荐完整流程）
+### 從小說文字到影片專案（推薦完整流程）
 
 ```bash
-# 1. 创建项目
+# 1. 建立專案
 curl -X POST {{BASE_URL}}/api/v1/projects \
   -H "Authorization: Bearer <API_KEY>" \
   -H "Content-Type: application/json" \
-  -d '{"name": "ghost-story", "title": "鬼屋探险"}'
+  -d '{"name": "ghost-story", "title": "鬼屋探險"}'
 
-# 2A. 上传小说文本，自动生成概述
+# 2A. 上傳小說文字，自動生成概述
 curl -X POST {{BASE_URL}}/api/v1/projects/ghost-story/source \
   -H "Authorization: Bearer <API_KEY>" \
-  -F "content=第一章\n\n探险者张明在山区发现了一座废弃的老宅……（完整小说文本）" \
+  -F "content=第一章\n\n探險者張明在山區發現了一座廢棄的老宅……（完整小說文字）" \
   -F "generate_overview=true"
 
-# 2B. 或者上传文件
+# 2B. 或者上傳檔案
 curl -X POST {{BASE_URL}}/api/v1/projects/ghost-story/source \
   -H "Authorization: Bearer <API_KEY>" \
   -F "file=@ghost-story.txt" \
   -F "generate_overview=true"
 
-# 3. 开始 Agent 对话，生成第一集剧本
+# 3. 開始 Agent 對話，生成第一集劇本
 curl -X POST {{BASE_URL}}/api/v1/agent/chat \
   -H "Authorization: Bearer <API_KEY>" \
   -H "Content-Type: application/json" \
-  -d '{"project_name": "ghost-story", "message": "请为这个故事生成第一集的分镜剧本，大约5个场景"}'
+  -d '{"project_name": "ghost-story", "message": "請為這個故事生成第一集的分鏡劇本，大約5個場景"}'
 
-# 4. 查看生成结果
+# 4. 查看生成結果
 curl {{BASE_URL}}/api/v1/projects/ghost-story \
   -H "Authorization: Bearer <API_KEY>"
 ```
 
-## 注意事项
+## 注意事項
 
-- `source` 接口最大 200000 字符（约 10 万汉字）；超长小说建议分章节多次传入（后续调用会覆盖同名文件）
-- Agent 对话最长等待 120 秒，复杂任务可能返回 `status: "timeout"` 和部分响应，此时可继续传入同一 `session_id` 查询进度
-- 所有 API 响应均为 JSON 格式
-- 项目名称（`name`）仅支持字母、数字和连字符，建议使用英文或拼音
+- `source` 介面最大 200000 字元（約 10 萬中文字）；超長小說建議分章節多次傳入（後續呼叫會覆蓋同名檔案）
+- Agent 對話最長等待 120 秒，複雜任務可能返回 `status: "timeout"` 和部分回應，此時可繼續傳入同一 `session_id` 查詢進度
+- 所有 API 回應均為 JSON 格式
+- 專案名稱（`name`）僅支援字母、數字和連字符，建議使用英文或拼音

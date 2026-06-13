@@ -1,7 +1,7 @@
 """
-认证依赖注入集成测试
+認證依賴注入整合測試
 
-测试替换中间件后，各路径的认证行为是否正确。
+測試替換中介軟體後，各路徑的認證行為是否正確。
 """
 
 import os
@@ -15,7 +15,7 @@ import server.auth as auth_module
 
 @pytest.fixture(autouse=True)
 def _auth_env():
-    """为所有测试设置固定的认证环境变量，测试结束后清理缓存。"""
+    """為所有測試設定固定的認證環境變數，測試結束後清理快取。"""
     auth_module._cached_token_secret = None
     auth_module._cached_password_hash = None
     with patch.dict(
@@ -33,15 +33,23 @@ def _auth_env():
 
 @pytest.fixture()
 def client():
-    """创建使用真实 app 的测试客户端。"""
+    """建立使用真實 app 的測試客戶端。"""
+    from unittest.mock import AsyncMock, MagicMock
+
     from server.app import app
 
-    with TestClient(app, raise_server_exceptions=False) as c:
-        yield c
+    # Mock 掉 GenerationWorker，避免啟動背景執行緒及相關資料庫操作
+    mock_worker = MagicMock()
+    mock_worker.start = AsyncMock()
+    mock_worker.stop = AsyncMock()
+
+    with patch("server.app.create_generation_worker", return_value=mock_worker):
+        with TestClient(app, raise_server_exceptions=False) as c:
+            yield c
 
 
 def _login(client: TestClient) -> str:
-    """辅助函数：登录并返回 access_token。"""
+    """輔助函式：登入並返回 access_token。"""
     resp = client.post(
         "/api/v1/auth/token",
         data={"username": "testuser", "password": "testpass"},
@@ -52,13 +60,13 @@ def _login(client: TestClient) -> str:
 
 class TestAuthIntegration:
     def test_health_no_auth(self, client):
-        """GET /health 不需要认证，返回 200"""
+        """GET /health 不需要認證，返回 200"""
         resp = client.get("/health")
         assert resp.status_code == 200
         assert resp.json()["status"] == "ok"
 
     def test_login_no_auth(self, client):
-        """POST /api/v1/auth/token 不需要认证"""
+        """POST /api/v1/auth/token 不需要認證"""
         resp = client.post(
             "/api/v1/auth/token",
             data={"username": "testuser", "password": "testpass"},
@@ -72,7 +80,7 @@ class TestAuthIntegration:
         assert resp.status_code == 401
 
     def test_api_with_valid_token(self, client):
-        """先登录获取 token，再带 token 访问 API，不应返回 401"""
+        """先登入獲取 token，再帶 token 訪問 API，不應返回 401"""
         token = _login(client)
         resp = client.get(
             "/api/v1/projects",
@@ -81,7 +89,7 @@ class TestAuthIntegration:
         assert resp.status_code != 401
 
     def test_api_with_invalid_token(self, client):
-        """带无效 token 访问返回 401"""
+        """帶無效 token 訪問返回 401"""
         resp = client.get(
             "/api/v1/projects",
             headers={"Authorization": "Bearer invalid-token-value"},
@@ -89,11 +97,11 @@ class TestAuthIntegration:
         assert resp.status_code == 401
 
     def test_docs_page_accessible(self, client):
-        """/docs Swagger UI 应可访问"""
+        """/docs Swagger UI 應可訪問"""
         resp = client.get("/docs")
         assert resp.status_code == 200
 
     def test_frontend_path_no_auth(self, client):
-        """前端路径（非 /api/ 开头）不需要认证"""
+        """前端路徑（非 /api/ 開頭）不需要認證"""
         resp = client.get("/app/projects")
         assert resp.status_code != 401

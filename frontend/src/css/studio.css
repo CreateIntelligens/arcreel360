@@ -1,7 +1,7 @@
-/* studio.css — 工作台专用样式 */
+/* studio.css — 工作臺專用樣式 */
 @reference "../index.css";
 
-/* Prompt 编辑器 */
+/* Prompt 編輯器 */
 .prompt-editor {
   @apply rounded-lg p-3 font-mono text-sm;
   background: rgba(11, 17, 28, 0.88);
@@ -9,7 +9,7 @@
   color: var(--wb-text-secondary);
 }
 
-/* 统一焦点指示 — 键盘导航可见性 */
+/* 統一焦點指示 — 鍵盤導航可見性 */
 .focus-ring {
   @apply focus-visible:outline-none;
   box-shadow: none;
@@ -19,12 +19,12 @@
   box-shadow: 0 0 0 1px rgba(136, 163, 255, 0.34), 0 0 0 4px rgba(109, 140, 255, 0.1);
 }
 
-/* 强调色 — 低饱和度纯色 */
+/* 強調色 — 低飽和度純色 */
 .accent-gradient {
   background: linear-gradient(135deg, rgba(109, 140, 255, 0.94), rgba(112, 199, 217, 0.78));
 }
 
-/* 强调色文字 */
+/* 強調色文字 */
 .accent-gradient-text {
   color: var(--wb-accent);
 }
@@ -42,7 +42,7 @@
   border-color: rgba(120, 148, 197, 0.18);
 }
 
-/* 呼吸灯动画 — 用于任务雷达 */
+/* 呼吸燈動畫 — 用於任務雷達 */
 @keyframes breathe {
   0%, 100% { opacity: 0.4; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.15); }
@@ -52,7 +52,7 @@
   animation: breathe 2s ease-in-out infinite;
 }
 
-/* 脉冲进度条 */
+/* 脈衝進度條 */
 @keyframes progress-pulse {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }

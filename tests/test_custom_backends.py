@@ -1,4 +1,4 @@
-"""CustomTextBackend / CustomImageBackend / CustomVideoBackend 单元测试。"""
+"""CustomTextBackend / CustomImageBackend / CustomVideoBackend 單元測試。"""
 
 from __future__ import annotations
 
@@ -26,14 +26,14 @@ class TestCustomTextBackend:
         assert backend.capabilities == {TextCapability.TEXT_GENERATION}
 
     def test_capabilities_delegated(self):
-        """capabilities 属性直接来自 delegate。"""
+        """capabilities 屬性直接來自 delegate。"""
         delegate = AsyncMock()
         delegate.capabilities = {
             TextCapability.TEXT_GENERATION,
             TextCapability.STRUCTURED_OUTPUT,
             TextCapability.VISION,
         }
-        backend = CustomTextBackend(provider_id="my-provider", delegate=delegate, model="gpt-5.4")
+        backend = CustomTextBackend(provider_id="my-provider", delegate=delegate, model="gpt-5.5")
 
         assert backend.capabilities is delegate.capabilities
 
@@ -57,7 +57,7 @@ class TestCustomTextBackend:
         delegate.generate.assert_awaited_once_with(request)
 
     async def test_generate_passes_request_unchanged(self):
-        """generate() 不修改请求对象，原样传给 delegate。"""
+        """generate() 不修改請求物件，原樣傳給 delegate。"""
         delegate = AsyncMock()
         delegate.generate = AsyncMock(return_value=TextGenerationResult(text="ok", provider="x", model="y"))
         delegate.capabilities = set()

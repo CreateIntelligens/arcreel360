@@ -4,9 +4,28 @@ Helpers for storyboard sequence ordering and dependency planning.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+
+_STORYBOARD_ID_PATTERN = re.compile(r"^E(\d+)S(\d+)(?:_(\d+))?$")
+
+
+def normalize_storyboard_id(raw: object) -> tuple:
+    """將 segment/scene id 正規化為可比對的標準形。
+
+    補零與否視為同一個 id：``E2S1`` 與 ``E2S01`` 正規化後相等，
+    避免不同來源（LLM 生成、前端、規範）的補零差異造成比對斷裂。
+
+    不符 ``E{n}S{seq}(_{sub})?`` 格式者退化為原字串比較，不拋例外。
+    """
+    text = str(raw).strip()
+    match = _STORYBOARD_ID_PATTERN.match(text)
+    if not match:
+        return ("raw", text)
+    episode, seq, sub = match.groups()
+    return ("ES", int(episode), int(seq), int(sub) if sub is not None else None)
 
 
 @dataclass(frozen=True)
@@ -18,13 +37,13 @@ class StoryboardTaskPlan:
     dependency_index: int
 
 
-PREVIOUS_STORYBOARD_REFERENCE_LABEL = "上一分镜图（镜头衔接参考）"
+PREVIOUS_STORYBOARD_REFERENCE_LABEL = "上一分鏡圖（鏡頭銜接參考）"
 PREVIOUS_STORYBOARD_REFERENCE_DESCRIPTION = (
-    "仅用于延续前一镜头的构图、色调和场景连续性，不是新增角色、服装或道具设定；请以当前 prompt 为准生成当前镜头。"
+    "僅用於延續前一鏡頭的構圖、色調和場景連續性，不是新增角色、服裝或道具設定；請以當前 prompt 為準生成當前鏡頭。"
 )
 
 
-def get_storyboard_items(script: dict) -> tuple[list[dict], str, str, str]:
+def get_storyboard_items(script: dict) -> tuple[list[dict], str, str, str, str]:
     content_mode = script.get("content_mode", "narration")
     if content_mode == "narration" and "segments" in script:
         return (
@@ -32,12 +51,14 @@ def get_storyboard_items(script: dict) -> tuple[list[dict], str, str, str]:
             "segment_id",
             "characters_in_segment",
             "clues_in_segment",
+            "scene_in_segment",
         )
     return (
         list(script.get("scenes", [])),
         "scene_id",
         "characters_in_scene",
         "clues_in_scene",
+        "scene_in_scene",
     )
 
 
@@ -46,8 +67,9 @@ def find_storyboard_item(
     id_field: str,
     resource_id: str,
 ) -> tuple[dict, int] | None:
+    target = normalize_storyboard_id(resource_id)
     for index, item in enumerate(items):
-        if str(item.get(id_field)) == str(resource_id):
+        if normalize_storyboard_id(item.get(id_field)) == target:
             return item, index
     return None
 

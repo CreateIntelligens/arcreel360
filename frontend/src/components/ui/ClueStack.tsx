@@ -26,11 +26,6 @@ function CluePopover({
 }) {
 
   const firstLine = clue.description?.split("\n")[0] ?? "";
-  const typeLabel = clue.type === "location" ? "场景" : "道具";
-  const typeBadgeClass =
-    clue.type === "location"
-      ? "bg-amber-800/60 text-amber-300"
-      : "bg-emerald-800/60 text-emerald-300";
 
   return (
     <Popover
@@ -47,21 +42,16 @@ function CluePopover({
           <img
             src={API.getFileUrl(projectName, clue.clue_sheet, sheetFp)}
             alt={name}
-            className="h-[120px] w-[90px] shrink-0 rounded object-cover"
+            className="h-[7.5rem] w-[5.625rem] shrink-0 rounded object-cover"
           />
         ) : (
-          <div className="flex h-[120px] w-[90px] shrink-0 items-center justify-center rounded bg-gray-800">
+          <div className="flex h-[7.5rem] w-[5.625rem] shrink-0 items-center justify-center rounded bg-gray-800">
             <Puzzle className="h-8 w-8 text-gray-600" />
           </div>
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <p className="truncate text-sm font-medium text-white">{name}</p>
-            <span
-              className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold ${typeBadgeClass}`}
-            >
-              {typeLabel}
-            </span>
           </div>
           {firstLine && (
             <p className="mt-0.5 line-clamp-4 whitespace-normal break-words text-xs leading-relaxed text-gray-400">

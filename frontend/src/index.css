@@ -29,6 +29,23 @@
 
     --font-sans: "Avenir Next", "SF Pro Display", "PingFang SC", "Noto Sans SC", sans-serif;
     --font-mono: "IBM Plex Mono", "Fira Code", "Noto Sans Mono", monospace;
+
+    /*
+     * 語意 text token：新元件請優先使用，避免散落的 text-xs / text-sm / text-base / text-lg。
+     *   text-caption  ≈ text-xs   — 次要說明、metadata、時間戳
+     *   text-body     ≈ text-sm   — 一般正文（預設）
+     *   text-body-lg  ≈ text-base — 強調正文、表單欄位
+     *   text-title    ≈ text-lg   — 區塊標題
+     * 既有代碼漸進遷移；不需一次替換。
+     */
+    --text-caption: 0.75rem;
+    --text-caption--line-height: 1rem;
+    --text-body: 0.875rem;
+    --text-body--line-height: 1.25rem;
+    --text-body-lg: 1rem;
+    --text-body-lg--line-height: 1.5rem;
+    --text-title: 1.125rem;
+    --text-title--line-height: 1.75rem;
 }
 
 :root {
@@ -88,4 +105,28 @@ textarea {
         color 0.18s ease,
         box-shadow 0.18s ease,
         transform 0.18s ease;
+}
+
+/*
+ * streamdown 表格全螢幕浮層的背景修正。
+ * streamdown 的浮層容器（<div data-streamdown="table-fullscreen">）使用
+ * shadcn 風格的 `bg-background` utility，對應語意 token `--color-background`。
+ * 本專案 Tailwind v4 `@theme` 未定義該 token，故 `bg-background` 不會產出
+ * 任何規則，浮層因此沒有背景色、透明，背後內容透出導致表格看不清。
+ * 此規則為 unlayered（優先於所有 @layer），是浮層背景的唯一來源，必然生效；
+ * 沿用既有 --wb-bg / --wb-text-primary token 補上實心深色底，請勿刪除。
+ *
+ * ⚠️ **已知 scope 限制(不修)**:此 selector 是全域 attribute,而非綁定 chat 容器。
+ *   - 浮層由 streamdown 用 `createPortal` 掛在 `document.body`,在 .markdown-body 之外,
+ *     無法用 ancestor selector 收窄。
+ *   - 目前所有 StreamMarkdown 用點(chat、PreprocessingView 等)皆為深色 panel,
+ *     一律套深色底沒有撞色問題。
+ *   - 若日後新增「淺色 panel 用 streamdown 表格」,此規則會強制深色撞色 — 屆時:
+ *     (a) 改 StreamMarkdown 用 data-attribute 區分 theme,本規則加 selector;
+ *     (b) 或定義 --color-background token 讓 streamdown 自有 bg-background 生效。
+ *   - streamdown 升級若改 attribute 名,此規則漸進失效(回到原本透明),非破壞性退化。
+ */
+[data-streamdown="table-fullscreen"] {
+    background-color: var(--wb-bg);
+    color: var(--wb-text-primary);
 }

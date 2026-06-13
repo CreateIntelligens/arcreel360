@@ -87,7 +87,7 @@ class VideoGenerationRequest:
     seed: int | None = None
 ```
 
-> **duration_seconds 标准化规则**：接口统一使用 `int`（秒数）。Veo 仅支持离散值 `4/6/8`，由 `GeminiVideoBackend` 内部调用现有 `normalize_veo_duration_seconds()` 标准化；Seedance 1.5 pro 支持 `4-12` 连续范围，直接透传。
+> **duration_seconds 标准化规则**：接口统一使用 `int`（秒数）。Veo 仅支持离散值 `4/6/8`，由 `GeminiVideoBackend` 内部调用現有 `normalize_veo_duration_seconds()` 标准化；Seedance 1.5 pro 支持 `4-12` 连续范围，直接透传。
 
 ### VideoGenerationResult
 
@@ -99,7 +99,7 @@ class VideoGenerationResult:
     model: str                             # 具体模型 ID
     duration_seconds: int
 
-    # 可选
+    # 可選
     video_uri: str | None = None           # 远程 URI（Veo GCS / Seedance CDN）
     seed: int | None = None                # 实际使用的种子
     usage_tokens: int | None = None        # Seedance token 用量
@@ -143,7 +143,7 @@ class VideoBackend(Protocol):
 ### SeedanceVideoBackend
 
 - 使用 `volcengine-python-sdk[ark]`（`volcenginesdkarkruntime.Ark`）
-- 异步轮询模式：`tasks.create()` → 轮询 `tasks.get()` → 下载 MP4
+- 異步轮询模式：`tasks.create()` → 轮询 `tasks.get()` → 下载 MP4
 - 模型：`doubao-seedance-1-5-pro-251215`
 
 能力集：
@@ -186,13 +186,13 @@ def get_available_backends() -> list[str]:
     ...
 ```
 
-启动时自动注册 `gemini` 和 `seedance`。缺少 API key 不会导致启动失败，仅在实际选用该供应商时报错。
+启动时自动注册 `gemini` 和 `seedance`。缺少 API key 不会导致启动失敗，仅在实际選用该供应商时报错。
 
 ## 配置设计
 
 ### 全局配置（SystemConfigManager）
 
-全局配置通过现有的 `SystemConfigManager`（`.system_config.json`）管理，前端通过 MediaConfigTab 操作。新增以下配置项：
+全局配置通过現有的 `SystemConfigManager`（`.system_config.json`）管理，前端通过 MediaConfigTab 操作。新增以下配置项：
 
 | 配置项 | 说明 | 对应环境变量 |
 |--------|------|-------------|
@@ -200,7 +200,7 @@ def get_available_backends() -> list[str]:
 | `ark_api_key` | 火山方舟 API key | `ARK_API_KEY` |
 | `file_service_base_url` | 项目文件服务公网地址（Seedance 图片上传用） | `FILE_SERVICE_BASE_URL` |
 
-这些配置项遵循现有机制：保存后立即应用到 `os.environ`，无需重启。MediaConfigTab 需扩展 UI 以支持视频供应商选择和 Seedance API key 输入。
+这些配置项遵循現有机制：保存后立即应用到 `os.environ`，无需重启。MediaConfigTab 需扩展 UI 以支持视频供应商選择和 Seedance API key 输入。
 
 > 注：MediaConfigTab 的 UI 改动属于供应商管理页（#102）范畴，本次后端先支持配置读写，前端可暂通过直接编辑 `.system_config.json` 配置。
 
@@ -236,9 +236,9 @@ def get_available_backends() -> list[str]:
 
 | 参数 | 来源 | 说明 |
 |------|------|------|
-| `prompt` | 单次请求 | 每个分镜不同 |
+| `prompt` | 单次请求 | 每個分镜不同 |
 | `duration_seconds` | 单次请求 | 可按分镜指定 |
-| `seed` | 单次请求（可选） | 迭代时手动传入 |
+| `seed` | 单次请求（可選） | 迭代时手动传入 |
 | `resolution` | 项目 video_settings | 全项目一致 |
 | `aspect_ratio` | 项目 video_settings | 全项目一致 |
 | `generate_audio` | 项目 video_settings | 全项目一致 |
@@ -267,7 +267,7 @@ def get_available_backends() -> list[str]:
 
 ## MediaGenerator 适配
 
-现有 `MediaGenerator` 的 `self.video_backend` 属性（`media_generator.py:62`）存储的是字符串 `"aistudio"` | `"vertex"`。适配时将其重命名为 `self._gemini_backend_type`，新增 `self._video_backend: VideoBackend` 存储 Backend 实例。
+現有 `MediaGenerator` 的 `self.video_backend` 属性（`media_generator.py:62`）存储的是字符串 `"aistudio"` | `"vertex"`。适配时将其重命名为 `self._gemini_backend_type`，新增 `self._video_backend: VideoBackend` 存储 Backend 实例。
 
 ```python
 class MediaGenerator:
@@ -284,7 +284,7 @@ class MediaGenerator:
         result = await self._video_backend.generate(request)
 ```
 
-**Backend 实例化职责**：`get_media_generator()`（`server/services/generation_tasks.py`）负责读取项目配置、选择供应商、通过 Registry 创建 Backend 实例并注入 `MediaGenerator`。
+**Backend 实例化职责**：`get_media_generator()`（`server/services/generation_tasks.py`）负责读取项目配置、選择供应商、通过 Registry 创建 Backend 实例并注入 `MediaGenerator`。
 
 **横切关注点不下沉到 Backend**：版本管理、用量追踪在 MediaGenerator 层处理，Backend 只负责「调 API、拿结果」。
 
@@ -294,7 +294,7 @@ class MediaGenerator:
 
 按供应商分策略计费，返回 `(amount: float, currency: str)` 元组：
 
-- **Gemini**：按 resolution × duration × audio 查表（USD）— 现有逻辑不变
+- **Gemini**：按 resolution × duration × audio 查表（USD）— 現有逻辑不变
 - **Seedance**：从 API 响应的 `usage.completion_tokens` 获取实际 token 用量，按单价计算
 
 ### Seedance 费用计算逻辑
@@ -323,17 +323,17 @@ class MediaGenerator:
 
 **实现要点**：`CostCalculator` 新增 `_seedance_video_cost(model, usage_tokens, service_tier, generate_audio)` 方法，根据 `service_tier` 和 `generate_audio` 查表取单价，乘以 token 用量。
 
-不同币种分别统计，不做汇率转换。
+不同币种分别統計，不做汇率转换。
 
 ### UsageTracker（api_calls 表）
 
 数据库迁移方案：
-1. 将现有 `cost_usd` 列重命名为 `cost_amount`
+1. 将現有 `cost_usd` 列重命名为 `cost_amount`
 2. 新增 `currency` 列（`String`，默认 `"USD"`，既有数据回填 `"USD"`）
 3. 新增 `provider` 列（`String`，默认 `"gemini"`，既有数据回填 `"gemini"`）
 4. 新增 `usage_tokens` 列（`Integer`，可空）
 
-通过 Alembic 迁移脚本执行，确保现有数据不丢失。
+通过 Alembic 迁移脚本执行，确保現有数据不丢失。
 
 `UsageRepository.get_stats()` 修改为按 `currency` 分组汇总费用。
 

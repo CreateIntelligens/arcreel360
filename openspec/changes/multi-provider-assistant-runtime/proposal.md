@@ -1,6 +1,6 @@
 ## Why
 
-当前 ArcReel 的对话式助手完全绑定 Claude Agent SDK，导致 Anthropic 配置缺失时，助手能力不可用，且前端将该状态表达为接近"系统未完成配置"。这对只使用 Gemini 或 OpenAI/ChatGPT 的二开场景都不成立，也阻碍了将助手能力演进为可替换的产品层能力。
+当前 ArcReel 的对话式助手完全绑定 Claude Agent SDK，导致 Anthropic 配置缺失时，助手能力不可用，且前端将该状态表达为接近"系统未完成配置"。这对只使用 Gemini 或 OpenAI/ChatGPT 的二开場景都不成立，也阻碍了将助手能力演进为可替换的产品层能力。
 
 如果继续维持当前结构，任何 Gemini 或 OpenAI assistant 尝试都会被迫模拟 Claude SDK 的会话、tool use、resume、subagent 与 transcript 语义，技术风险高、演进成本大。因此需要先将 assistant runtime 从"Claude 专用实现"重构为"多 provider、按能力分层"的架构，并在同一套 proposal 中纳入 Gemini 与 OpenAI/ChatGPT 两类 provider。
 
@@ -22,20 +22,20 @@
 ### Modified Capabilities
 
 - `sync-agent-chat`：同步对话端点改为走当前激活 provider，并在能力不足时返回结构化降级信息
-- `system-config-ui`：配置页与全局警告从"Anthropic 必填"改为"当前 assistant provider 所需凭证"，避免误伤 Gemini-only 或 OpenAI-only 场景
+- `system-config-ui`：配置页与全局警告从"Anthropic 必填"改为"当前 assistant provider 所需凭证"，避免误伤 Gemini-only 或 OpenAI-only 場景
 
 ## Impact
 
 - **后端核心改动**：`server/agent_runtime/session_manager.py`、`server/agent_runtime/service.py`、`server/routers/assistant.py`、`server/routers/agent_chat.py`
 - **配置与状态改动**：`server/routers/system_config.py`、`lib/config/service.py`、`frontend/src/stores/config-status-store.ts`
 - **前端交互改动**：`frontend/src/components/pages/AgentConfigTab.tsx`、`frontend/src/components/pages/SystemConfigPage.tsx`、助手面板相关状态与类型定义
-- **复用资产**：`lib/text_backends/gemini.py`、现有 Gemini provider 配置体系、现有 OpenAI 兼容 provider / backend 封装、现有项目上下文构建与消息流 UI
+- **复用资产**：`lib/text_backends/gemini.py`、現有 Gemini provider 配置体系、現有 OpenAI 兼容 provider / backend 封装、現有项目上下文构建与消息流 UI
 - **首期目标**：Gemini 与 OpenAI/ChatGPT 的 lite assistant；Claude 保留 full runtime
 - **后续阶段目标**：按本项目的小说转短视频工作流需要，逐步补齐 workflow-grade 能力，而不是复制 Claude SDK 全部协议
 
 ## Migration Notes
 
-- `assistant_provider=claude` 仍是默认行为，现有 Anthropic 用户不需要修改配置
+- `assistant_provider=claude` 仍是默认行为，現有 Anthropic 用户不需要修改配置
 - `assistant_provider=gemini-lite` 或 `assistant_provider=openai-lite` 后，系统配置完整性检查将改为对应 provider-specific requirement，不再把 Anthropic 视为全局必填
 - Gemini-lite 与 OpenAI-lite 首期定位是项目内 copilot，不承诺 Claude full runtime 的 resume、subagent、permission hook 等能力
 - 若前端检测到 capability 不支持，应显示结构化降级提示，而不是继续暴露 Claude-only 入口

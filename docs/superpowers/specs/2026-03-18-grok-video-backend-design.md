@@ -12,7 +12,7 @@
 
 新建 `lib/video_backends/grok.py`。
 
-### SDK 选择
+### SDK 選择
 
 使用 `xai_sdk` 官方 Python SDK。通过 `xai_sdk.AsyncClient` 调用 `grok-imagine-video` 模型。
 
@@ -45,7 +45,7 @@ def __init__(self, *, api_key: str | None = None, model: str | None = None):
 2. 若有 `start_image`：读取本地文件，base64 编码为 `data:image/{ext};base64,{data}`
 3. 调用 `client.video.generate(...)`（具体参数名以 `xai_sdk` 实际 API 为准，实现时参考 `docs/grok-docs/video-generation.md`）
 4. SDK 自动处理轮询，返回结果包含临时视频 URL
-5. 用 `httpx.AsyncClient` 异步下载视频到 `output_path`
+5. 用 `httpx.AsyncClient` 異步下载视频到 `output_path`
 6. 返回 `VideoGenerationResult(video_path=output_path, provider="grok", model=model, duration_seconds=...)`
 
 ### 分辨率
@@ -91,7 +91,7 @@ elif provider_name == PROVIDER_GROK:
 
 ### CostCalculator
 
-新增 Grok 计费字典和实例方法（与现有 `calculate_video_cost` / `calculate_seedance_video_cost` 模式一致）：
+新增 Grok 计费字典和实例方法（与現有 `calculate_video_cost` / `calculate_seedance_video_cost` 模式一致）：
 
 ```python
 GROK_VIDEO_COST = {
@@ -151,7 +151,7 @@ def calculate_grok_video_cost(self, duration_seconds: int, model: str) -> float:
 }
 ```
 
-**分辨率注入点**：`server/services/generation_tasks.py` 的 `execute_video_task()` 中，在构建 `VideoGenerationRequest` 前，根据当前选中的模型名从 `video_model_settings` 取对应分辨率，设置到 `request.resolution`。各模型默认值：
+**分辨率注入点**：`server/services/generation_tasks.py` 的 `execute_video_task()` 中，在构建 `VideoGenerationRequest` 前，根据当前選中的模型名从 `video_model_settings` 取对应分辨率，设置到 `request.resolution`。各模型默认值：
 
 | 模型 | 默认分辨率 |
 |------|-----------|

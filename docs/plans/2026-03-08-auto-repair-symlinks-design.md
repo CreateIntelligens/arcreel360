@@ -5,7 +5,7 @@
 
 ## 背景
 
-每个视频项目目录下需要两条软连接，让 Claude Agent SDK 能发现 skill/agent 配置：
+每個视频项目目录下需要两条软连接，让 Claude Agent SDK 能发现 skill/agent 配置：
 
 - `.claude` → `../../agent_runtime_profile/.claude`
 - `CLAUDE.md` → `../../agent_runtime_profile/CLAUDE.md`
@@ -21,7 +21,7 @@
 
 - 每次服务器启动时，自动确保所有项目的软连接正确
 - 修复策略：损坏 → 删除重建；缺失 → 创建；正常 → 跳过
-- 不影响任何现有 API 行为
+- 不影响任何現有 API 行为
 
 ## 架构改动
 
@@ -36,7 +36,7 @@
   - exists()                       → skip（正常，无论是软连接还是真实文件）
 ```
 
-新增 `repair_all_symlinks() -> dict`，扫描 `projects/` 下所有非隐藏子目录，返回统计：
+新增 `repair_all_symlinks() -> dict`，扫描 `projects/` 下所有非隐藏子目录，返回統計：
 
 ```python
 {"repaired": int, "created": int, "skipped": int, "errors": int}
@@ -81,4 +81,4 @@ lifespan startup
 | `server/app.py` | lifespan startup 插入一行调用 |
 | `scripts/migrate_claude_symlinks.py` | 修复 skip bug |
 
-不影响任何现有 API 端点和测试。
+不影响任何現有 API 端点和测试。

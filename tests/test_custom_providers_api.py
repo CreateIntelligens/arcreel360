@@ -1,7 +1,7 @@
-"""自定义供应商管理 API 测试。
+"""自定義供應商管理 API 測試。
 
-通过 TestClient + dependency_overrides 测试 CRUD、模型管理、
-模型发现和连接测试端点。使用内存 SQLite 数据库。
+透過 TestClient + dependency_overrides 測試 CRUD、模型管理、
+模型發現和連線測試端點。使用記憶體 SQLite 資料庫。
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from server.routers import custom_providers
 
 @pytest.fixture()
 async def db_engine():
-    """内存 SQLite 引擎。"""
+    """記憶體 SQLite 引擎。"""
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -41,7 +41,7 @@ async def session_factory(db_engine):
 
 @pytest.fixture()
 def app(session_factory) -> FastAPI:
-    """创建绑定内存数据库的 FastAPI 应用。"""
+    """建立繫結記憶體資料庫的 FastAPI 應用。"""
     _app = FastAPI()
 
     async def _override_session():
@@ -407,7 +407,7 @@ class TestDiscoverModels:
         with patch(
             "lib.custom_provider.discovery.discover_models",
             new_callable=AsyncMock,
-            side_effect=ValueError("不支持的 api_format: 'invalid'"),
+            side_effect=ValueError("不支援的 api_format: 'invalid'"),
         ):
             resp = client.post(
                 "/api/v1/custom-providers/discover",
@@ -445,7 +445,7 @@ class TestConnectionTest:
     def test_openai_success(self, client: TestClient):
         with patch(
             "server.routers.custom_providers._test_openai",
-            return_value=custom_providers.ConnectionTestResponse(success=True, message="连接成功", model_count=5),
+            return_value=custom_providers.ConnectionTestResponse(success=True, message="連線成功", model_count=5),
         ):
             resp = client.post(
                 "/api/v1/custom-providers/test",
@@ -463,7 +463,7 @@ class TestConnectionTest:
     def test_google_success(self, client: TestClient):
         with patch(
             "server.routers.custom_providers._test_google",
-            return_value=custom_providers.ConnectionTestResponse(success=True, message="连接成功", model_count=10),
+            return_value=custom_providers.ConnectionTestResponse(success=True, message="連線成功", model_count=10),
         ):
             resp = client.post(
                 "/api/v1/custom-providers/test",
@@ -490,7 +490,7 @@ class TestConnectionTest:
         assert resp.status_code == 200
         body = resp.json()
         assert body["success"] is False
-        assert "不支持" in body["message"]
+        assert "不支援" in body["message"]
 
     def test_connection_failure(self, client: TestClient):
         with patch(
@@ -512,7 +512,7 @@ class TestConnectionTest:
 
 
 # ---------------------------------------------------------------------------
-# 回归测试：修复过的高危 bug
+# 迴歸測試：修復過的高危 bug
 # ---------------------------------------------------------------------------
 
 _PROVIDER_PAYLOAD = {
@@ -534,21 +534,21 @@ _PROVIDER_PAYLOAD = {
 
 
 class TestDeleteProviderCleansGlobalSettings:
-    """回归: 删除 provider 时应清理全局 DB 中引用该 provider 的 default_*_backend。"""
+    """迴歸: 刪除 provider 時應清理全域性 DB 中引用該 provider 的 default_*_backend。"""
 
     async def test_global_settings_cleaned_on_delete(self, client: TestClient, session: AsyncSession):
-        # 创建供应商
+        # 建立供應商
         resp = client.post("/api/v1/custom-providers", json=_PROVIDER_PAYLOAD)
         pid = resp.json()["id"]
 
-        # 模拟全局配置引用该供应商
+        # 模擬全域性配置引用該供應商
         svc = ConfigService(session)
         await svc.set_setting("default_text_backend", f"custom-{pid}/gpt-4o")
         await svc.set_setting("default_image_backend", f"custom-{pid}/dall-e-3")
-        await svc.set_setting("default_video_backend", "gemini-aistudio/veo-3")  # 不应被清理
+        await svc.set_setting("default_video_backend", "gemini-aistudio/veo-3")  # 不應被清理
         await session.commit()
 
-        # 删除供应商（mock 掉项目清理和缓存失效）
+        # 刪除供應商（mock 掉專案清理和快取失效）
         with (
             patch("server.routers.custom_providers._cleanup_project_refs"),
             patch("server.routers.custom_providers._invalidate_caches", new_callable=AsyncMock),
@@ -556,22 +556,22 @@ class TestDeleteProviderCleansGlobalSettings:
             del_resp = client.delete(f"/api/v1/custom-providers/{pid}")
         assert del_resp.status_code == 204
 
-        # 验证引用被清理
+        # 驗證引用被清理
         assert await svc.get_setting("default_text_backend", "") == ""
         assert await svc.get_setting("default_image_backend", "") == ""
-        # 不相关的设置应保留
+        # 不相關的設定應保留
         assert await svc.get_setting("default_video_backend", "") == "gemini-aistudio/veo-3"
 
 
 class TestDeleteProviderCleansProjectRefs:
-    """回归: 删除 provider 时应清理项目级 project.json 中的悬空引用。"""
+    """迴歸: 刪除 provider 時應清理專案級 project.json 中的懸空引用。"""
 
     def test_project_refs_cleaned_on_delete(self, client: TestClient):
         resp = client.post("/api/v1/custom-providers", json=_PROVIDER_PAYLOAD)
         pid = resp.json()["id"]
         prefix = f"custom-{pid}/"
 
-        # 模拟 ProjectManager
+        # 模擬 ProjectManager
         mock_pm = MagicMock()
         mock_pm.list_projects.return_value = ["project-a"]
         project_data = {"text_backend_script": f"{prefix}gpt-4o", "title": "Test"}
@@ -584,31 +584,31 @@ class TestDeleteProviderCleansProjectRefs:
             del_resp = client.delete(f"/api/v1/custom-providers/{pid}")
         assert del_resp.status_code == 204
 
-        # 验证 update_project 被调用来清理引用
+        # 驗證 update_project 被呼叫來清理引用
         mock_pm.update_project.assert_called_once()
         call_args = mock_pm.update_project.call_args
         assert call_args[0][0] == "project-a"
-        # 执行 mutate_fn 验证清理逻辑
+        # 執行 mutate_fn 驗證清理邏輯
         mutate_fn = call_args[0][1]
         test_proj = {"text_backend_script": f"{prefix}gpt-4o", "title": "Test"}
         mutate_fn(test_proj)
         assert "text_backend_script" not in test_proj
-        assert test_proj["title"] == "Test"  # 无关字段保留
+        assert test_proj["title"] == "Test"  # 無關欄位保留
 
 
 class TestReplaceModelsCleansStaleRefs:
-    """回归: 替换 models 时应清理引用已删除 model 的全局配置。"""
+    """迴歸: 替換 models 時應清理引用已刪除 model 的全域性配置。"""
 
     async def test_stale_model_refs_cleaned(self, client: TestClient, session: AsyncSession):
         resp = client.post("/api/v1/custom-providers", json=_PROVIDER_PAYLOAD)
         pid = resp.json()["id"]
 
-        # 模拟全局配置引用 gpt-4o
+        # 模擬全域性配置引用 gpt-4o
         svc = ConfigService(session)
         await svc.set_setting("default_text_backend", f"custom-{pid}/gpt-4o")
         await session.commit()
 
-        # 替换 models — 移除 gpt-4o，保留 dall-e-3
+        # 替換 models — 移除 gpt-4o，保留 dall-e-3
         with patch("server.routers.custom_providers._invalidate_caches", new_callable=AsyncMock):
             replace_resp = client.put(
                 f"/api/v1/custom-providers/{pid}/models",
@@ -626,12 +626,12 @@ class TestReplaceModelsCleansStaleRefs:
             )
         assert replace_resp.status_code == 200
 
-        # gpt-4o 被删除，引用它的全局配置应被清空
+        # gpt-4o 被刪除，引用它的全域性配置應被清空
         assert await svc.get_setting("default_text_backend", "") == ""
 
 
 class TestEmptyModelIdRejected:
-    """回归: 启用模型必须有非空 model_id。"""
+    """迴歸: 啟用模型必須有非空 model_id。"""
 
     def test_create_with_empty_model_id(self, client: TestClient):
         resp = client.post(
@@ -664,7 +664,7 @@ class TestEmptyModelIdRejected:
 
 
 class TestDuplicateModelIdRejected:
-    """回归: 同一供应商下不允许重复 model_id。"""
+    """迴歸: 同一供應商下不允許重複 model_id。"""
 
     def test_create_with_duplicate(self, client: TestClient):
         resp = client.post(
@@ -681,11 +681,11 @@ class TestDuplicateModelIdRejected:
             },
         )
         assert resp.status_code == 422
-        assert "重复" in resp.json()["detail"]
+        assert "重複" in resp.json()["detail"]
 
 
 class TestFullUpdateProvider:
-    """回归: PUT 全量更新端点应原子更新 provider + models。"""
+    """迴歸: PUT 全量更新端點應原子更新 provider + models。"""
 
     def test_full_update(self, client: TestClient):
         create_resp = client.post("/api/v1/custom-providers", json=_PROVIDER_PAYLOAD)
@@ -742,12 +742,12 @@ class TestFullUpdateProvider:
 
 
 class TestValidateBackendValueCustomPrefix:
-    """回归: validate_backend_value 应接受 custom-* 前缀。"""
+    """迴歸: validate_backend_value 應接受 custom-* 字首。"""
 
     def test_custom_prefix_accepted(self):
         from server.routers._validators import validate_backend_value
 
-        # 不应抛异常
+        # 不應拋異常
         validate_backend_value("custom-3/gpt-4o", "default_text_backend")
 
     def test_unknown_provider_rejected(self):
@@ -761,10 +761,10 @@ class TestValidateBackendValueCustomPrefix:
 
 
 class TestDuplicateDefaultRejected:
-    """回归: 同一 media_type 下最多只能有一个 is_default=True 的模型。"""
+    """迴歸: 同一 media_type 下最多只能有一個 is_default=True 的模型。"""
 
     def test_create_with_duplicate_defaults(self, client: TestClient):
-        """创建供应商时同一 media_type 有两个 is_default=true 的模型，期望 422。"""
+        """建立供應商時同一 media_type 有兩個 is_default=true 的模型，期望 422。"""
         resp = client.post(
             "/api/v1/custom-providers",
             json={
@@ -791,10 +791,10 @@ class TestDuplicateDefaultRejected:
             },
         )
         assert resp.status_code == 422
-        assert "默认模型" in resp.json()["detail"]
+        assert "預設模型" in resp.json()["detail"]
 
     def test_single_default_per_type_allowed(self, client: TestClient):
-        """不同 media_type 各一个 default，期望 201 成功。"""
+        """不同 media_type 各一個 default，期望 201 成功。"""
         resp = client.post(
             "/api/v1/custom-providers",
             json={
@@ -831,7 +831,7 @@ class TestDuplicateDefaultRejected:
 
 
 class TestPriceFieldConsistency:
-    """回归: price_output 不能脱离 price_input 单独存在；currency 可独立存在。"""
+    """迴歸: price_output 不能脫離 price_input 單獨存在；currency 可獨立存在。"""
 
     def test_output_without_input_rejected(self, client: TestClient):
         resp = client.post(
@@ -855,7 +855,7 @@ class TestPriceFieldConsistency:
         assert resp.status_code == 422
 
     def test_currency_without_input_accepted(self, client: TestClient):
-        """currency 可独立存在（用户先选币种，稍后填价格）。"""
+        """currency 可獨立存在（使用者先選幣種，稍後填價格）。"""
         resp = client.post(
             "/api/v1/custom-providers",
             json={

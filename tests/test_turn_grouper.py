@@ -175,12 +175,12 @@ class TestTurnGrouper:
 
     def test_untyped_live_blocks_are_normalized_and_attached(self):
         raw_messages = [
-            {"type": "user", "content": "使用 manga-workflow 开始项目"},
+            {"type": "user", "content": "使用 manga-workflow 開始專案"},
             {
                 "type": "assistant",
                 "content": [
                     {
-                        "text": "我来启动 workflow",
+                        "text": "我來啟動 workflow",
                     }
                 ],
             },
@@ -208,7 +208,7 @@ class TestTurnGrouper:
                 "type": "user",
                 "content": [
                     {
-                        "text": "Base directory for this skill: /tmp/.claude/skills/manga-workflow/SKILL.md\n\n# 视频工作流",
+                        "text": "Base directory for this skill: /tmp/.claude/skills/manga-workflow/SKILL.md\n\n# 影片工作流",
                     }
                 ],
             },
@@ -228,7 +228,7 @@ class TestTurnGrouper:
 
     def test_subagent_parent_user_text_is_filtered_from_assistant_turn(self):
         raw_messages = [
-            {"type": "user", "content": "继续制作"},
+            {"type": "user", "content": "繼續製作"},
             {
                 "type": "assistant",
                 "content": [
@@ -236,13 +236,13 @@ class TestTurnGrouper:
                         "type": "tool_use",
                         "id": "task-1",
                         "name": "Task",
-                        "input": {"subagent_type": "Explore", "description": "检查项目状态"},
+                        "input": {"subagent_type": "Explore", "description": "檢查專案狀態"},
                     }
                 ],
             },
             {
                 "type": "user",
-                "content": [{"type": "text", "text": "正在分析项目结构..."}],
+                "content": [{"type": "text", "text": "正在分析專案結構..."}],
                 "parent_tool_use_id": "task-1",
             },
         ]
@@ -255,7 +255,7 @@ class TestTurnGrouper:
 
     def test_subagent_user_text_without_assistant_turn_is_dropped(self):
         raw_messages = [
-            {"type": "user", "content": "请继续"},
+            {"type": "user", "content": "請繼續"},
             {
                 "type": "user",
                 "content": [{"type": "text", "text": "subagent telemetry"}],
@@ -268,7 +268,7 @@ class TestTurnGrouper:
 
     def test_subagent_tool_result_still_attaches_to_task_tool_use(self):
         raw_messages = [
-            {"type": "user", "content": "继续制作"},
+            {"type": "user", "content": "繼續製作"},
             {
                 "type": "assistant",
                 "content": [
@@ -276,7 +276,7 @@ class TestTurnGrouper:
                         "type": "tool_use",
                         "id": "task-attach-1",
                         "name": "Task",
-                        "input": {"subagent_type": "Explore", "description": "检查项目状态"},
+                        "input": {"subagent_type": "Explore", "description": "檢查專案狀態"},
                     }
                 ],
             },
@@ -426,7 +426,7 @@ class TestTurnGrouper:
                 "content": [
                     {
                         "type": "text",
-                        "text": "请用 Glob 查找 .claude/skills/**/SKILL.md 下的所有 skill 文件",
+                        "text": "請用 Glob 查詢 .claude/skills/**/SKILL.md 下的所有 skill 檔案",
                     }
                 ],
                 "parent_tool_use_id": "agent-1",

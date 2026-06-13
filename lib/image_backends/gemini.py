@@ -1,4 +1,4 @@
-"""GeminiImageBackend — 从 GeminiClient 提取的图片生成逻辑。"""
+"""GeminiImageBackend — 從 GeminiClient 提取的圖片生成邏輯。"""
 
 from __future__ import annotations
 
@@ -22,15 +22,15 @@ from lib.system_config import resolve_vertex_credentials_path
 
 logger = logging.getLogger(__name__)
 
-# 跳过名称推断的文件名模式
+# 跳過名稱推斷的檔名模式
 SKIP_NAME_PATTERNS = ("scene_", "storyboard_", "output_")
 
-# 默认图片模型
+# 預設圖片模型
 DEFAULT_IMAGE_MODEL = "gemini-3.1-flash-image-preview"
 
 
 class GeminiImageBackend:
-    """Gemini 图片生成后端，支持 AI Studio 和 Vertex AI。"""
+    """Gemini 圖片生成後端，支援 AI Studio 和 Vertex AI。"""
 
     def __init__(
         self,
@@ -60,7 +60,7 @@ class GeminiImageBackend:
                 credentials_file = resolve_vertex_credentials_path(Path(__file__).parent.parent.parent)
 
             if credentials_file is None:
-                raise ValueError("未找到 Vertex AI 凭证文件")
+                raise ValueError("未找到 Vertex AI 憑證檔案")
 
             with open(credentials_file) as f:
                 creds_data = json_module.load(f)
@@ -79,7 +79,7 @@ class GeminiImageBackend:
         else:
             _api_key = api_key or os.environ.get("GEMINI_API_KEY")
             if not _api_key:
-                raise ValueError("Gemini API Key 未提供。请在「全局设置 → 供应商」页面配置 API Key。")
+                raise ValueError("Gemini API Key 未提供。請在「全域性設定 → 供應商」頁面配置 API Key。")
 
             effective_base_url = normalize_base_url(base_url or os.environ.get("GEMINI_BASE_URL"))
             http_options = {"base_url": effective_base_url} if effective_base_url else None
@@ -104,15 +104,15 @@ class GeminiImageBackend:
 
     @with_retry_async(max_attempts=5, backoff_seconds=(2, 4, 8, 16, 32))
     async def generate(self, request: ImageGenerationRequest) -> ImageGenerationResult:
-        """异步生成图片。"""
+        """非同步生成圖片。"""
         # 1. 限流
         if self._rate_limiter:
             await self._rate_limiter.acquire_async(self._image_model)
 
-        # 2. 构建 contents（参考图 + prompt）
+        # 2. 構建 contents（參考圖 + prompt）
         contents = self._build_contents_with_labeled_refs(request.prompt, request.reference_images)
 
-        # 3. 构建配置
+        # 3. 構建配置
         config = self._types.GenerateContentConfig(
             response_modalities=["IMAGE"],
             image_config=self._types.ImageConfig(
@@ -121,12 +121,12 @@ class GeminiImageBackend:
             ),
         )
 
-        # 4. 调用异步 API
+        # 4. 呼叫非同步 API
         response = await self._client.aio.models.generate_content(
             model=self._image_model, contents=contents, config=config
         )
 
-        # 5. 解析响应并保存
+        # 5. 解析響應並儲存
         self._process_image_response(response, request.output_path)
 
         return ImageGenerationResult(
@@ -137,13 +137,13 @@ class GeminiImageBackend:
 
     @staticmethod
     def _load_image_detached(image_path: str | Path) -> Image.Image:
-        """从路径加载图片并与底层文件句柄解绑。"""
+        """從路徑載入圖片並與底層檔案控制代碼解綁。"""
         with Image.open(image_path) as img:
             return img.copy()
 
     @staticmethod
     def _extract_name_from_path(image_path: str | Path) -> str | None:
-        """从图片路径推断名称。跳过 scene_/storyboard_/output_ 前缀的文件。"""
+        """從圖片路徑推斷名稱。跳過 scene_/storyboard_/output_ 字首的檔案。"""
         path = Path(image_path)
         filename = path.stem
         for pattern in SKIP_NAME_PATTERNS:
@@ -157,16 +157,16 @@ class GeminiImageBackend:
         reference_images: list[ReferenceImage] | None = None,
     ) -> list:
         """
-        构建带名称标签的 contents 列表。
+        構建帶名稱標籤的 contents 列表。
 
-        格式：[标签1, 图片1, 标签2, 图片2, ..., prompt]
+        格式：[標籤1, 圖片1, 標籤2, 圖片2, ..., prompt]
         """
         contents: list = []
 
         if reference_images:
             labeled_refs: list[str] = []
             for ref in reference_images:
-                # 确定标签
+                # 確定標籤
                 label = ref.label.strip() if ref.label else ""
                 name = label or self._extract_name_from_path(ref.path)
 
@@ -174,24 +174,24 @@ class GeminiImageBackend:
                     labeled_refs.append(name)
                     contents.append(name)
 
-                # 加载图片
+                # 載入圖片
                 loaded_img = self._load_image_detached(ref.path)
                 contents.append(loaded_img)
 
             if labeled_refs:
-                logger.debug("参考图片标签: %s", ", ".join(labeled_refs))
+                logger.debug("參考圖片標籤: %s", ", ".join(labeled_refs))
 
-        # prompt 放最后
+        # prompt 放最後
         contents.append(prompt)
         return contents
 
     @staticmethod
     def _process_image_response(response, output_path: Path) -> Image.Image:
-        """解析图片生成响应并保存到文件。"""
+        """解析圖片生成響應並儲存到檔案。"""
         for part in response.parts:
             if part.inline_data is not None:
                 image = part.as_image()
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 image.save(output_path)
                 return image
-        raise RuntimeError("API 未返回图片")
+        raise RuntimeError("API 未返回圖片")

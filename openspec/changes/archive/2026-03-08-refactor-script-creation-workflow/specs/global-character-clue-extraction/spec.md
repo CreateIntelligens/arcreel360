@@ -9,16 +9,16 @@
 - **THEN** subagent 读取 `projects/{project_name}/source/` 下的所有小说文本，提取全部角色和线索，写入 project.json
 
 #### Scenario: 分析指定章节范围
-- **WHEN** subagent 被 dispatch 且指定了分析范围（如"第1-3章"或"某个文件"）
+- **WHEN** subagent 被 dispatch 且指定了分析范围（如"第1-3章"或"某個文件"）
 - **THEN** subagent 只分析指定范围的文本，提取该范围内的角色和线索
 
 ### Requirement: 角色/线索提取须支持增量追加模式
 
-当 project.json 中已有角色/线索时，subagent SHALL 对比现有数据，只追加新发现的角色和线索，不覆盖已有定义。
+当 project.json 中已有角色/线索时，subagent SHALL 对比現有数据，只追加新发现的角色和线索，不覆盖已有定义。
 
 #### Scenario: 已有角色列表时追加新角色
-- **WHEN** project.json 中已有 5 个角色定义，subagent 分析后发现 3 个新角色
-- **THEN** subagent 只将 3 个新角色追加到 project.json，保留原有 5 个角色不变
+- **WHEN** project.json 中已有 5 個角色定义，subagent 分析后发现 3 個新角色
+- **THEN** subagent 只将 3 個新角色追加到 project.json，保留原有 5 個角色不变
 
 #### Scenario: 已有角色的描述不被覆盖
 - **WHEN** project.json 中某角色已有手动修改过的 description 或 character_sheet
@@ -40,8 +40,8 @@
 
 提取的线索 SHALL 标记类型（location/prop）和重要性（major/minor）。
 
-#### Scenario: 场景类线索标记为 location
-- **WHEN** 线索为环境/场景（如"竹林深处"、"客栈大堂"）
+#### Scenario: 場景类线索标记为 location
+- **WHEN** 线索为环境/場景（如"竹林深处"、"客栈大堂"）
 - **THEN** 线索 type 标记为 "location"，描述包含空间结构、光线氛围
 
 #### Scenario: 道具类线索标记为 prop
@@ -64,8 +64,8 @@ subagent 写入 project.json 后 SHALL 调用数据验证确保完整性。
 - **WHEN** subagent 完成角色/线索写入
 - **THEN** subagent 调用 `validate_project(project_name)` 验证 project.json 结构和引用完整性
 
-#### Scenario: 验证失败时修复
-- **WHEN** validate_project 返回验证失败
+#### Scenario: 验证失敗时修复
+- **WHEN** validate_project 返回验证失敗
 - **THEN** subagent 根据错误信息修复数据，重新验证直到通过
 
 ### Requirement: subagent 须返回结构化摘要
@@ -74,7 +74,7 @@ subagent 写入 project.json 后 SHALL 调用数据验证确保完整性。
 
 #### Scenario: 返回角色摘要
 - **WHEN** subagent 完成角色提取
-- **THEN** 返回内容包含：新增角色数量、角色名称列表、每个角色的一句话描述
+- **THEN** 返回内容包含：新增角色数量、角色名称列表、每個角色的一句话描述
 
 #### Scenario: 返回线索摘要
 - **WHEN** subagent 完成线索提取

@@ -57,7 +57,11 @@ export function ContentBlockRenderer({ block, index }: ContentBlockRendererProps
             {block.is_error ? "執行失敗" : "工具結果"}
           </div>
           <pre className="text-xs text-slate-300 overflow-x-auto whitespace-pre-wrap">
-            {block.content || ""}
+            {typeof block.content === "string"
+              ? block.content
+              : block.content
+                ? JSON.stringify(block.content, null, 2)
+                : ""}
           </pre>
         </div>
       );
@@ -124,7 +128,7 @@ function ChatImageBlock({ src }: Readonly<{ src: string }>) {
         type="button"
         className="mt-1 cursor-pointer border-0 bg-transparent p-0"
         onClick={() => setOpen(true)}
-        aria-label="點擊放大圖片"
+        aria-label="點選放大圖片"
       >
         <img
           src={src}

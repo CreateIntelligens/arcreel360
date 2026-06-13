@@ -19,8 +19,8 @@
 - 自定义供应商的 CRUD
 - 动态模型列表管理（自动发现 + 手动添加）
 - 用户自定义定价
-- 轻量 Backend 包装类（复用现有 OpenAI/Gemini 后端）
-- 与 ConfigResolver、CostCalculator、用量统计的集成
+- 轻量 Backend 包装类（复用現有 OpenAI/Gemini 后端）
+- 与 ConfigResolver、CostCalculator、用量統計的集成
 - 完整前端 UI
 
 ### #189 遗留改进项
@@ -38,12 +38,12 @@
 
 ## 架构方案：平行轨道
 
-预置供应商保持现有 `PROVIDER_REGISTRY` 不变。自定义供应商有独立的 API 端点、Service、前端区域。两者在以下节点汇合：
+预置供应商保持現有 `PROVIDER_REGISTRY` 不变。自定义供应商有独立的 API 端点、Service、前端区域。两者在以下节点汇合：
 
-1. **Backend 选择** — ConfigResolver 解析默认 backend 时同时查询预置和自定义供应商
-2. **模型选择下拉框** — `/api/v1/system-config/options` 合并两者的可用模型
+1. **Backend 選择** — ConfigResolver 解析默认 backend 时同时查询预置和自定义供应商
+2. **模型選择下拉框** — `/api/v1/system-config/options` 合并两者的可用模型
 3. **费用记录** — ApiCall 表通过 `provider` 字段（`custom-{id}`）统一记录
-4. **用量统计** — 后端 API 返回 `display_name`，预置供应商从 `PROVIDER_REGISTRY` 取，自定义供应商 join `custom_provider` 表取
+4. **用量統計** — 后端 API 返回 `display_name`，预置供应商从 `PROVIDER_REGISTRY` 取，自定义供应商 join `custom_provider` 表取
 
 ---
 
@@ -57,10 +57,10 @@
 | `display_name` | str | 用户可见名称，如「我的 NewAPI」 |
 | `api_format` | str | `"openai"` 或 `"google"` |
 | `base_url` | str | API 基础地址 |
-| `api_key` | str | 敏感字段，DB 存原文，API 响应时掩蔽（复用现有 `mask_secret()`） |
+| `api_key` | str | 敏感字段，DB 存原文，API 响应时掩蔽（复用現有 `mask_secret()`） |
 | `created_at` / `updated_at` | datetime | 时间戳 |
 
-设计选择：`api_key` 和 `base_url` 直接存在供应商表中，不复用 `provider_credential` 表。自定义供应商是「一个供应商 = 一个中转站地址 + 一个 key」的简单模型，不需要多凭证切换。
+设计選择：`api_key` 和 `base_url` 直接存在供应商表中，不复用 `provider_credential` 表。自定义供应商是「一個供应商 = 一個中转站地址 + 一個 key」的简单模型，不需要多凭证切换。
 
 ### 新增表 `custom_provider_model`
 
@@ -72,7 +72,7 @@
 | `display_name` | str | 显示名称 |
 | `media_type` | str | `"text"` / `"image"` / `"video"` |
 | `is_default` | bool | 该供应商下该媒体类型的默认模型 |
-| `is_enabled` | bool | 是否启用（用户勾选） |
+| `is_enabled` | bool | 是否启用（用户勾選） |
 | `price_unit` | str NULL | 计费单位：`"token"` / `"image"` / `"second"` |
 | `price_input` | float NULL | 输入价格（text: /百万 token，image: /张，video: /秒） |
 | `price_output` | float NULL | 输出价格（仅 text 有，其他为 NULL） |
@@ -81,9 +81,9 @@
 
 唯一约束：`(provider_id, model_id)`。
 
-`is_default` 约束：每个 `(provider_id, media_type)` 组合最多一个 `is_default=True`，应用层保证。
+`is_default` 约束：每個 `(provider_id, media_type)` 组合最多一個 `is_default=True`，应用层保证。
 
-价格可选：全部 NULL 表示不计费（Ollama 等本地场景）。
+价格可選：全部 NULL 表示不计费（Ollama 等本地場景）。
 
 ---
 
@@ -91,7 +91,7 @@
 
 ### 轻量包装类
 
-三个包装类（`CustomTextBackend`、`CustomImageBackend`、`CustomVideoBackend`），每个约 30 行。持有一个内部 delegate（现有的 OpenAI/Gemini Backend 实例），覆盖 `name` 和 `model` 属性：
+三個包装类（`CustomTextBackend`、`CustomImageBackend`、`CustomVideoBackend`），每個约 30 行。持有一個内部 delegate（現有的 OpenAI/Gemini Backend 实例），覆盖 `name` 和 `model` 属性：
 
 ```python
 # lib/custom_provider/backends.py
@@ -125,7 +125,7 @@ class CustomTextBackend:
 # lib/custom_provider/factory.py
 async def create_custom_backend(provider_id: str, model_id: str, media_type: str):
     # 1. 从 DB 查询 custom_provider + custom_provider_model
-    # 2. 根据 api_format 选择内部 delegate：
+    # 2. 根据 api_format 選择内部 delegate：
     #    - "openai" → OpenAITextBackend / OpenAIImageBackend / OpenAIVideoBackend
     #    - "google" → GeminiTextBackend / GeminiImageBackend / GeminiVideoBackend
     # 3. 用 base_url + api_key + model_id 初始化 delegate
@@ -148,7 +148,7 @@ async def create_custom_backend(provider_id: str, model_id: str, media_type: str
 def calculate_cost(self, provider, call_type, *, model, ...):
     if provider.startswith("custom-"):
         return self._calculate_custom_cost(provider, call_type, model=model, ...)
-    # ... 现有预置供应商逻辑不变
+    # ... 現有预置供应商逻辑不变
 ```
 
 `_calculate_custom_cost()` 从 DB 查询 `custom_provider_model` 的价格字段：
@@ -163,7 +163,7 @@ def calculate_cost(self, provider, call_type, *, model, ...):
 
 ### UsageTracker 透传
 
-ApiCall 记录中 `provider` 存 `custom-{id}`，`model` 存实际模型 ID。用量统计 API 返回时 join `custom_provider` 表取 `display_name`。
+ApiCall 记录中 `provider` 存 `custom-{id}`，`model` 存实际模型 ID。用量統計 API 返回时 join `custom_provider` 表取 `display_name`。
 
 ---
 
@@ -177,7 +177,7 @@ ApiCall 记录中 `provider` 存 `custom-{id}`，`model` 存实际模型 ID。�
 - `update_provider(provider_id, ...)` → 更新配置
 - `delete_provider(provider_id)` → 级联删除关联模型
 - `list_providers()` → 返回所有自定义供应商及其状态
-- `get_provider(provider_id)` → 单个供应商详情（含模型列表）
+- `get_provider(provider_id)` → 单個供应商详情（含模型列表）
 
 **模型管理：**
 
@@ -205,7 +205,7 @@ discover_models(api_format, base_url, api_key):
   3. Google 格式：从模型 supported_generation_methods 推断
      （含 generateContent → text，含 generateImages → image，含 predictVideo → video），
      无法获取则回退关键词推断
-  4. 每个媒体类型的第一个模型标记为 is_default
+  4. 每個媒体类型的第一個模型标记为 is_default
   5. 返回推断结果（不写 DB），前端展示后用户确认再保存
 ```
 
@@ -221,7 +221,7 @@ discover_models(api_format, base_url, api_key):
 |------|------|------|
 | GET | `/` | 列出所有自定义供应商（含模型列表和状态） |
 | POST | `/` | 创建供应商 + 模型列表（一次性） |
-| GET | `/{id}` | 单个供应商详情 |
+| GET | `/{id}` | 单個供应商详情 |
 | PATCH | `/{id}` | 更新供应商配置 |
 | DELETE | `/{id}` | 删除供应商（级联删除模型） |
 
@@ -229,10 +229,10 @@ discover_models(api_format, base_url, api_key):
 
 | 方法 | 端点 | 说明 |
 |------|------|------|
-| PUT | `/{id}/models` | 批量替换整个模型列表（删除旧列表，写入新列表） |
-| POST | `/{id}/models` | 添加单个模型 |
-| PATCH | `/{id}/models/{model_id}` | 更新单个模型 |
-| DELETE | `/{id}/models/{model_id}` | 删除单个模型 |
+| PUT | `/{id}/models` | 批量替换整個模型列表（删除旧列表，写入新列表） |
+| POST | `/{id}/models` | 添加单個模型 |
+| PATCH | `/{id}/models/{model_id}` | 更新单個模型 |
+| DELETE | `/{id}/models/{model_id}` | 删除单個模型 |
 
 **无状态操作：**
 
@@ -241,7 +241,7 @@ discover_models(api_format, base_url, api_key):
 | POST | `/discover` | 模型发现 |
 | POST | `/test` | 连接测试 |
 
-**汇合点：** `/api/v1/system-config/options` 扩展，将自定义供应商中已启用的模型追加到对应媒体类型的选项列表，格式 `"custom-{id}:{model_id}"`。
+**汇合点：** `/api/v1/system-config/options` 扩展，将自定义供应商中已启用的模型追加到对应媒体类型的選項列表，格式 `"custom-{id}:{model_id}"`。
 
 ---
 
@@ -267,15 +267,15 @@ discover_models(api_format, base_url, api_key):
 
 1. 基础信息：名称、API 格式（下拉）、Base URL、API Key
 2. [获取模型列表] → 调用 `/discover`
-3. 模型列表：勾选启用、修正媒体类型、标记默认、填写价格
+3. 模型列表：勾選启用、修正媒体类型、标记默认、填写价格
 4. [测试连接] → 调用 `/test`
 5. [保存] → 一次性提交
 
 ### 集成点
 
-- **模型选择器**：`system-config/options` 已包含自定义模型，`ProviderModelSelect` 无需特殊处理
+- **模型選择器**：`system-config/options` 已包含自定义模型，`ProviderModelSelect` 无需特殊处理
 - **ProviderIcon**：已有 fallback（显示首字母），自定义供应商自动适用
-- **用量统计**：后端返回 `display_name`，前端改用 `display_name ?? provider`
+- **用量統計**：后端返回 `display_name`，前端改用 `display_name ?? provider`
 
 ### 新增文件
 
@@ -294,13 +294,13 @@ discover_models(api_format, base_url, api_key):
 
 文件：`lib/text_backends/openai.py`
 
-参照 Gemini 后端模式：原生 `response_format` 失败时捕获异常，回退到 Instructor 库解析。此改进同时惠及自定义供应商（OpenAI 兼容的中转站可能不支持 `response_format`）。
+参照 Gemini 后端模式：原生 `response_format` 失敗时捕获异常，回退到 Instructor 库解析。此改进同时惠及自定义供应商（OpenAI 兼容的中转站可能不支持 `response_format`）。
 
 ### 7.2 quality 参数传递链
 
 文件：`lib/image_backends/base.py`、`lib/image_backends/openai.py`、`lib/usage_tracker.py`
 
-`ImageGenerationResult` 新增可选字段 `quality: str | None`，`OpenAIImageBackend` 填入实际值，`UsageTracker` 透传到 `CostCalculator`。
+`ImageGenerationResult` 新增可選字段 `quality: str | None`，`OpenAIImageBackend` 填入实际值，`UsageTracker` 透传到 `CostCalculator`。
 
 ### 7.3 Video resolution 参数映射
 
@@ -343,7 +343,7 @@ discover_models(api_format, base_url, api_key):
 | `lib/image_backends/openai.py` | quality 传递 |
 | `lib/image_backends/base.py` | `ImageGenerationResult` 新增 quality 字段 |
 | `lib/video_backends/openai.py` | resolution 映射 |
-| `lib/db/repositories/usage_repo.py` | 用量统计 join display_name |
+| `lib/db/repositories/usage_repo.py` | 用量統計 join display_name |
 | `server/routers/system_config.py` | options 合并自定义模型 |
 | `server/routers/usage.py` | 返回 display_name |
 | `server/app.py` | 注册新路由 |

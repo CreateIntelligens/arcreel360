@@ -100,8 +100,8 @@ function rowToInput(r: ModelRow): CustomProviderModelInput {
 
 function priceLabel(mediaType: MediaType): { input: string; output: string } {
   if (mediaType === "video") return { input: "/秒", output: "" };
-  if (mediaType === "image") return { input: "/张", output: "" };
-  return { input: "/M输入", output: "/M输出" };
+  if (mediaType === "image") return { input: "/張", output: "" };
+  return { input: "/M輸入", output: "/M輸出" };
 }
 
 // ---------------------------------------------------------------------------
@@ -227,7 +227,7 @@ export function CustomProviderForm({ existing, onSaved, onCancel }: CustomProvid
     setSaving(true);
     try {
       if (isEdit && existing) {
-        // 单个事务原子更新 provider + models
+        // 單個事務原子更新 provider + models
         await API.fullUpdateCustomProvider(existing.id, {
           display_name: displayName,
           base_url: baseUrl,
@@ -290,11 +290,11 @@ export function CustomProviderForm({ existing, onSaved, onCancel }: CustomProvid
     const trimmed = baseUrl.trim().replace(/\/+$/, "");
     if (!trimmed) return null;
     if (apiFormat === "openai") {
-      // OpenAI SDK 需要 /v1 后缀，后端自动补全
+      // OpenAI SDK 需要 /v1 字尾，後端自動補全
       const base = trimmed.match(/\/v\d+$/) ? trimmed : `${trimmed}/v1`;
       return `${base}/models`;
     }
-    // Google SDK 自动拼接 /v1beta，后端会剥离用户误填的版本路径
+    // Google SDK 自動拼接 /v1beta，後端會剝離使用者誤填的版本路徑
     const base = trimmed.replace(/\/v\d+\w*$/, "");
     return `${base}/v1beta/models`;
   })();
@@ -312,7 +312,7 @@ export function CustomProviderForm({ existing, onSaved, onCancel }: CustomProvid
         {/* Display name */}
         <div>
           <label htmlFor="cp-name" className="mb-1.5 block text-sm text-gray-400">
-            名称 <span className="text-red-400">*</span>
+            名稱 <span className="text-red-400">*</span>
           </label>
           <input
             id="cp-name"
@@ -476,7 +476,7 @@ export function CustomProviderForm({ existing, onSaved, onCancel }: CustomProvid
                       <select
                         value={m.media_type}
                         onChange={(e) => updateModel(m.key, { media_type: e.target.value as MediaType })}
-                        aria-label="媒體類型"
+                        aria-label="媒體型別"
                         className={selectCls}
                       >
                         {MEDIA_TYPE_OPTIONS.map((o) => (
@@ -567,7 +567,7 @@ export function CustomProviderForm({ existing, onSaved, onCancel }: CustomProvid
         {/* Empty model hint */}
         {models.length === 0 && (
           <div className="rounded-xl border border-dashed border-gray-700 p-4 text-center text-sm text-gray-500">
-            點擊「取得模型清單」自動探索，或
+            點選「取得模型清單」自動探索，或
             <button
               type="button"
               onClick={addManualModel}

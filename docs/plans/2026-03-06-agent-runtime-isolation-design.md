@@ -2,7 +2,7 @@
 
 ## 背景
 
-项目的 Claude Code 运行环境配置（`.claude/`、`CLAUDE.md`）混合了两种场景：
+项目的 Claude Code 运行环境配置（`.claude/`、`CLAUDE.md`）混合了两种場景：
 
 1. **智能体态**（WebUI 内嵌 Claude Agent SDK）：面向终端用户的视频创作助手
 2. **开发态**（开发者本地 CLI）：面向开发者的编码助手
@@ -137,7 +137,7 @@ def _build_system_prompt(self, project_name: str) -> str:
     profile_prompt_path = self.project_root / "agent_runtime_profile" / "CLAUDE.md"
     base_prompt = profile_prompt_path.read_text(encoding="utf-8")
 
-    # 2. 拼接项目上下文（现有逻辑）
+    # 2. 拼接项目上下文（現有逻辑）
     ...
 ```
 
@@ -201,7 +201,7 @@ COPY agent_runtime_profile/ agent_runtime_profile/
 - Skill 脚本的 `lib/` import 路径不变（Python path 不受文件位置影响）
 - 前端 API 调用无需修改
 - `generation_queue_client.py` 路径不变
-- 现有项目需运行一次迁移脚本补建符号链接
+- 現有项目需运行一次迁移脚本补建符号链接
 
 ## 隔离效果总结
 

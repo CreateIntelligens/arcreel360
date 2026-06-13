@@ -1,5 +1,5 @@
 #!/bin/bash
-# 下载 Claude Agent SDK 文档到当前目录
+# 下載 Claude Agent SDK 文件到當前目錄
 # 用法: cd docs/claude-agent-sdk-docs && bash download_docs.sh
 
 set -euo pipefail
@@ -8,7 +8,7 @@ BASE_URL="https://platform.claude.com/docs/en/agent-sdk"
 OUTPUT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 DOCS=(
-  # 顶层
+  # 頂層
   "overview"
   "quickstart"
   "agent-loop"
@@ -39,8 +39,8 @@ DOCS=(
   "python"
 )
 
-echo "下载目录: $OUTPUT_DIR"
-echo "共 ${#DOCS[@]} 个文档待下载"
+echo "下載目錄: $OUTPUT_DIR"
+echo "共 ${#DOCS[@]} 個文件待下載"
 echo "---"
 
 success=0
@@ -50,28 +50,28 @@ for doc in "${DOCS[@]}"; do
   url="${BASE_URL}/${doc}.md"
   output="${OUTPUT_DIR}/${doc}.md"
 
-  echo -n "下载 ${doc}.md ... "
+  echo -n "下載 ${doc}.md ... "
 
   if curl -fsSL "$url" -o "$output" 2>/dev/null; then
     size=$(wc -c < "$output" | tr -d ' ')
     echo "成功 (${size} bytes)"
     ((success++))
   else
-    echo "失败，尝试从页面提取..."
-    # 如果 .md 直接下载失败，尝试抓取 HTML 页面
+    echo "失敗，嘗試從頁面提取..."
+    # 如果 .md 直接下載失敗，嘗試抓取 HTML 頁面
     page_url="${BASE_URL}/${doc}"
     if curl -fsSL "$page_url" -o "${output}.html" 2>/dev/null; then
-      # 保留 HTML 备用，标记需要手动处理
+      # 保留 HTML 備用，標記需要手動處理
       mv "${output}.html" "$output"
       size=$(wc -c < "$output" | tr -d ' ')
-      echo "已保存 HTML (${size} bytes)"
+      echo "已儲存 HTML (${size} bytes)"
       ((success++))
     else
-      echo "失败"
+      echo "失敗"
       ((fail++))
     fi
   fi
 done
 
 echo "---"
-echo "完成: ${success} 成功, ${fail} 失败"
+echo "完成: ${success} 成功, ${fail} 失敗"

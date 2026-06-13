@@ -107,4 +107,29 @@ describe("useProjectAssetSync", () => {
       expect(API.getProject).toHaveBeenCalledTimes(1);
     });
   });
+
+  it("pushes a toast notification when a task fails", async () => {
+    renderHook(() => useProjectAssetSync("demo"));
+
+    act(() => {
+      useTasksStore.getState().setTasks([makeTask({ status: "running" })]);
+    });
+
+    act(() => {
+      useTasksStore.getState().setTasks([
+        makeTask({
+          status: "failed",
+          error_message: "Sensitive content detected",
+          updated_at: "2026-02-01T00:01:00Z",
+        }),
+      ]);
+    });
+
+    await waitFor(() => {
+      const toast = useAppStore.getState().toast;
+      expect(toast).not.toBeNull();
+      expect(toast?.text).toContain("任務失敗 [SEG-1] 分鏡圖生成失敗：Sensitive content detected");
+      expect(toast?.tone).toBe("error");
+    });
+  });
 });

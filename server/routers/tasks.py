@@ -1,5 +1,5 @@
 """
-任务队列与 SSE 路由。
+任務佇列與 SSE 路由。
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ def _parse_last_event_id(value: str | None) -> int | None:
 
 
 def _transform_task_event(raw_event: dict, stats: dict) -> dict:
-    """将原始 task_events 行转换为前端期望的 TaskStreamTaskPayload 结构。"""
+    """將原始 task_events 行轉換為前端期望的 TaskStreamTaskPayload 結構。"""
     event_type = raw_event.get("event_type", "")
     action = "created" if event_type == "queued" else "updated"
     return {
@@ -155,10 +155,41 @@ async def stream_tasks(
         await asyncio.sleep(poll_interval)
 
 
+@router.get("/tasks/{task_id}/cancel-preview")
+async def cancel_preview(task_id: str, _user: CurrentUser):
+    queue = get_task_queue()
+    try:
+        return await queue.get_cancel_preview(task_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/tasks/{task_id}/cancel")
+async def cancel_task(task_id: str, _user: CurrentUser):
+    queue = get_task_queue()
+    try:
+        return await queue.cancel_task(task_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/projects/{project_name}/tasks/cancel-all-preview")
+async def cancel_all_preview(project_name: str, _user: CurrentUser):
+    queue = get_task_queue()
+    queued_count = await queue.get_cancel_all_preview(project_name)
+    return {"queued_count": queued_count}
+
+
+@router.post("/projects/{project_name}/tasks/cancel-all")
+async def cancel_all_queued(project_name: str, _user: CurrentUser):
+    queue = get_task_queue()
+    return await queue.cancel_all_queued(project_name)
+
+
 @router.get("/tasks/{task_id}")
 async def get_task(task_id: str, _user: CurrentUser):
     queue = get_task_queue()
     task = await queue.get_task(task_id)
     if not task:
-        raise HTTPException(status_code=404, detail=f"任务 '{task_id}' 不存在")
+        raise HTTPException(status_code=404, detail=f"任務 '{task_id}' 不存在")
     return {"task": task}

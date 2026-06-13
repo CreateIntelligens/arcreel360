@@ -43,10 +43,10 @@ function AvatarPopover({
           <img
             src={API.getFileUrl(projectName, character.character_sheet, sheetFp)}
             alt={name}
-            className="h-[120px] w-[90px] shrink-0 rounded object-cover"
+            className="h-[7.5rem] w-[5.625rem] shrink-0 rounded object-cover"
           />
         ) : (
-          <div className="flex h-[120px] w-[90px] shrink-0 items-center justify-center rounded bg-gray-800">
+          <div className="flex h-[7.5rem] w-[5.625rem] shrink-0 items-center justify-center rounded bg-gray-800">
             <User className="h-8 w-8 text-gray-600" />
           </div>
         )}

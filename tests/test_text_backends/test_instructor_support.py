@@ -1,4 +1,4 @@
-"""instructor_support 模块测试。"""
+"""instructor_support 模組測試。"""
 
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -19,7 +19,7 @@ class SampleModel(BaseModel):
 
 class TestGenerateStructuredViaInstructor:
     def test_returns_json_and_tokens(self):
-        """正确返回 JSON 文本和 token 统计。"""
+        """正確返回 JSON 文字和 token 統計。"""
         mock_client = MagicMock()
         sample = SampleModel(name="Alice", age=30)
         mock_completion = SimpleNamespace(
@@ -46,7 +46,7 @@ class TestGenerateStructuredViaInstructor:
         assert output_tokens == 20
 
     def test_passes_mode_and_retries(self):
-        """正确传递 mode 和 max_retries 参数。"""
+        """正確傳遞 mode 和 max_retries 引數。"""
         from instructor import Mode
 
         mock_client = MagicMock()
@@ -72,9 +72,9 @@ class TestGenerateStructuredViaInstructor:
                 max_retries=3,
             )
 
-            # 验证 from_openai 使用了正确的 mode
+            # 驗證 from_openai 使用了正確的 mode
             mock_instructor.from_openai.assert_called_once_with(mock_client, mode=Mode.MD_JSON)
-            # 验证 create_with_completion 使用了正确的参数
+            # 驗證 create_with_completion 使用了正確的引數
             mock_patched.chat.completions.create_with_completion.assert_called_once_with(
                 model="test-model",
                 messages=[{"role": "user", "content": "test"}],
@@ -83,7 +83,7 @@ class TestGenerateStructuredViaInstructor:
             )
 
     def test_handles_none_usage(self):
-        """completion.usage 为 None 时返回 None token 统计。"""
+        """completion.usage 為 None 時返回 None token 統計。"""
         mock_client = MagicMock()
         sample = SampleModel(name="Charlie", age=35)
         mock_completion = SimpleNamespace(usage=None)
@@ -109,10 +109,10 @@ class TestGenerateStructuredViaInstructor:
 
 
 class TestInstructorFallbackSync:
-    """instructor_fallback_sync 高层函数测试。"""
+    """instructor_fallback_sync 高層函式測試。"""
 
     def test_pydantic_schema_uses_instructor(self):
-        """Pydantic schema 走 instructor 路径，返回正确的 TextGenerationResult。"""
+        """Pydantic schema 走 instructor 路徑，返回正確的 TextGenerationResult。"""
         sample = SampleModel(name="Alice", age=30)
 
         with patch(
@@ -134,7 +134,7 @@ class TestInstructorFallbackSync:
         assert result.output_tokens == 20
 
     def test_dict_schema_uses_json_object(self):
-        """dict schema 走 json_object 路径。"""
+        """dict schema 走 json_object 路徑。"""
         mock_client = MagicMock()
         mock_response = SimpleNamespace(
             choices=[SimpleNamespace(message=SimpleNamespace(content='{"key": "value"}'))],
@@ -159,10 +159,10 @@ class TestInstructorFallbackSync:
 
 
 class TestInstructorFallbackAsync:
-    """instructor_fallback_async 高层函数测试。"""
+    """instructor_fallback_async 高層函式測試。"""
 
     async def test_pydantic_schema_uses_instructor_async(self):
-        """Pydantic schema 走异步 instructor 路径。"""
+        """Pydantic schema 走非同步 instructor 路徑。"""
         sample = SampleModel(name="Bob", age=25)
 
         with patch(
@@ -184,7 +184,7 @@ class TestInstructorFallbackAsync:
         assert result.output_tokens == 18
 
     async def test_dict_schema_uses_json_object_async(self):
-        """dict schema 走异步 json_object 路径。"""
+        """dict schema 走非同步 json_object 路徑。"""
         mock_client = AsyncMock()
         mock_response = SimpleNamespace(
             choices=[SimpleNamespace(message=SimpleNamespace(content='{"k": "v"}'))],

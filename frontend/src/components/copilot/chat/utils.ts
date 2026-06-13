@@ -20,18 +20,18 @@ export function getRoleLabel(role: string): string {
     case "tool":
       return "工具";
     case "tool_result":
-      return "工具结果";
+      return "工具結果";
     case "skill_content":
       return "Skill";
     case "result":
       return "完成";
     case "system":
-      return "系统";
+      return "系統";
     case "stream_event":
       return "流式更新";
     case "unknown":
-      return "消息";
+      return "訊息";
     default:
-      return role || "消息";
+      return role || "訊息";
   }
 }

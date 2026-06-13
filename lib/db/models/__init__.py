@@ -1,5 +1,6 @@
 """ORM model exports."""
 
+from lib.db.models.agent_message import AgentMessage
 from lib.db.models.api_call import ApiCall
 from lib.db.models.api_key import ApiKey
 from lib.db.models.config import ProviderConfig, SystemSetting
@@ -15,6 +16,7 @@ __all__ = [
     "WorkerLease",
     "ApiCall",
     "AgentSession",
+    "AgentMessage",
     "ApiKey",
     "ProviderConfig",
     "SystemSetting",

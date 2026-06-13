@@ -12,7 +12,13 @@ from lib.custom_provider import is_custom_provider, parse_provider_id
 from lib.db.base import DEFAULT_USER_ID, dt_to_iso, utc_now
 from lib.db.models.api_call import ApiCall
 from lib.db.repositories.base import BaseRepository
-from lib.providers import PROVIDER_GEMINI, CallType
+from lib.providers import PROVIDER_BYTEPLUS, PROVIDER_GEMINI, CallType, normalize_provider_id
+
+
+def _normalize_usage_provider_id(provider: str) -> str:
+    if provider in {"ark", "seedance"}:
+        return PROVIDER_BYTEPLUS
+    return provider
 
 
 def _row_to_dict(row: ApiCall) -> dict[str, Any]:
@@ -74,7 +80,7 @@ class UsageRepository(BaseRepository):
             generate_audio=generate_audio,
             status="pending",
             started_at=now,
-            provider=provider,
+            provider=_normalize_usage_provider_id(provider),
             user_id=user_id,
             segment_id=segment_id,
         )
@@ -92,11 +98,11 @@ class UsageRepository(BaseRepository):
         error_message: str | None = None,
         retry_count: int = 0,
         usage_tokens: int | None = None,
-        service_tier: str = "default",
         generate_audio: bool | None = None,
         input_tokens: int | None = None,
         output_tokens: int | None = None,
         quality: str | None = None,
+        size: str | None = None,
     ) -> None:
         finished_at = utc_now()
 
@@ -105,7 +111,7 @@ class UsageRepository(BaseRepository):
         if not row:
             return
 
-        # 后端回写的实际 generate_audio 覆盖 start_call 时的请求值
+        # 後端回寫的實際 generate_audio 覆蓋 start_call 時的請求值
         if generate_audio is not None:
             row.generate_audio = generate_audio
 
@@ -143,10 +149,10 @@ class UsageRepository(BaseRepository):
                 duration_seconds=row.duration_seconds,
                 generate_audio=bool(row.generate_audio),
                 usage_tokens=usage_tokens,
-                service_tier=service_tier,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 quality=quality,
+                size=size,
                 custom_price_input=custom_price_input,
                 custom_price_output=custom_price_output,
                 custom_currency=custom_currency,
@@ -315,7 +321,7 @@ class UsageRepository(BaseRepository):
                 try:
                     custom_ids.add(parse_provider_id(p))
                 except ValueError:
-                    pass  # 防御畸形 provider 字符串（如 "custom-abc"）
+                    pass  # 防禦畸形 provider 字串（如 "custom-abc"）
 
         custom_names: dict[int, str] = {}
         if custom_ids:
@@ -332,7 +338,7 @@ class UsageRepository(BaseRepository):
                 except ValueError:
                     stat["display_name"] = provider_str
             else:
-                meta = PROVIDER_REGISTRY.get(provider_str or "")
+                meta = PROVIDER_REGISTRY.get(normalize_provider_id(provider_str or ""))
                 stat["display_name"] = meta.display_name if meta else provider_str
 
         period_start: str | None = None
@@ -389,11 +395,11 @@ class UsageRepository(BaseRepository):
         self,
         project_name: str,
     ) -> dict[str, dict[str, dict[str, float]]]:
-        """按 segment_id + call_type + currency 汇总实际费用。
+        """按 segment_id + call_type + currency 彙總實際費用。
 
         Returns:
             {segment_id: {call_type: {currency: total_amount}}}
-            segment_id 为 None 的记录归入 "__project__" 键。
+            segment_id 為 None 的記錄歸入 "__project__" 鍵。
         """
         stmt = (
             select(

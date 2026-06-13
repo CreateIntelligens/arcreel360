@@ -4,20 +4,87 @@ import { ChevronDown, ChevronRight, History } from "lucide-react";
 import { API, type VersionInfo } from "@/api";
 import { useAppStore } from "@/stores/app-store";
 import { useProjectsStore } from "@/stores/projects-store";
+import { UI_LAYERS } from "@/utils/ui-layers";
+import { PreviewableImageFrame } from "@/components/ui/PreviewableImageFrame";
+import { PreviewableVideoFrame } from "@/components/ui/PreviewableVideoFrame";
+
+type ResourceType = "storyboards" | "videos" | "characters" | "clues" | "scenes" | "output";
 
 interface VersionTimeMachineProps {
   projectName: string;
-  resourceType: "storyboards" | "videos" | "characters" | "clues";
+  resourceType: ResourceType;
   resourceId: string;
   onRestore?: (version: number) => void | Promise<void>;
 }
 
-function getImagePreviewHeightClass(
-  resourceType: VersionTimeMachineProps["resourceType"],
-): string {
+function getImagePreviewHeightClass(resourceType: ResourceType): string {
   if (resourceType === "characters") return "h-80";
-  if (resourceType === "clues") return "h-56";
+  if (resourceType === "clues" || resourceType === "scenes") return "h-56";
   return "h-64";
+}
+
+function getResourcePath(resourceType: ResourceType, resourceId: string): string {
+  switch (resourceType) {
+    case "storyboards":
+      return `storyboards/scene_${resourceId}.png`;
+    case "videos":
+      return `videos/scene_${resourceId}.mp4`;
+    case "output":
+      return `output/episode_${resourceId}_final.mp4`;
+    case "characters":
+      return `characters/${resourceId}.png`;
+    case "scenes":
+      return `scenes/${resourceId}.png`;
+    case "clues":
+      return `clues/${resourceId}.png`;
+  }
+}
+
+/** v0 是使用者上傳的可替換基底版本；AI 生成版本從 v1 起。 */
+function versionLabel(version: number): string {
+  return version === 0 ? "使用者上傳" : `v${version}`;
+}
+
+/** 從版本資訊組出要顯示的生成參數列（label, value），略過未記錄的欄位。 */
+function buildMetaRows(info: VersionInfo): { label: string; value: string }[] {
+  const rows: { label: string; value: string }[] = [];
+  if (info.aspect_ratio) rows.push({ label: "長寬比", value: info.aspect_ratio });
+  if (info.image_size) rows.push({ label: "尺寸", value: info.image_size });
+  if (info.resolution) rows.push({ label: "解析度", value: info.resolution });
+  if (info.duration_seconds != null)
+    rows.push({ label: "時長", value: `${info.duration_seconds}s` });
+  if (info.negative_prompt) rows.push({ label: "負向提示", value: info.negative_prompt });
+  if (info.reference_images?.length) {
+    const names = info.reference_images
+      .map((ref) => ref.label || ref.name)
+      .filter(Boolean)
+      .join("、");
+    rows.push({ label: "參考圖", value: names });
+  }
+  if (info.source_clips?.length) {
+    rows.push({ label: "來源影片", value: info.source_clips.join("、") });
+  }
+  return rows;
+}
+
+function versionPillClass(isSelected: boolean, isCurrent: boolean, isBase: boolean): string {
+  const baseClass = "rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ";
+  if (isSelected) {
+    return baseClass + "bg-indigo-600 text-white ring-1 ring-indigo-400";
+  }
+  if (isCurrent) {
+    return baseClass + "bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/30";
+  }
+  if (isBase) {
+    return baseClass + "bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/30 hover:bg-emerald-500/20";
+  }
+  return baseClass + "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white";
+}
+
+function restoreButtonLabel(restoringVersion: number | null, selectedVersion: number): string {
+  if (restoringVersion === selectedVersion) return "切換中...";
+  if (selectedVersion === 0) return "切換到上傳圖";
+  return "切換到此版本";
 }
 
 /** Find all scrollable ancestor elements. */
@@ -38,11 +105,7 @@ export function VersionTimeMachine({
   resourceId,
   onRestore,
 }: VersionTimeMachineProps) {
-  const resourcePath =
-    resourceType === "storyboards" ? `storyboards/scene_${resourceId}.png` :
-    resourceType === "videos" ? `videos/scene_${resourceId}.mp4` :
-    resourceType === "characters" ? `characters/${resourceId}.png` :
-    `clues/${resourceId}.png`;
+  const resourcePath = getResourcePath(resourceType, resourceId);
   const resourceFp = useProjectsStore((s) => s.getAssetFingerprint(resourcePath));
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -98,11 +161,13 @@ export function VersionTimeMachine({
       await onRestore?.(version);
       await loadVersions();
       setSelectedVersion(version);
-      useAppStore.getState().pushToast(`已切换到 v${version}`, "success");
+      useAppStore
+        .getState()
+        .pushToast(`已切換到 ${versionLabel(version)}`, "success");
     } catch (err) {
       useAppStore
         .getState()
-        .pushToast(`切换版本失败: ${(err as Error).message}`, "error");
+        .pushToast(`切換版本失敗: ${(err as Error).message}`, "error");
     } finally {
       setRestoringVersion(null);
     }
@@ -202,15 +267,15 @@ export function VersionTimeMachine({
               left: panelPos.left,
               transform: "translateX(-100%)",
             }}
-            className="z-[9999] w-64 rounded-xl border border-gray-700 bg-gray-900/95 p-3 shadow-2xl shadow-black/40 backdrop-blur"
+            className={`${UI_LAYERS.workspacePopover} w-64 rounded-xl border border-gray-700 bg-gray-900/95 p-3 shadow-2xl shadow-black/40 backdrop-blur`}
           >
             {loading ? (
-              <span className="text-xs text-gray-500">加载中...</span>
+              <span className="text-xs text-gray-500">載入中...</span>
             ) : versions.length === 0 ? (
               <div className="space-y-1">
-                <p className="text-[11px] font-medium text-gray-300">暂无历史版本</p>
+                <p className="text-[11px] font-medium text-gray-300">暫無歷史版本</p>
                 <p className="text-[11px] leading-5 text-gray-500">
-                  生成或还原后，历史版本会出现在这里。
+                  生成或還原後，歷史版本會出現在這裡。
                 </p>
               </div>
             ) : (
@@ -218,11 +283,11 @@ export function VersionTimeMachine({
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-                    历史版本
+                    歷史版本
                   </span>
                   {currentVersion > 0 && (
                     <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-200">
-                      当前 v{currentVersion}
+                      當前 v{currentVersion}
                     </span>
                   )}
                 </div>
@@ -232,6 +297,7 @@ export function VersionTimeMachine({
                   {versions.map((v) => {
                     const isCurrent = v.is_current;
                     const isSelected = selectedVersion === v.version;
+                    const isBase = v.version === 0;
                     return (
                       <button
                         key={v.version}
@@ -241,16 +307,9 @@ export function VersionTimeMachine({
                             prev === v.version ? null : v.version,
                           )
                         }
-                        className={
-                          "rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors " +
-                          (isSelected
-                            ? "bg-indigo-600 text-white ring-1 ring-indigo-400"
-                            : isCurrent
-                              ? "bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/30"
-                              : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white")
-                        }
+                        className={versionPillClass(isSelected, isCurrent, isBase)}
                       >
-                        v{v.version}
+                        {versionLabel(v.version)}
                       </button>
                     );
                   })}
@@ -258,7 +317,7 @@ export function VersionTimeMachine({
 
                 {!selectedInfo && (
                   <p className="text-[10px] leading-4 text-gray-400">
-                    点击版本号预览，非当前版本可切换。
+                    點選版本號預覽，非當前版本可切換。
                   </p>
                 )}
 
@@ -267,14 +326,20 @@ export function VersionTimeMachine({
                   <div className="rounded-xl border border-gray-700 bg-gray-950/80 p-2.5">
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <span className="text-[11px] font-medium text-gray-200">
-                        v{selectedInfo.version}
+                        {selectedInfo.version === 0 ? (
+                          <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-emerald-300">
+                            使用者上傳
+                          </span>
+                        ) : (
+                          `v${selectedInfo.version}`
+                        )}
                         <span className="ml-1.5 text-[10px] font-normal text-gray-500">
                           {selectedInfo.created_at}
                         </span>
                       </span>
                       {selectedInfo.is_current ? (
                         <span className="shrink-0 rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-medium text-indigo-300">
-                          当前
+                          當前
                         </span>
                       ) : (
                         <button
@@ -283,39 +348,60 @@ export function VersionTimeMachine({
                           onClick={() => void handleRestore(selectedInfo.version)}
                           className="shrink-0 rounded-full bg-indigo-600 px-2.5 py-0.5 text-[10px] font-medium text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
                         >
-                          {restoringVersion === selectedInfo.version ? "切换中..." : "切换到此版本"}
+                          {restoreButtonLabel(restoringVersion, selectedInfo.version)}
                         </button>
                       )}
                     </div>
 
                     {/* Media preview */}
                     {selectedInfo.file_url &&
-                      (resourceType === "videos" ? (
-                        <video
-                          src={selectedInfo.file_url}
-                          className="mb-2 w-full rounded-lg border border-gray-800 bg-black object-contain"
-                          controls
-                          playsInline
-                          preload="none"
-                        />
-                      ) : (
-                        <div
-                          className={`mb-2 flex w-full items-center justify-center rounded-lg border border-gray-800 bg-gray-900/70 p-2 ${getImagePreviewHeightClass(resourceType)}`}
-                        >
-                          <img
+                      (resourceType === "videos" || resourceType === "output" ? (
+                        <PreviewableVideoFrame src={selectedInfo.file_url} alt={`版本 v${selectedInfo.version} 預覽`}>
+                          <video
                             src={selectedInfo.file_url}
-                            alt={`版本 v${selectedInfo.version} 预览`}
-                            className="max-h-full w-full object-contain"
+                            aria-label={`版本 v${selectedInfo.version} 預覽`}
+                            className="mb-2 w-full rounded-lg border border-gray-800 bg-black object-contain"
+                            controls
+                            playsInline
+                            preload="none"
                           />
-                        </div>
+                        </PreviewableVideoFrame>
+                      ) : (
+                        <PreviewableImageFrame src={selectedInfo.file_url} alt={`版本 v${selectedInfo.version} 預覽`}>
+                          <div
+                            className={`mb-2 flex w-full items-center justify-center rounded-lg border border-gray-800 bg-gray-900/70 p-2 ${getImagePreviewHeightClass(resourceType)}`}
+                          >
+                            <img
+                              src={selectedInfo.file_url}
+                              alt={`版本 v${selectedInfo.version} 預覽`}
+                              className="max-h-full w-full object-contain"
+                            />
+                          </div>
+                        </PreviewableImageFrame>
                       ))}
 
                     {/* Prompt text */}
                     <p className="line-clamp-4 text-[11px] leading-5 text-gray-400">
-                      {selectedInfo.prompt || "该版本没有记录额外说明。"}
+                      {selectedInfo.prompt || "該版本沒有記錄額外說明。"}
                     </p>
 
-
+                    {/* Generation metadata */}
+                    {selectedInfo.version !== 0 && (
+                      <dl className="mt-2 space-y-0.5 border-t border-gray-800 pt-1.5 text-[10px] leading-5">
+                        {selectedInfo.model && (
+                          <div className="flex gap-1.5">
+                            <dt className="shrink-0 text-gray-500">模型</dt>
+                            <dd className="min-w-0 break-words text-gray-300">{selectedInfo.model}</dd>
+                          </div>
+                        )}
+                        {buildMetaRows(selectedInfo).map((row) => (
+                          <div key={row.label} className="flex gap-1.5">
+                            <dt className="shrink-0 text-gray-500">{row.label}</dt>
+                            <dd className="min-w-0 break-words text-gray-400">{row.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
                   </div>
                 )}
 

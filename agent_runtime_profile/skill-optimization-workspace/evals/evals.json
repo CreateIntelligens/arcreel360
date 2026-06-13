@@ -3,100 +3,110 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "我有一部武侠小说想做成短视频，大概3万字，帮我开始",
-      "expected_output": "应触发 manga-workflow，引导创建新项目、询问项目名称和内容模式，不直接读取小说原文",
-      "target_skills": ["manga-workflow"],
+      "prompt": "我有一部武俠小說想做成短影片，大概3萬字，幫我開始",
+      "expected_output": "應觸發 manga-workflow，引導建立新專案、詢問專案名稱和內容模式，不直接讀取小說原文",
+      "target_skills": [
+        "manga-workflow"
+      ],
       "assertions": [
         {
           "name": "asks_project_name",
-          "text": "询问用户项目名称",
+          "text": "詢問使用者專案名稱",
           "type": "behavior"
         },
         {
           "name": "asks_content_mode",
-          "text": "询问内容模式（narration 或 drama）",
+          "text": "詢問內容模式（narration 或 drama）",
           "type": "behavior"
         },
         {
           "name": "does_not_read_novel",
-          "text": "不直接读取小说原文到 context",
+          "text": "不直接讀取小說原文到 context",
           "type": "constraint"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "继续上次的项目，我记得角色已经分析完了，帮我继续",
-      "expected_output": "应触发 manga-workflow 状态检测，按检测清单顺序找到第一个缺失项，从对应阶段继续",
-      "target_skills": ["manga-workflow"],
+      "prompt": "繼續上次的專案，我記得角色已經分析完了，幫我繼續",
+      "expected_output": "應觸發 manga-workflow 狀態檢測，按檢測清單順序找到第一個缺失項，從對應階段繼續",
+      "target_skills": [
+        "manga-workflow"
+      ],
       "assertions": [
         {
           "name": "reads_project_json",
-          "text": "读取 project.json 检查当前状态",
+          "text": "讀取 project.json 檢查當前狀態",
           "type": "behavior"
         },
         {
           "name": "uses_glob_check",
-          "text": "使用 Glob 检查文件系统确认各阶段文件是否存在",
+          "text": "使用 Glob 檢查檔案系統確認各階段檔案是否存在",
           "type": "behavior"
         },
         {
           "name": "identifies_correct_stage",
-          "text": "根据检测结果确定正确的下一阶段",
+          "text": "根據檢測結果確定正確的下一階段",
           "type": "behavior"
         }
       ]
     },
     {
       "id": 3,
-      "prompt": "帮我把第2集的分镜图重新生成，E2S03 和 E2S07 的画面不太满意",
-      "expected_output": "应使用 generate-storyboard 的 --scene-ids 参数重新生成指定场景，不重新生成全部",
-      "target_skills": ["generate-storyboard"],
+      "prompt": "幫我把第2集的分鏡圖生成，E2S03 和 E2S07 的畫面不太滿意",
+      "expected_output": "應使用 generate-storyboard 的 --scene-ids 引數生成指定場景，不生成全部",
+      "target_skills": [
+        "generate-storyboard"
+      ],
       "assertions": [
         {
           "name": "uses_scene_ids_flag",
-          "text": "使用 --scene-ids E2S03 E2S07 参数而非生成全部",
+          "text": "使用 --scene-ids E2S03 E2S07 引數而非生成全部",
           "type": "behavior"
         },
         {
           "name": "correct_script_path",
-          "text": "在正确的项目目录下执行脚本",
+          "text": "在正確的專案目錄下執行指令碼",
           "type": "behavior"
         }
       ]
     },
     {
       "id": 4,
-      "prompt": "这集视频生成到一半断了，帮我接着来",
-      "expected_output": "应使用 generate-video 的 --resume 参数断点续传，不重新生成已完成的场景",
-      "target_skills": ["generate-video"],
+      "prompt": "這集影片生成到一半斷了，幫我接著來",
+      "expected_output": "應使用 generate-video 的 --resume 引數斷點續傳，不生成已完成的場景",
+      "target_skills": [
+        "generate-video"
+      ],
       "assertions": [
         {
           "name": "uses_resume_flag",
-          "text": "使用 --resume 参数断点续传",
+          "text": "使用 --resume 引數斷點續傳",
           "type": "behavior"
         },
         {
           "name": "does_not_regenerate_all",
-          "text": "不重新生成已完成的场景视频",
+          "text": "不生成已完成的場景影片",
           "type": "constraint"
         }
       ]
     },
     {
       "id": 5,
-      "prompt": "视频做好了，帮我加个背景音乐，音量小一点大概0.2",
-      "expected_output": "应使用 compose-video 添加 BGM，设置 --music-volume 0.2",
-      "target_skills": ["compose-video"],
+      "prompt": "影片做好了，幫我加個背景音樂，音量小一點大概0.2",
+      "expected_output": "應使用 compose-video 新增 BGM，設定 --music-volume 0.2",
+      "target_skills": [
+        "compose-video"
+      ],
       "assertions": [
         {
           "name": "uses_compose_video",
-          "text": "调用 compose-video 脚本",
+          "text": "呼叫 compose-video 指令碼",
           "type": "behavior"
         },
         {
           "name": "correct_volume",
-          "text": "设置 --music-volume 0.2",
+          "text": "設定 --music-volume 0.2",
           "type": "behavior"
         }
       ]

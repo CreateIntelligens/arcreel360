@@ -1,4 +1,4 @@
-"""图片后端注册与工厂。"""
+"""圖片後端註冊與工廠。"""
 
 from __future__ import annotations
 

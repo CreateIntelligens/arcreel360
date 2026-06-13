@@ -17,8 +17,8 @@ class TestPromptUtils:
             "scene": "夜雨中的街道",
             "composition": {
                 "shot_type": "Medium Shot",
-                "lighting": "路灯暖光",
-                "ambiance": "薄雾",
+                "lighting": "路燈暖光",
+                "ambiance": "薄霧",
             },
         }
 
@@ -30,22 +30,22 @@ class TestPromptUtils:
 
     def test_video_prompt_to_yaml_includes_dialogue_conditionally(self):
         with_dialogue = {
-            "action": "抬头观察",
+            "action": "抬頭觀察",
             "camera_motion": "Static",
-            "ambiance_audio": "雨声",
-            "dialogue": [{"speaker": "姜月茴", "line": "有人吗"}],
+            "ambiance_audio": "雨聲",
+            "dialogue": [{"speaker": "姜月茴", "line": "有人嗎"}],
         }
         without_dialogue = {
-            "action": "快步前进",
+            "action": "快步前進",
             "camera_motion": "Pan Left",
-            "ambiance_audio": "脚步声",
+            "ambiance_audio": "腳步聲",
             "dialogue": [],
         }
 
         parsed_a = yaml.safe_load(video_prompt_to_yaml(with_dialogue))
         parsed_b = yaml.safe_load(video_prompt_to_yaml(without_dialogue))
 
-        assert parsed_a["Action"] == "抬头观察"
+        assert parsed_a["Action"] == "抬頭觀察"
         assert parsed_a["Dialogue"][0]["Speaker"] == "姜月茴"
         assert "Dialogue" not in parsed_b
 

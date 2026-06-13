@@ -2,7 +2,7 @@
 
 ## 概述
 
-在分镜卡片的文本列（第一列）下半部分添加备注区，用户可编写和查看针对每个分镜的备注。备注仅供用户参考，不参与生图/生视频。
+在分镜卡片的文本列（第一列）下半部分添加备注区，用户可编写和查看针对每個分镜的备注。备注仅供用户参考，不参与生图/生视频。
 
 ## 数据层
 
@@ -18,7 +18,7 @@ note: Optional[str] = None
 
 ## API 层
 
-无需新增端点，复用现有 PATCH 接口：
+无需新增端点，复用現有 PATCH 接口：
 
 - Narration：`PATCH /api/v1/projects/{name}/segments/{segment_id}` — body 含 `"note": "..."`
 - Drama：`PATCH /api/v1/projects/{name}/scenes/{scene_id}` — updates 含 `"note": "..."`

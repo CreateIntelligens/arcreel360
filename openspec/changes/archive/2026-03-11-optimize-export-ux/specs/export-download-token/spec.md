@@ -45,7 +45,7 @@
 - **WHEN** 请求携带 `download_token`（签发给项目 A）访问项目 B 的导出端点
 - **THEN** 系统返回 403，detail 为 "下载 token 与目标项目不匹配"
 
-#### Scenario: 下载 token 不影响现有认证方式
+#### Scenario: 下载 token 不影响現有认证方式
 - **WHEN** 请求携带合法 Bearer JWT（无 download_token）访问导出端点
 - **THEN** 系统正常返回 ZIP 文件（向后兼容）
 

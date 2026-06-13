@@ -5,6 +5,13 @@ import { useProjectsStore } from "@/stores/projects-store";
 import { useTasksStore } from "@/stores/tasks-store";
 
 const SYNCED_TASK_TYPES = new Set(["storyboard", "video", "character", "clue"]);
+const TASK_TYPE_LABELS: Record<string, string> = {
+  storyboard: "分鏡圖",
+  video: "影片",
+  character: "角色",
+  clue: "道具",
+  scenes: "場景",
+};
 
 export function useProjectAssetSync(projectName?: string | null): void {
   const tasks = useTasksStore((s) => s.tasks);
@@ -78,6 +85,21 @@ export function useProjectAssetSync(projectName?: string | null): void {
       ) {
         processedTransitionsRef.current.add(transitionKey);
         shouldRefresh = true;
+      }
+
+      if (
+        previousStatus &&
+        previousStatus !== "failed" &&
+        task.status === "failed" &&
+        !processedTransitionsRef.current.has(transitionKey)
+      ) {
+        processedTransitionsRef.current.add(transitionKey);
+        const typeLabel = TASK_TYPE_LABELS[task.task_type] || task.task_type;
+        const errorMsg = task.error_message || "未知原因";
+        useAppStore.getState().pushToast(
+          `任務失敗 [${task.resource_id}] ${typeLabel}生成失敗：${errorMsg}`,
+          "error",
+        );
       }
     }
 

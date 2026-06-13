@@ -18,9 +18,9 @@ AgentCopilot 对话框当前只支持纯文本输入。Claude Agent SDK 的 `Cla
 
 ### 决策 1：图片传输方式 — Base64 inline in JSON
 
-**选择**：图片 base64 直接内嵌在 `SendMessageRequest.images[]` 中，一次请求发送。
+**選择**：图片 base64 直接内嵌在 `SendMessageRequest.images[]` 中，一次请求发送。
 
-**备选**：先 POST multipart 上传得到临时 ID，再在消息中引用。
+**备選**：先 POST multipart 上传得到临时 ID，再在消息中引用。
 
 **原因**：无需新增上传接口，前后端改动最小；单次请求无状态，不需要临时文件生命周期管理。图片上限 5 张 × 5MB，JSON body 最大 ~33MB，可接受。
 
@@ -28,10 +28,10 @@ AgentCopilot 对话框当前只支持纯文本输入。Claude Agent SDK 的 `Cla
 
 ### 决策 2：SDK 集成层 — Service 层封装
 
-**选择**：`AssistantService.send_message()` 负责把 `content + images` 组装为 AsyncGenerator，传给 SessionManager；SessionManager 只感知 `str | AsyncIterable[dict]`，不理解图片结构。
+**選择**：`AssistantService.send_message()` 负责把 `content + images` 组装为 AsyncGenerator，传给 SessionManager；SessionManager 只感知 `str | AsyncIterable[dict]`，不理解图片结构。
 
-**备选 A**：Router 层序列化（最外层处理）。
-**备选 B**：SessionManager 内部处理（最底层）。
+**备選 A**：Router 层序列化（最外层处理）。
+**备選 B**：SessionManager 内部处理（最底层）。
 
 **原因**：Service 是业务逻辑层，Router 做 HTTP 边界校验，SessionManager 做 SDK 通信管理，职责分层清晰。Service 集中处理内容格式化，测试和后续扩展更方便。
 
@@ -39,7 +39,7 @@ AgentCopilot 对话框当前只支持纯文本输入。Claude Agent SDK 的 `Cla
 
 ### 决策 3：echo_text 与 sdk_prompt 分离
 
-**选择**：`SessionManager.send_message()` 新增 `echo_text` 参数，用于用户气泡展示；`prompt` 参数传入 sdk_prompt（可为 str 或 AsyncGenerator）。
+**選择**：`SessionManager.send_message()` 新增 `echo_text` 参数，用于用户气泡展示；`prompt` 参数传入 sdk_prompt（可为 str 或 AsyncGenerator）。
 
 **原因**：用户气泡只需展示文字部分；AsyncGenerator 不可重复消费，不能既用于 SDK 又用于 echo 构建。分离两者避免耦合。
 
@@ -61,4 +61,4 @@ AgentCopilot 对话框当前只支持纯文本输入。Claude Agent SDK 的 `Cla
 
 ## Open Questions
 
-- 是否需要在 `normalize_block` 中显式注册 `"image"` type（加 `elif block_type == "image": pass`），还是依赖现有 deepcopy 透传即可？建议显式注册以提高可读性，但不影响功能。
+- 是否需要在 `normalize_block` 中显式注册 `"image"` type（加 `elif block_type == "image": pass`），还是依赖現有 deepcopy 透传即可？建议显式注册以提高可读性，但不影响功能。

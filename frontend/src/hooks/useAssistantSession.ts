@@ -18,7 +18,7 @@ export interface AttachedImage {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers — 从旧 use-assistant-state.js 移植
+// Helpers — 從舊 use-assistant-state.js 移植
 // ---------------------------------------------------------------------------
 
 function parseSsePayload(event: MessageEvent): Record<string, unknown> {
@@ -34,13 +34,21 @@ function applyTurnPatch(prev: Turn[], patch: Record<string, unknown>): Turn[] {
   if (op === "reset") return (patch.turns as Turn[]) ?? [];
   if (op === "append" && patch.turn) {
     const newTurn = patch.turn as Turn;
-    // 当后端 append 真实 user turn 时，移除末尾的 optimistic turn 避免重复
-    if (
-      newTurn.type === "user" &&
-      prev.length > 0 &&
-      prev.at(-1)?.uuid?.startsWith(OPTIMISTIC_PREFIX)
-    ) {
-      return [...prev.slice(0, -1), newTurn];
+    if (newTurn.type === "user" && prev.length > 0) {
+      const last = prev.at(-1)!;
+      // 1) optimistic → 真實 user：替換
+      if (last.uuid?.startsWith(OPTIMISTIC_PREFIX)) {
+        return [...prev.slice(0, -1), newTurn];
+      }
+      // 2) snapshot 已含當前 user，後端又 append 同一條（內容一致）→ 視為重複，丟棄
+      //    lite provider 的 user echo 沒有 optimistic 字首，需要按內容去重
+      if (
+        last.type === "user" &&
+        last.uuid !== newTurn.uuid &&
+        extractTurnText(last) === extractTurnText(newTurn)
+      ) {
+        return prev;
+      }
     }
     return [...prev, newTurn];
   }
@@ -77,8 +85,20 @@ function findLatestUserTurn(turns: Turn[]): Turn | null {
   return null;
 }
 
+function isSameSnapshotTurn(left: Turn, right: Turn): boolean {
+  return left.type === right.type &&
+    left.uuid === right.uuid &&
+    extractTurnText(left) === extractTurnText(right);
+}
+
+function snapshotMatchesCurrentBeforeOptimistic(snapshotTurns: Turn[], currentTurns: Turn[]): boolean {
+  const previousTurns = currentTurns.slice(0, -1);
+  return snapshotTurns.length === previousTurns.length &&
+    snapshotTurns.every((turn, index) => isSameSnapshotTurn(turn, previousTurns[index]));
+}
+
 // ---------------------------------------------------------------------------
-// localStorage helpers — 记住每个项目最后使用的会话
+// localStorage helpers — 記住每個專案最後使用的會話
 // ---------------------------------------------------------------------------
 
 const LAST_SESSION_KEY = "arcreel:lastSessionByProject";
@@ -98,7 +118,7 @@ function saveLastSessionId(projectName: string, sessionId: string): void {
     map[projectName] = sessionId;
     localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(map));
   } catch {
-    // 静默失败
+    // 靜默失敗
   }
 }
 
@@ -107,11 +127,11 @@ function saveLastSessionId(projectName: string, sessionId: string): void {
 // ---------------------------------------------------------------------------
 
 /**
- * 管理 AI 助手会话生命周期：
- * - 加载/创建会话
- * - 发送消息
+ * 管理 AI 助手會話生命週期：
+ * - 載入/建立會話
+ * - 傳送訊息
  * - SSE 流式接收
- * - 中断会话
+ * - 中斷會話
  */
 export function useAssistantSession(projectName: string | null) {
   const store = useAssistantStore;
@@ -154,26 +174,25 @@ export function useAssistantSession(projectName: string | null) {
     const snapshotTurns = (snapshot.turns as Turn[]) ?? [];
     const currentTurns = store.getState().turns;
 
-    // 保留末尾的 optimistic turn：仅当 snapshot 尚未包含当前轮 user 时。
-    // 使用内容匹配而非 UUID（optimistic UUID 永远不会匹配后端真实 UUID）。
+    // 保留末尾的 optimistic turn：僅當 snapshot 尚未包含相同內容的 user 時。
+    // 注意：不能用前端 / 後端時間戳比較来判断「新一轮」，
+    // 因为前端/容器时钟容易差几百毫秒，导致同一条 user 被错判为「下一轮」而双倍保留。
+    // 內容相同就視為同一條，让 snapshot 真實 user 取代 optimistic。
     const lastTurn = currentTurns.at(-1);
     let shouldPreserveOptimistic = false;
 
     if (lastTurn?.uuid?.startsWith(OPTIMISTIC_PREFIX)) {
       const optText = extractTurnText(lastTurn);
-
       if (optText) {
         const latestUserTurn = findLatestUserTurn(snapshotTurns);
-        if (!latestUserTurn || extractTurnText(latestUserTurn) !== optText) {
+        const snapshotOnlyHasPreviousTurns = snapshotMatchesCurrentBeforeOptimistic(snapshotTurns, currentTurns);
+        // 同文字 user 可能是舊輪次；snapshot 若仍只是送出前的 turns，必須保留 optimistic。
+        if (
+          snapshotOnlyHasPreviousTurns ||
+          !latestUserTurn ||
+          extractTurnText(latestUserTurn) !== optText
+        ) {
           shouldPreserveOptimistic = true;
-        } else {
-          const latestUserTs = parseTurnTimestamp(latestUserTurn);
-          const optimisticTs = parseTurnTimestamp(lastTurn);
-          shouldPreserveOptimistic = Boolean(
-            latestUserTs !== null &&
-            optimisticTs !== null &&
-            latestUserTs < optimisticTs,
-          );
         }
       }
     }
@@ -188,7 +207,7 @@ export function useAssistantSession(projectName: string | null) {
     syncPendingQuestion(getPendingQuestionFromSnapshot(snapshot));
   }, [store, syncPendingQuestion]);
 
-  // 关闭流
+  // 關閉流
   const closeStream = useCallback(() => {
     if (reconnectRef.current) {
       clearTimeout(reconnectRef.current);
@@ -201,10 +220,10 @@ export function useAssistantSession(projectName: string | null) {
     streamSessionRef.current = null;
   }, []);
 
-  // 连接 SSE 流
+  // 連線 SSE 流
   const connectStream = useCallback(
     (sessionId: string) => {
-      // 如果已连接到同一 session 且连接健康，跳过重连
+      // 如果已連線到同一 session 且連線健康，跳過重連
       if (
         streamRef.current &&
         streamSessionRef.current === sessionId &&
@@ -229,9 +248,9 @@ export function useAssistantSession(projectName: string | null) {
         const data = parseSsePayload(event as MessageEvent);
         const isSending = store.getState().sending;
 
-        // 正在发送消息时，后端可能尚未将 session 切为 "running"，
-        // 此时 SSE 连接到旧 "completed" session 会立即收到旧 snapshot + status 后断开。
-        // 忽略这种 stale snapshot 的 turns 和 status，保留前端的 optimistic 状态。
+        // 正在傳送訊息時，後端可能尚未將 session 切為 "running"，
+        // 此時 SSE 連線到舊 "completed" session 會立即收到舊 snapshot + status 後斷開。
+        // 忽略這種 stale snapshot 的 turns 和 status，保留前端的 optimistic 狀態。
         if (isSending && typeof data.status === "string" && data.status !== "running") {
           return;
         }
@@ -241,9 +260,9 @@ export function useAssistantSession(projectName: string | null) {
         if (typeof data.status === "string") {
           store.getState().setSessionStatus(data.status as "idle");
           statusRef.current = data.status as string;
-          // 收到任何有效 status 都清除 sending（stale 的已在上方过滤）。
-          // 特别是 "running" 表示后端已确认收到消息，必须清除 sending，
-          // 否则后续的 "completed" 会被 status handler 的 isSending 守卫过滤掉。
+          // 收到任何有效 status 都清除 sending（stale 的已在上方過濾）。
+          // 特別是 "running" 表示後端已確認收到訊息，必須清除 sending，
+          // 否則後續的 "completed" 會被 status handler 的 isSending 守衛過濾掉。
           store.getState().setSending(false);
         }
       });
@@ -272,10 +291,10 @@ export function useAssistantSession(projectName: string | null) {
         const status = (data.status as string) ?? statusRef.current;
         const isSending = store.getState().sending;
 
-        // 正在发送消息时，忽略旧 session 的 terminal status。
-        // 后端对非 running session 的 SSE 会发 status:"completed" 后关闭连接，
-        // 不应让这个 stale status 触发 closeStream / setSending(false)。
-        // onerror 回调会在连接断开后自动重连到已变为 "running" 的 session。
+        // 正在傳送訊息時，忽略舊 session 的 terminal status。
+        // 後端對非 running session 的 SSE 會發 status:"completed" 後關閉連線，
+        // 不應讓這個 stale status 觸發 closeStream / setSending(false)。
+        // onerror 回撥會在連線斷開後自動重連到已變為 "running" 的 session。
         if (isSending && TERMINAL.has(status) && status !== "error") {
           return;
         }
@@ -292,12 +311,12 @@ export function useAssistantSession(projectName: string | null) {
           }
           closeStream();
 
-          // Turn 结束后刷新会话列表，获取 SDK summary 标题
+          // Turn 結束後重新整理會話列表，獲取 SDK summary 標題
           if (projectName) {
             API.listAssistantSessions(projectName).then((res) => {
               const fresh = res.sessions ?? [];
               if (fresh.length > 0) store.getState().setSessions(fresh);
-            }).catch(() => {/* 静默失败 */});
+            }).catch(() => {/* 靜默失敗 */});
           }
         }
       });
@@ -313,9 +332,9 @@ export function useAssistantSession(projectName: string | null) {
 
       source.onerror = () => {
         if (!isActiveStream()) return;
-        // 重连条件：session 正在运行，或者前端正在发送消息。
-        // 后者处理后端对旧 "completed" session 的 SSE 立即关闭的情况：
-        // 连接断开后需要重连，此时后端已将 session 设为 "running"。
+        // 重連條件：session 正在執行，或者前端正在傳送訊息。
+        // 後者處理後端對舊 "completed" session 的 SSE 立即關閉的情況：
+        // 連線斷開後需要重連，此時後端已將 session 設為 "running"。
         if (statusRef.current === "running" || store.getState().sending) {
           reconnectRef.current = setTimeout(() => {
             connectStream(sessionId);
@@ -326,7 +345,7 @@ export function useAssistantSession(projectName: string | null) {
     [applySnapshot, clearPendingQuestion, projectName, closeStream, store, syncPendingQuestion],
   );
 
-  // 加载会话
+  // 載入會話
   useEffect(() => {
     if (!projectName) return;
     let cancelled = false;
@@ -334,12 +353,12 @@ export function useAssistantSession(projectName: string | null) {
     async function init() {
       store.getState().setMessagesLoading(true);
       try {
-        // 获取会话列表
+        // 獲取會話列表
         const res = await API.listAssistantSessions(projectName!);
         const sessions = res.sessions ?? [];
         store.getState().setSessions(sessions);
 
-        // 优先使用上次选择的会话（如果仍存在于列表中）
+        // 優先使用上次選擇的會話（如果仍存在於列表中）
         const lastId = getLastSessionId(projectName!);
         const sessionId = (lastId && sessions.some((s: SessionMeta) => s.id === lastId))
           ? lastId
@@ -354,7 +373,7 @@ export function useAssistantSession(projectName: string | null) {
 
         store.getState().setCurrentSessionId(sessionId);
 
-        // 加载会话快照
+        // 載入會話快照
         const session = await API.getAssistantSession(projectName!, sessionId);
         const raw = session as Record<string, unknown>;
         const sessionObj = (raw.session ?? raw) as Record<string, unknown>;
@@ -370,13 +389,13 @@ export function useAssistantSession(projectName: string | null) {
           applySnapshot(snapshot);
         }
       } catch {
-        // 静默失败
+        // 靜默失敗
       } finally {
         if (!cancelled) store.getState().setMessagesLoading(false);
       }
     }
 
-    // 加载技能列表
+    // 載入技能列表
     API.listAssistantSkills(projectName)
       .then((res) => {
         if (!cancelled) store.getState().setSkills(res.skills ?? []);
@@ -400,7 +419,7 @@ export function useAssistantSession(projectName: string | null) {
     store,
   ]);
 
-  // 发送消息
+  // 傳送訊息
   const sendMessage = useCallback(
     async (content: string, images?: AttachedImage[]) => {
       if ((!content.trim() && (!images || images.length === 0)) || store.getState().sending) return;
@@ -414,13 +433,13 @@ export function useAssistantSession(projectName: string | null) {
       store.getState().setError(null);
 
       try {
-        // 提取 base64 数据
+        // 提取 base64 資料
         const imagePayload = images?.map((img) => ({
           data: img.dataUrl.split(",")[1] ?? "",
           media_type: img.mimeType,
         }));
 
-        // 乐观更新：立即在 UI 上显示用户消息
+        // 樂觀更新：立即在 UI 上顯示使用者訊息
         const optimisticContent: import("@/types").ContentBlock[] = [
           ...(imagePayload ?? []).map((img) => ({
             type: "image" as const,
@@ -443,7 +462,7 @@ export function useAssistantSession(projectName: string | null) {
         statusRef.current = "running";
         store.getState().setSessionStatus("running");
 
-        // 统一发送（新建或已有会话）
+        // 統一傳送（新建或已有會話）
         const result = await API.sendAssistantMessage(
           projectName!,
           content,
@@ -455,7 +474,7 @@ export function useAssistantSession(projectName: string | null) {
 
         const returnedSessionId = result.session_id;
 
-        // 新会话：更新 store
+        // 新會話：更新 store
         if (!sessionId) {
           const provider = inferAssistantProvider(returnedSessionId);
           const newSession: SessionMeta = {
@@ -483,7 +502,7 @@ export function useAssistantSession(projectName: string | null) {
         if (sessionId && optimisticUuid) {
           restoreFailedSend(sessionId, optimisticUuid, previousStatus);
         } else {
-          // 新会话创建失败：回滚到 draft 模式
+          // 新會話建立失敗：回滾到 draft 模式
           store.getState().setTurns(store.getState().turns.filter(t => t.uuid !== optimisticUuid));
           store.getState().setIsDraftSession(true);
           store.getState().setCurrentSessionId(null);
@@ -516,7 +535,7 @@ export function useAssistantSession(projectName: string | null) {
     [projectName, store],
   );
 
-  // 中断会话
+  // 中斷會話
   const interrupt = useCallback(async () => {
     const sessionId = store.getState().currentSessionId;
     if (!projectName || !sessionId || statusRef.current !== "running") return;
@@ -530,7 +549,7 @@ export function useAssistantSession(projectName: string | null) {
     }
   }, [projectName, store]);
 
-  // 创建新会话（懒创建：仅清空状态，实际创建延迟到首次发消息时）
+  // 建立新會話（懶建立：僅清空狀態，實際建立延遲到首次發訊息時）
   const createNewSession = useCallback(async () => {
     if (!projectName) return;
 
@@ -545,7 +564,7 @@ export function useAssistantSession(projectName: string | null) {
     statusRef.current = "idle";
   }, [projectName, clearPendingQuestion, closeStream, invalidatePendingSend, store]);
 
-  // 切换到指定会话
+  // 切換到指定會話
   const switchSession = useCallback(async (sessionId: string) => {
     if (store.getState().currentSessionId === sessionId) return;
 
@@ -558,7 +577,7 @@ export function useAssistantSession(projectName: string | null) {
     clearPendingQuestion();
     store.getState().setMessagesLoading(true);
 
-    // 记住选择
+    // 記住選擇
     if (projectName) saveLastSessionId(projectName, sessionId);
 
     try {
@@ -576,13 +595,13 @@ export function useAssistantSession(projectName: string | null) {
         applySnapshot(snapshot);
       }
     } catch {
-      // 静默失败
+      // 靜默失敗
     } finally {
       store.getState().setMessagesLoading(false);
     }
   }, [projectName, applySnapshot, clearPendingQuestion, closeStream, connectStream, invalidatePendingSend, store]);
 
-  // 删除会话
+  // 刪除會話
   const deleteSession = useCallback(async (sessionId: string) => {
     if (!projectName) return;
     try {
@@ -590,7 +609,7 @@ export function useAssistantSession(projectName: string | null) {
       const sessions = store.getState().sessions.filter((s) => s.id !== sessionId);
       store.getState().setSessions(sessions);
 
-      // 如果删除的是当前会话，切换到下一个
+      // 如果刪除的是當前會話，切換到下一個
       if (store.getState().currentSessionId === sessionId) {
         if (sessions.length > 0) {
           await switchSession(sessions[0].id);
@@ -606,7 +625,7 @@ export function useAssistantSession(projectName: string | null) {
         }
       }
     } catch {
-      // 静默失败
+      // 靜默失敗
     }
   }, [projectName, clearPendingQuestion, closeStream, invalidatePendingSend, switchSession, store]);
 

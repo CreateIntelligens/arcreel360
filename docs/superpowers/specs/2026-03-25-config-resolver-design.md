@@ -5,7 +5,7 @@
 
 ## 问题
 
-`video_generate_audio` 配置项在从 DB 到 Vertex API 的传递链路中经过 6 个文件、4 层传递，且存在 **默认值不一致** 的 bug：
+`video_generate_audio` 配置项在从 DB 到 Vertex API 的传递链路中经过 6 個文件、4 层传递，且存在 **默认值不一致** 的 bug：
 
 | 位置 | 默认值 |
 |------|--------|
@@ -85,7 +85,7 @@ class ConfigResolver:
             return await svc.get_default_image_backend()
 
     async def provider_config(self, provider_id: str) -> dict[str, str]:
-        """获取单个供应商配置。"""
+        """获取单個供应商配置。"""
         async with self._session_factory() as session:
             svc = ConfigService(session)
             return await svc.get_provider_config(provider_id)
@@ -108,9 +108,9 @@ class ConfigResolver:
 - 构造函数接收 `config_resolver: ConfigResolver`
 - `generate_video()` / `generate_video_async()` 中调用 `self._config.video_generate_audio(project_name)` 获取配置值
 
-**同步 `generate_video()` 路径**：通过现有 `_sync()` helper 调用 async 的 ConfigResolver 方法，与其他 async 调用方式一致。
+**同步 `generate_video()` 路径**：通过現有 `_sync()` helper 调用 async 的 ConfigResolver 方法，与其他 async 调用方式一致。
 
-**后端能力限制由后端自行处理**：ConfigResolver 返回"用户意图"，MediaGenerator 如实传递给后端。后端根据自身能力决定实际行为，并通过 `VideoGenerationResult.generate_audio` 回写实际值。MediaGenerator 在 `finish_call` 时用后端回写的实际值覆盖 usage 记录，确保用量统计与 API 实际行为一致。
+**后端能力限制由后端自行处理**：ConfigResolver 返回"用户意图"，MediaGenerator 如实传递给后端。后端根据自身能力决定实际行为，并通过 `VideoGenerationResult.generate_audio` 回写实际值。MediaGenerator 在 `finish_call` 时用后端回写的实际值覆盖 usage 记录，确保用量統計与 API 实际行为一致。
 
 职责分离：
 - **ConfigResolver**：返回用户配置（项目级覆盖 > 全局配置 > 默认值）
@@ -221,7 +221,7 @@ else:
 | `lib/video_backends/gemini.py` | `generate()` 回写实际 `generate_audio` 值 |
 | `lib/video_backends/seedance.py` | `generate()` 回写实际 `generate_audio` 值 |
 | `lib/video_backends/grok.py` | `generate()` 回写实际 `generate_audio` 值 |
-| `lib/usage_tracker.py` | `finish_call` 新增 `generate_audio` 可选参数 |
+| `lib/usage_tracker.py` | `finish_call` 新增 `generate_audio` 可選参数 |
 | `lib/db/repositories/usage_repo.py` | `finish_call` 支持用后端实际值覆盖 `generate_audio` |
 | 测试文件 | 更新 MediaGenerator 构造方式 |
 
@@ -237,4 +237,4 @@ else:
    - 验证 `generate_video` 通过 ConfigResolver 获取正确的 audio 设置
    - 验证 aistudio 后端仍强制 `audio=True`
    - 验证 `version_metadata` 调用级覆盖正常工作
-3. **回归测试** — 现有测试适配新的构造方式后应全部通过
+3. **回归测试** — 現有测试适配新的构造方式后应全部通过

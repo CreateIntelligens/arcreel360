@@ -1,8 +1,8 @@
-"""剪映草稿导出服务
+"""剪映草稿匯出服務
 
-将 ArcReel 单集已生成的视频片段导出为剪映草稿 ZIP。
-使用 pyJianYingDraft 库生成 draft_content.json，
-后处理路径替换使草稿指向用户本地剪映目录。
+將 ArcReel 單集已生成的影片片段匯出為剪映草稿 ZIP。
+使用 pyJianYingDraft 庫生成 draft_content.json，
+後處理路徑替換使草稿指向使用者本地剪映目錄。
 """
 
 import json
@@ -33,17 +33,17 @@ logger = logging.getLogger(__name__)
 
 
 class JianyingDraftService:
-    """剪映草稿导出服务"""
+    """剪映草稿匯出服務"""
 
     def __init__(self, project_manager: ProjectManager):
         self.pm = project_manager
 
     # ------------------------------------------------------------------
-    # 内部方法：数据提取
+    # 內部方法：資料提取
     # ------------------------------------------------------------------
 
     def _find_episode_script(self, project_name: str, project: dict, episode: int) -> tuple[dict, str]:
-        """定位指定集的剧本文件，返回 (script_dict, filename)"""
+        """定位指定集的劇本檔案，返回 (script_dict, filename)"""
         episodes = project.get("episodes", [])
         ep_entry = next((e for e in episodes if e.get("episode") == episode), None)
         if ep_entry is None:
@@ -55,7 +55,7 @@ class JianyingDraftService:
         return script_data, filename
 
     def _collect_video_clips(self, script: dict, project_dir: Path) -> list[dict[str, Any]]:
-        """从剧本中提取已完成视频的片段列表"""
+        """從劇本中提取已完成影片的片段列表"""
         content_mode = script.get("content_mode", "narration")
         items = script.get("segments" if content_mode == "narration" else "scenes", [])
         id_field = "segment_id" if content_mode == "narration" else "scene_id"
@@ -69,7 +69,7 @@ class JianyingDraftService:
 
             abs_path = (project_dir / video_clip).resolve()
             if not abs_path.is_relative_to(project_dir.resolve()):
-                logger.warning("video_clip 路径越界，已跳过: %s", video_clip)
+                logger.warning("video_clip 路徑越界，已跳過: %s", video_clip)
                 continue
             if not abs_path.exists():
                 continue
@@ -87,7 +87,7 @@ class JianyingDraftService:
         return clips
 
     def _resolve_canvas_size(self, project: dict, first_video_path: Path | None = None) -> tuple[int, int]:
-        """根据项目 aspect_ratio 确定画布尺寸，缺失时从首个视频自动检测"""
+        """根據專案 aspect_ratio 確定畫布尺寸，缺失時從首個影片自動檢測"""
         ar = project.get("aspect_ratio")
         aspect = ar if isinstance(ar, str) else (ar.get("video") if isinstance(ar, dict) else None)
         if aspect is None and first_video_path is not None:
@@ -98,7 +98,7 @@ class JianyingDraftService:
         return 1920, 1080
 
     # ------------------------------------------------------------------
-    # 内部方法：草稿生成
+    # 內部方法：草稿生成
     # ------------------------------------------------------------------
 
     def _generate_draft(
@@ -111,15 +111,15 @@ class JianyingDraftService:
         height: int,
         content_mode: str,
     ) -> None:
-        """使用 pyJianYingDraft 在 draft_dir 中生成草稿文件"""
+        """使用 pyJianYingDraft 在 draft_dir 中生成草稿檔案"""
         draft_dir.parent.mkdir(parents=True, exist_ok=True)
         folder = draft.DraftFolder(str(draft_dir.parent))
         script_file = folder.create_draft(draft_name, width=width, height=height, allow_replace=True)
 
-        # 视频轨
+        # 影片軌
         script_file.add_track(TrackType.video)
 
-        # 字幕轨（仅 narration 模式）
+        # 字幕軌（僅 narration 模式）
         has_subtitle = content_mode == "narration"
         text_style: TextStyle | None = None
         text_border: TextBorder | None = None
@@ -151,14 +151,14 @@ class JianyingDraftService:
                 transform_y=-0.75 if is_portrait else -0.8,
             )
 
-        # 逐片段添加
+        # 逐片段新增
         offset_us = 0
         for clip in clips:
-            # 预读实际视频时长
+            # 預讀實際影片時長
             material = VideoMaterial(clip["local_path"])
             actual_duration_us = material.duration
 
-            # 视频片段
+            # 影片片段
             video_seg = VideoSegment(
                 material,
                 trange(offset_us, actual_duration_us),
@@ -182,11 +182,11 @@ class JianyingDraftService:
         script_file.save()
 
     def _replace_paths_in_draft(self, *, json_path: Path, tmp_prefix: str, target_prefix: str) -> None:
-        """JSON 安全地替换 draft_content.json 中的临时路径"""
+        """JSON 安全地替換 draft_content.json 中的臨時路徑"""
         real = os.path.realpath(json_path)
         tmp = os.path.realpath(tempfile.gettempdir()) + os.sep
         if not real.startswith(tmp):
-            raise ValueError(f"路径越界，拒绝写入: {real}")
+            raise ValueError(f"路徑越界，拒絕寫入: {real}")
 
         with open(real, encoding="utf-8") as f:  # noqa: PTH123
             data = json.load(f)
@@ -205,7 +205,7 @@ class JianyingDraftService:
             json.dump(data, f, ensure_ascii=False)
 
     # ------------------------------------------------------------------
-    # 公开方法
+    # 公開方法
     # ------------------------------------------------------------------
 
     def export_episode_draft(
@@ -217,31 +217,31 @@ class JianyingDraftService:
         use_draft_info_name: bool = True,
     ) -> Path:
         """
-        导出指定集的剪映草稿 ZIP。
+        匯出指定集的剪映草稿 ZIP。
 
         Returns:
-            ZIP 文件路径（临时文件，调用方负责清理）
+            ZIP 檔案路徑（臨時檔案，呼叫方負責清理）
 
         Raises:
-            FileNotFoundError: 项目或剧本不存在
-            ValueError: 无可导出的视频片段
+            FileNotFoundError: 專案或劇本不存在
+            ValueError: 無可匯出的影片片段
         """
         project = self.pm.load_project(project_name)
         project_dir = self.pm.get_project_path(project_name)
 
-        # 1. 定位剧本
+        # 1. 定位劇本
         script_data, _ = self._find_episode_script(project_name, project, episode)
 
-        # 2. 收集已完成视频
+        # 2. 收集已完成影片
         content_mode = script_data.get("content_mode", "narration")
         clips = self._collect_video_clips(script_data, project_dir)
         if not clips:
-            raise ValueError(f"第 {episode} 集没有已完成的视频片段，请先生成视频")
+            raise ValueError(f"第 {episode} 集沒有已完成的影片片段，請先生成影片")
 
-        # 3. 画布尺寸（项目未设 aspect_ratio 时从首个视频自动检测）
+        # 3. 畫布尺寸（專案未設 aspect_ratio 時從首個影片自動檢測）
         width, height = self._resolve_canvas_size(project, clips[0]["abs_path"])
 
-        # 4. 创建临时目录 + 复制素材到暂存区
+        # 4. 建立臨時目錄 + 複製素材到暫存區
         raw_title = project.get("title", project_name)
         safe_title = raw_title.replace("/", "_").replace("\\", "_").replace("..", "_")
         draft_name = f"{safe_title}_第{episode}集"
@@ -260,7 +260,7 @@ class JianyingDraftService:
                     shutil.copy2(src, dst)
                 local_clips.append({**clip, "local_path": str(dst)})
 
-            # 5. 生成草稿（create_draft 会重建 draft_dir）
+            # 5. 生成草稿（create_draft 會重建 draft_dir）
             draft_dir = tmp_dir / draft_name
             self._generate_draft(
                 draft_dir=draft_dir,
@@ -271,7 +271,7 @@ class JianyingDraftService:
                 content_mode=content_mode,
             )
 
-            # 6. 将素材移入草稿目录
+            # 6. 將素材移入草稿目錄
             assets_dir = draft_dir / "assets"
             assets_dir.mkdir(exist_ok=True)
             for clip in local_clips:
@@ -279,7 +279,7 @@ class JianyingDraftService:
                 dst = assets_dir / src.name
                 shutil.move(str(src), str(dst))
 
-            # 7. 路径后处理：staging 路径 → 用户本地路径
+            # 7. 路徑後處理：staging 路徑 → 使用者本地路徑
             draft_content_path = draft_dir / "draft_content.json"
             self._replace_paths_in_draft(
                 json_path=draft_content_path,

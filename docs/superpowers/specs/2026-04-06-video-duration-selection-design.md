@@ -2,19 +2,19 @@
 
 ## 背景
 
-当前视频时长硬编码为 `[4, 6, 8]` 秒三个选项，横竖屏与 `content_mode` 强绑定（说书=竖屏，剧集=横屏）。随着多供应商视频模型接入，不同模型支持的时长各不相同，需要将这两项配置从硬编码改为动态可配置。
+当前视频时长硬编码为 `[4, 6, 8]` 秒三個選項，横竖屏与 `content_mode` 强绑定（说书=竖屏，剧集=横屏）。随着多供应商视频模型接入，不同模型支持的时长各不相同，需要将这两项配置从硬编码改为动态可配置。
 
 ## 设计目标
 
 1. 视频时长由视频模型的能力决定，精确到模型级别
-2. 横竖屏（aspect_ratio）与 content_mode 完全解耦，项目创建时独立选择
-3. 用户可设置项目默认时长偏好，也可选择"自动"让 AI 根据内容决定
-4. 分镜级别仍可在模型支持范围内逐个选择时长
+2. 横竖屏（aspect_ratio）与 content_mode 完全解耦，项目创建时独立選择
+3. 用户可设置项目默认时长偏好，也可選择"自动"让 AI 根据内容决定
+4. 分镜级别仍可在模型支持范围内逐個選择时长
 5. 向后兼容已有项目数据
 
 ## 方案：扩展 ModelInfo + 运行时解析
 
-在现有 `ModelInfo` 和 `CustomProviderModel` 上扩展 `supported_durations` 字段，复用现有 Registry/ConfigService 体系。
+在現有 `ModelInfo` 和 `CustomProviderModel` 上扩展 `supported_durations` 字段，复用現有 Registry/ConfigService 体系。
 
 ---
 
@@ -33,7 +33,7 @@ class ModelInfo:
     default: bool = False
     supported_durations: list[int] = field(default_factory=list)  # 新增
     # 分辨率对时长的约束，仅在有限制时声明
-    # e.g. {"1080p": [8]} 表示 1080p 下只能选 8s，未列出的分辨率用 supported_durations 全集
+    # e.g. {"1080p": [8]} 表示 1080p 下只能選 8s，未列出的分辨率用 supported_durations 全集
     duration_resolution_constraints: dict[str, list[int]] = field(default_factory=dict)  # 新增
 ```
 
@@ -55,7 +55,7 @@ class ModelInfo:
 
 非视频模型保持空列表 `[]`。
 
-前端获取时长选项时，根据当前分辨率过滤：若模型声明了 `duration_resolution_constraints` 且当前分辨率命中，则使用约束列表；否则使用 `supported_durations` 全集。
+前端获取时长選項时，根据当前分辨率过滤：若模型声明了 `duration_resolution_constraints` 且当前分辨率命中，则使用约束列表；否则使用 `supported_durations` 全集。
 
 ### 1.2 自定义供应商 — CustomProviderModel 扩展
 
@@ -67,7 +67,7 @@ supported_durations: Mapped[str | None] = mapped_column(Text, nullable=True)
 # null 表示使用按 api_format 的保守预设
 ```
 
-需一个 Alembic 迁移。
+需一個 Alembic 迁移。
 
 ### 1.3 保守预设
 
@@ -106,7 +106,7 @@ class CreateProjectRequest(BaseModel):
 
 ### 2.2 项目修改
 
-移除 `aspect_ratio` 不可修改的限制。用户修改时前端弹出提示：已生成的分镜图/视频仍为原比例，建议重新生成。
+移除 `aspect_ratio` 不可修改的限制。用户修改时前端弹出提示：已生成的分镜图/视频仍为原比例，建议生成。
 
 `content_mode` 仍然创建后不可修改。
 
@@ -141,13 +141,13 @@ def get_aspect_ratio(project: dict, resource_type: str) -> str:
 }
 ```
 
-- `default_duration: int` — 用户选择的偏好时长
+- `default_duration: int` — 用户選择的偏好时长
 - `default_duration: null`（或缺失） — "自动"，由 AI 根据内容决定
 
 ### 3.2 对剧本生成 Prompt 的影响
 
-- 有默认值：Prompt 注入 `"时长：从 [4, 6, 8] 秒中选择，默认使用 4 秒"`
-- 自动模式：Prompt 注入 `"时长：从 [4, 6, 8] 秒中选择，根据内容节奏自行决定"`
+- 有默认值：Prompt 注入 `"时长：从 [4, 6, 8] 秒中選择，默认使用 4 秒"`
+- 自动模式：Prompt 注入 `"时长：从 [4, 6, 8] 秒中選择，根据内容节奏自行决定"`
 
 ### 3.3 已有项目兼容
 
@@ -166,7 +166,7 @@ def get_aspect_ratio(project: dict, resource_type: str) -> str:
 duration_seconds: int = Field(ge=1, le=60, description="片段时长（秒）")
 
 # DramaScene
-duration_seconds: int = Field(ge=1, le=60, description="场景时长（秒）")
+duration_seconds: int = Field(ge=1, le=60, description="場景时长（秒）")
 ```
 
 不再在 Pydantic 层硬编码有效值，严格校验移到业务层（根据当前视频模型的 `supported_durations`）。
@@ -248,16 +248,16 @@ def build_drama_prompt(
 
 ### 7.1 项目创建表单
 
-- 新增横竖屏选择器（竖屏 9:16 / 横屏 16:9），独立于 content_mode
-- 新增默认时长选择器：选项从当前视频模型的 `supported_durations` 获取，额外提供"自动"选项
+- 新增横竖屏選择器（竖屏 9:16 / 横屏 16:9），独立于 content_mode
+- 新增默认时长選择器：選項从当前视频模型的 `supported_durations` 获取，额外提供"自动"選項
 
 ### 7.2 项目设置页面
 
 - 允许修改 `aspect_ratio` 和 `default_duration`
-- 修改 `aspect_ratio` 时弹出提示：已生成的分镜图/视频仍为原比例，建议重新生成
-- 切换视频模型时，`default_duration` 选项联动更新；若当前值不在新模型支持列表中，重置为 `null`（自动）
+- 修改 `aspect_ratio` 时弹出提示：已生成的分镜图/视频仍为原比例，建议生成
+- 切换视频模型时，`default_duration` 選項联动更新；若当前值不在新模型支持列表中，重置为 `null`（自动）
 
-### 7.3 SegmentCard 时长选择器
+### 7.3 SegmentCard 时长選择器
 
 - `DURATION_OPTIONS` 从硬编码 `[4, 6, 8]` 改为从项目当前视频模型的 `supported_durations` 动态获取
 - 数据来源：可在项目数据中通过 `StatusCalculator` 注入，或前端从 providers API 自行解析
@@ -272,7 +272,7 @@ def build_drama_prompt(
 
 ## 8. 数据迁移与向后兼容
 
-| 场景 | 处理方式 |
+| 場景 | 处理方式 |
 |------|---------|
 | 已有项目无 `aspect_ratio` | 读取时按 `content_mode` 推导（narration→9:16, drama→16:9） |
 | 已有项目无 `default_duration` | 视为 `null`（自动模式） |
@@ -300,10 +300,10 @@ def build_drama_prompt(
 ### 前端
 - `frontend/src/types/script.ts` — DurationSeconds 类型
 - `frontend/src/types/project.ts` — ProjectData 新增字段
-- `frontend/src/components/canvas/timeline/SegmentCard.tsx` — 动态时长选项
+- `frontend/src/components/canvas/timeline/SegmentCard.tsx` — 动态时长選項
 - `frontend/src/components/canvas/timeline/TimelineCanvas.tsx` — 移除 content_mode 推导
 - `frontend/src/api.ts` — 移除修改限制
-- 项目创建/设置相关组件 — 新增选择器
+- 项目创建/设置相关组件 — 新增選择器
 
 ### 数据库
-- 1 个 Alembic 迁移（CustomProviderModel.supported_durations）
+- 1 個 Alembic 迁移（CustomProviderModel.supported_durations）

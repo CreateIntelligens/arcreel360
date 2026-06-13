@@ -21,10 +21,10 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # 1. 删除 sdk_session_id IS NULL 的幽灵记录
+    # 1. 刪除 sdk_session_id IS NULL 的幽靈記錄
     op.execute("DELETE FROM agent_sessions WHERE sdk_session_id IS NULL")
 
-    # 2. 添加 UNIQUE + NOT NULL 约束（使用 batch_alter_table 以兼容 SQLite）
+    # 2. 新增 UNIQUE + NOT NULL 約束（使用 batch_alter_table 以相容 SQLite）
     with op.batch_alter_table("agent_sessions", schema=None) as batch_op:
         batch_op.alter_column(
             "sdk_session_id",

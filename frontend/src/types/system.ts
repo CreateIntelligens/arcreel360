@@ -3,6 +3,7 @@ export interface SystemConfigSettings {
   default_video_backend: string;
   default_image_backend: string;
   default_text_backend: string;
+  byteplus_video_endpoint_id: string;
   text_backend_script: string;
   text_backend_overview: string;
   text_backend_style: string;
@@ -36,6 +37,7 @@ export interface SystemConfigPatch {
   default_video_backend?: string;
   default_image_backend?: string;
   default_text_backend?: string;
+  byteplus_video_endpoint_id?: string;
   text_backend_script?: string;
   text_backend_overview?: string;
   text_backend_style?: string;

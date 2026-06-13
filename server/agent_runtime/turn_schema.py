@@ -31,7 +31,25 @@ Turn Contract:
 from __future__ import annotations
 
 import copy
+import json
 from typing import Any
+
+
+def _coerce_to_string(value: Any) -> str:
+    """確保 tool_result.content / tool_use.result 等欄位送到前端時是 string。
+
+    前端 React 直接渲染這些欄位，若收到 dict/list/None 會拋 React error #31
+    （Objects are not valid as a React child）。後端工具回傳 dict 是常見情況
+    （例如 fs_write 回 `{"bytes_written": ..., "created": ...}`），統一在此序列化。
+    """
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    try:
+        return json.dumps(value, ensure_ascii=False, default=str)
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def infer_block_type(block: dict[str, Any]) -> str:
@@ -91,6 +109,16 @@ def normalize_block(block: Any) -> dict[str, Any]:
             normalized["input"] = {}
     elif block_type == "image":
         pass  # image blocks pass through as-is (source field preserved by deepcopy)
+    elif block_type == "tool_result":
+        if "content" in normalized:
+            normalized["content"] = _coerce_to_string(normalized["content"])
+
+    # 任何 block 帶 result/skill_content 欄位（tool_use 上的 attached result）
+    # 都需強制為 string，避免前端把 dict 當 React child。
+    if "result" in normalized:
+        normalized["result"] = _coerce_to_string(normalized["result"])
+    if "skill_content" in normalized:
+        normalized["skill_content"] = _coerce_to_string(normalized["skill_content"])
 
     return normalized
 

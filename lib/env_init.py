@@ -1,7 +1,7 @@
 """
-环境初始化模块
+環境初始化模組
 
-加载 .env 文件。
+載入 .env 檔案。
 """
 
 import logging
@@ -12,16 +12,16 @@ logger = logging.getLogger(__name__)
 
 def init_environment():
     """
-    初始化项目环境
+    初始化專案環境
 
-    1. 定位项目根目录
-    2. 加载 .env 文件
+    1. 定位專案根目錄
+    2. 載入 .env 檔案
     """
-    # 获取项目根目录（lib 的父目录）
+    # 獲取專案根目錄（lib 的父目錄）
     lib_dir = Path(__file__).parent
     project_root = lib_dir.parent
 
-    # 加载 .env 文件
+    # 載入 .env 檔案
     try:
         from dotenv import load_dotenv
 
@@ -31,10 +31,10 @@ def init_environment():
         else:
             load_dotenv()
     except ImportError:
-        pass  # python-dotenv 未安装时跳过
+        pass  # python-dotenv 未安裝時跳過
 
     return project_root
 
 
-# 模块导入时自动初始化
+# 模組匯入時自動初始化
 PROJECT_ROOT = init_environment()

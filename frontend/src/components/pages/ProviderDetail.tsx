@@ -186,7 +186,7 @@ export function ProviderDetail({ providerId, onSaved }: Props) {
   useWarnUnsaved(hasDraft);
 
   const handleCredentialChanged = useCallback(async () => {
-    // 静默刷新配置（不清除 detail，避免 loading 闪烁和子组件重挂）
+    // 靜默重新整理配置（不清除 detail，避免 loading 閃爍和子元件重掛）
     const updated = await API.getProviderConfig(providerId);
     setDetail(updated);
     onSaved?.();

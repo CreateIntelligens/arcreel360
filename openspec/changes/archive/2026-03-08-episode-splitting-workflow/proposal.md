@@ -2,9 +2,9 @@
 
 当前体系缺少**小说 → 集数的映射机制**。用户上传完整小说后，系统直接将全文传给 Gemini 生成剧本，但无法指定"这一集只用小说的某一部分"。具体表现：
 
-1. `normalize_drama_script.py` 默认读取 `source/` 下**所有文件拼接**，`--source` 参数只能指定整个文件，不能指定文件内的范围
-2. `split-narration-segments` subagent 的描述中提到"本集小说文本范围"，但没有实际机制让用户定义或切分这个范围
-3. `manga-workflow` 编排 dispatch 时写了 `本集小说范围：{章节名/文件名/起止说明}`，但这个值无从获取——主 agent 不知道小说哪部分对应哪一集
+1. `normalize_drama_script.py` 默认读取 `source/` 下**所有文件拼接**，`--source` 参数只能指定整個文件，不能指定文件内的范围
+2. `split-narration-segments` subagent 的描述中提到"本集小说文本范围"，但没有实际机制让用户定义或切分这個范围
+3. `manga-workflow` 编排 dispatch 时写了 `本集小说范围：{章节名/文件名/起止说明}`，但这個值无从获取——主 agent 不知道小说哪部分对应哪一集
 
 后果：
 - 10 万字小说全量灌入 Gemini，生成质量不可控（模型自行决定用哪部分）
@@ -13,7 +13,7 @@
 
 ## What Changes
 
-新增**渐进式分集规划**机制：通过两个脚本实现人机协作的分集流程。
+新增**渐进式分集规划**机制：通过两個脚本实现人机协作的分集流程。
 
 ### 核心思路
 
@@ -55,7 +55,7 @@ python split_episode.py --source source/novel.txt --episode 1 --anchor "他转�
 python split_episode.py --source source/novel.txt --episode 1 --anchor "他转身离开了。"
 ```
 
-- 输入：源文件路径、集数、锚点文本（切分点前的 10-20 个字符）
+- 输入：源文件路径、集数、锚点文本（切分点前的 10-20 個字符）
 - `--dry-run`：仅展示切分预览（前文末尾 + 后文开头各 50 字），不写文件
 - 锚点匹配到多处时报错，要求提供更长的锚点文本
 - 输出：
@@ -98,7 +98,7 @@ python split_episode.py --source source/novel.txt --episode 1 --anchor "他转�
 用户可以随时停下，不必一口气规划所有集数。
 ```
 
-### 现有脚本适配
+### 現有脚本适配
 
 `normalize_drama_script.py` 和 `split-narration-segments` subagent 不需要大改——只需在 dispatch 时指定 `--source source/episode_N.txt`，让它们读取已切分好的单集文件而非全量小说。
 
@@ -117,7 +117,7 @@ python split_episode.py --source source/novel.txt --episode 1 --anchor "他转�
   - `agent_runtime_profile/.claude/skills/manage-project/scripts/split_episode.py`
 - **修改文件**：
   - `agent_runtime_profile/.claude/skills/manga-workflow/SKILL.md` — 阶段 2 增加前置检查逻辑
-  - `agent_runtime_profile/.claude/settings.json` — 添加两个新脚本的 Bash 执行权限
+  - `agent_runtime_profile/.claude/settings.json` — 添加两個新脚本的 Bash 执行权限
 - **不受影响**：
   - `normalize_drama_script.py` — 已支持 `--source` 参数，无需修改
   - `split-narration-segments` subagent — dispatch 时指定文件路径即可

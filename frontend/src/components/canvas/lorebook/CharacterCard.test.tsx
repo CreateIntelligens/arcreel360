@@ -1,11 +1,17 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { CharacterCard } from "./CharacterCard";
 import { useAppStore } from "@/stores/app-store";
 
 vi.mock("@/components/canvas/timeline/VersionTimeMachine", () => ({
   VersionTimeMachine: () => <div data-testid="version-time-machine">versions</div>,
 }));
+
+function renderCharacterCard(ui: ReactElement) {
+  return render(ui, { wrapper: ConfirmProvider });
+}
 
 describe("CharacterCard", () => {
   beforeEach(() => {
@@ -22,7 +28,7 @@ describe("CharacterCard", () => {
   });
 
   it("renders existing saved reference image", () => {
-    render(
+    renderCharacterCard(
       <CharacterCard
         name="Hero"
         character={{
@@ -32,24 +38,27 @@ describe("CharacterCard", () => {
         }}
         projectName="demo"
         onSave={vi.fn()}
+        onUploadReference={vi.fn()}
         onGenerate={vi.fn()}
       />,
     );
 
-    expect(screen.getByAltText("Hero 参考图")).toHaveAttribute(
+    expect(screen.getByAltText("Hero 參考圖")).toHaveAttribute(
       "src",
       "/api/v1/files/demo/characters/refs/Hero.png",
     );
   });
 
-  it("keeps selected reference file until save and submits it in the payload", async () => {
+  it("uploads a selected reference file immediately", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
-    const { container } = render(
+    const onUploadReference = vi.fn().mockResolvedValue(undefined);
+    const { container } = renderCharacterCard(
       <CharacterCard
         name="Hero"
         character={{ description: "hero desc", voice_style: "warm" }}
         projectName="demo"
         onSave={onSave}
+        onUploadReference={onUploadReference}
         onGenerate={vi.fn()}
       />,
     );
@@ -60,40 +69,11 @@ describe("CharacterCard", () => {
     const file = new File(["ref"], "hero.png", { type: "image/png" });
     fireEvent.change(fileInput as HTMLInputElement, { target: { files: [file] } });
 
-    expect(screen.getByText("待保存参考图")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
-
     await waitFor(() => {
-      expect(onSave).toHaveBeenCalledWith("Hero", {
-        description: "hero desc",
-        voiceStyle: "warm",
-        referenceFile: file,
-      });
+      expect(onUploadReference).toHaveBeenCalledWith("Hero", file);
+      expect(screen.getByText("已上傳參考圖")).toBeInTheDocument();
     });
-  });
-
-  it("auto-resizes the description textarea as content grows", async () => {
-    render(
-      <CharacterCard
-        name="Hero"
-        character={{ description: "hero desc", voice_style: "warm" }}
-        projectName="demo"
-        onSave={vi.fn().mockResolvedValue(undefined)}
-        onGenerate={vi.fn()}
-      />,
-    );
-
-    const textarea = screen.getByPlaceholderText("输入角色描述...");
-    Object.defineProperty(textarea, "scrollHeight", {
-      configurable: true,
-      value: 128,
-    });
-
-    fireEvent.change(textarea, { target: { value: "hero desc with more lines" } });
-
-    await waitFor(() => {
-      expect(textarea).toHaveStyle({ height: "128px" });
-    });
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "儲存" })).not.toBeInTheDocument();
   });
 });

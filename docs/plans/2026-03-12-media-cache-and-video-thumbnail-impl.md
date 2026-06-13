@@ -110,7 +110,7 @@ def compute_asset_fingerprints(project_path: Path) -> dict[str, int]:
     扫描项目目录下所有媒体文件，返回 {相对路径: mtime_int} 映射。
 
     mtime 为 stat.st_mtime_ns（纳秒整数），精度到纳秒，用作 URL cache-bust 参数。
-    对约 50 个文件，耗时 <1ms（仅读文件系统元数据）。
+    对约 50 個文件，耗时 <1ms（仅读文件系统元数据）。
     """
     fingerprints: dict[str, int] = {}
 
@@ -152,7 +152,7 @@ git commit -m "feat: add compute_asset_fingerprints utility for content-addressa
 
 **Step 1: Write the failing test**
 
-在 `tests/test_projects_router.py` 中追加测试。先找到现有的 fixture 和测试模式，然后添加：
+在 `tests/test_projects_router.py` 中追加测试。先找到現有的 fixture 和测试模式，然后添加：
 
 ```python
 def test_get_project_includes_asset_fingerprints(self, monkeypatch, tmp_path):
@@ -444,7 +444,7 @@ def _emit_generation_success_batch(
         emit_project_change_batch(project_name, changes, source="worker")
     except Exception:
         logger.exception(
-            "发送生成完成项目事件失败 project=%s task_type=%s resource_id=%s",
+            "发送生成完成项目事件失敗 project=%s task_type=%s resource_id=%s",
             project_name,
             task_type,
             resource_id,
@@ -617,7 +617,7 @@ class TestExtractVideoThumbnail:
             pytest.skip("ffmpeg not available")
 
     async def test_extracts_thumbnail_from_video(self, tmp_path):
-        # 用 ffmpeg 生成一个最小测试视频
+        # 用 ffmpeg 生成一個最小测试视频
         video_path = tmp_path / "test.mp4"
         proc = await asyncio.create_subprocess_exec(
             "ffmpeg", "-f", "lavfi", "-i", "color=c=red:s=64x64:d=1",
@@ -693,7 +693,7 @@ async def extract_video_thumbnail(
         thumbnail_path: 输出缩略图路径
 
     Returns:
-        缩略图路径（成功）或 None（失败）
+        缩略图路径（成功）或 None（失敗）
     """
     if not video_path.exists():
         return None
@@ -717,7 +717,7 @@ async def extract_video_thumbnail(
 
         return thumbnail_path
     except Exception:
-        logger.warning("提取视频缩略图失败: %s", video_path, exc_info=True)
+        logger.warning("提取视频缩略图失敗: %s", video_path, exc_info=True)
         return None
 ```
 
@@ -757,7 +757,7 @@ async def test_execute_video_task_generates_thumbnail(self, monkeypatch, tmp_pat
     # 关键：验证 update_scene_asset 被调用时包含 video_thumbnail
     # 验证 thumbnails/scene_E1S01.jpg 存在
 
-    # 注意：这个测试可能需要 mock extract_video_thumbnail
+    # 注意：这個测试可能需要 mock extract_video_thumbnail
     # 因为 ffmpeg 可能不可用
 ```
 
@@ -866,7 +866,7 @@ Expected: FAIL
 
 **Step 3: Write minimal implementation**
 
-修改 `frontend/src/types/workspace.ts:10-24`，给 ProjectChange 添加可选字段：
+修改 `frontend/src/types/workspace.ts:10-24`，给 ProjectChange 添加可選字段：
 
 ```typescript
 export interface ProjectChange {
@@ -994,7 +994,7 @@ onChanges(payload: ProjectChangeBatchPayload) {
 - `StudioCanvasRouter.tsx` 中的 `refreshProject`
 - `OverviewCanvas.tsx` 中的 `refreshProject`
 
-每处都需要把 `res.asset_fingerprints` 传入 `setCurrentProject` 的第四个参数。
+每处都需要把 `res.asset_fingerprints` 传入 `setCurrentProject` 的第四個参数。
 
 **Step 3: Run tests**
 
@@ -1019,7 +1019,7 @@ git commit -m "feat(frontend): SSE handler extracts asset_fingerprints, propagat
 - Modify: `frontend/src/components/canvas/lorebook/CharacterCard.tsx:128-134`
 - Modify: `frontend/src/components/canvas/OverviewCanvas.tsx:141-143`
 - Modify: `frontend/src/components/ui/AvatarStack.tsx:66,125`
-- Test: 各组件的现有测试（确保不 regression）
+- Test: 各组件的現有测试（确保不 regression）
 
 **Step 1: Write implementation**
 
@@ -1122,7 +1122,7 @@ async function handleRestore(version: number) {
     setSelectedVersion(version);
     useAppStore.getState().pushToast(`已切换到 v${version}`, "success");
   } catch (err) {
-    useAppStore.getState().pushToast(`切换版本失败: ${(err as Error).message}`, "error");
+    useAppStore.getState().pushToast(`切换版本失敗: ${(err as Error).message}`, "error");
   } finally {
     setRestoringVersion(null);
   }

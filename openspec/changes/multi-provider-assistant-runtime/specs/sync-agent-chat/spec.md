@@ -6,7 +6,7 @@
 
 #### Scenario: active provider 为 Claude
 - **WHEN** 已认证用户调用 `POST /api/v1/agent/chat`
-- **THEN** 系统 SHALL 使用 Claude provider 执行对话，并保持现有 full runtime 行为
+- **THEN** 系统 SHALL 使用 Claude provider 执行对话，并保持現有 full runtime 行为
 
 #### Scenario: active provider 为 Gemini-lite
 - **WHEN** 已认证用户调用 `POST /api/v1/agent/chat`

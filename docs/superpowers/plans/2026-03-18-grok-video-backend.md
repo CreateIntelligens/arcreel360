@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 接入 xAI Grok 的 grok-imagine-video 作为视频生成备选后端
+**Goal:** 接入 xAI Grok 的 grok-imagine-video 作为视频生成备選后端
 
-**Architecture:** 新增 `GrokVideoBackend` 实现 `VideoBackend` 协议，通过 `xai_sdk.AsyncClient` 调用 Grok API。分辨率改为模型级子配置（`video_model_settings.{model}.resolution`）。沿用现有注册、计费、配置管理模式。
+**Architecture:** 新增 `GrokVideoBackend` 实现 `VideoBackend` 协议，通过 `xai_sdk.AsyncClient` 调用 Grok API。分辨率改为模型级子配置（`video_model_settings.{model}.resolution`）。沿用現有注册、计费、配置管理模式。
 
 **Tech Stack:** xai_sdk（Python SDK）、httpx（视频下载）、pytest（测试）
 
@@ -93,7 +93,7 @@ git commit -m "feat: 新增 PROVIDER_GROK 常量"
 - Create: `tests/test_grok_video_backend.py`
 - Create: `lib/video_backends/grok.py`
 
-- [ ] **Step 1: 编写失败测试 — text-to-video**
+- [ ] **Step 1: 编写失敗测试 — text-to-video**
 
 创建 `tests/test_grok_video_backend.py`：
 
@@ -274,7 +274,7 @@ def _async_context_manager(mock_response):
     return _stream
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_grok_video_backend.py -v`
 Expected: FAIL（`ModuleNotFoundError: No module named 'lib.video_backends.grok'`）
@@ -466,7 +466,7 @@ git commit -m "feat: 注册 GrokVideoBackend 到后端系统"
 - Modify: `tests/test_cost_calculator.py`
 - Modify: `lib/cost_calculator.py`
 
-- [ ] **Step 1: 编写失败测试**
+- [ ] **Step 1: 编写失敗测试**
 
 在 `tests/test_cost_calculator.py` 末尾添加新测试类：
 
@@ -513,7 +513,7 @@ class TestGrokCost:
         assert cost == pytest.approx(0.50)
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_cost_calculator.py::TestGrokCost -v`
 Expected: FAIL（`AttributeError: 'CostCalculator' object has no attribute 'calculate_grok_video_cost'`）
@@ -776,7 +776,7 @@ git commit -m "feat: 视频后端工厂支持 Grok 供应商 + 模型级分辨�
 Run: `uv run python -m pytest -v`
 Expected: 全部 PASS，无回归
 
-- [ ] **Step 2: 如有失败，修复后重新运行**
+- [ ] **Step 2: 如有失敗，修复后重新运行**
 
 - [ ] **Step 3: 最终 commit（如有修复）**
 

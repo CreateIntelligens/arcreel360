@@ -6,13 +6,14 @@
  * - webui/server/routers/tasks.py (API responses)
  */
 
-export type TaskStatus = "queued" | "running" | "succeeded" | "failed";
+export type TaskStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
 export type TaskMediaType = "image" | "video";
+export type TaskType = "storyboard" | "video" | "character" | "clue" | "scene";
 
 export interface TaskItem {
   task_id: string;
   project_name: string;
-  task_type: string;
+  task_type: TaskType;
   media_type: TaskMediaType;
   resource_id: string;
   script_file: string | null;
@@ -22,6 +23,7 @@ export interface TaskItem {
   result: Record<string, unknown> | null;
   error_message: string | null;
   source: "webui" | "agent";
+  cancelled_by?: "user" | "cascade" | null;
   queued_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -33,5 +35,6 @@ export interface TaskStats {
   running: number;
   succeeded: number;
   failed: number;
+  cancelled: number;
   total: number;
 }

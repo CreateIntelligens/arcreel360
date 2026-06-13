@@ -53,7 +53,9 @@ export function PendingQuestionWizard({
   const currentQuestionKey = currentQuestion ? getQuestionKey(currentQuestion, normalizedQuestionIndex) : "";
   const currentQuestionAnswer = currentQuestionKey ? questionAnswers[currentQuestionKey] ?? "" : "";
   const currentQuestionCustomAnswer = currentQuestionKey ? questionCustomAnswers[currentQuestionKey] ?? "" : "";
-  const currentQuestionOptions = currentQuestion ? buildQuestionOptions(currentQuestion.options) : [];
+  const currentQuestionOptions = currentQuestion
+    ? buildQuestionOptions(currentQuestion.options, currentQuestion.allowOther !== false)
+    : [];
   const isFirstQuestion = normalizedQuestionIndex <= 0;
   const isLastQuestion = totalQuestions > 0 && normalizedQuestionIndex === totalQuestions - 1;
 

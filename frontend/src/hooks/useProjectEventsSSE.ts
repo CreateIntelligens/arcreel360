@@ -216,7 +216,7 @@ export function useProjectEventsSSE(projectName?: string | null): void {
           lastFingerprintRef.current = payload.fingerprint;
           setAssistantToolActivitySuppressed(true);
 
-          // 提取并更新 asset fingerprints（零延迟，立即写入 store）
+          // 提取並更新 asset fingerprints（零延遲，立即寫入 store）
           const mergedFingerprints: Record<string, number> = {};
           for (const change of payload.changes) {
             if (change.asset_fingerprints) {
@@ -246,7 +246,7 @@ export function useProjectEventsSSE(projectName?: string | null): void {
           }
 
           if (payload.source !== "webui") {
-            // Draft 事件 — 自动导航到剧集预处理 Tab
+            // Draft 事件 — 自動導航到劇集預處理 Tab
             let draftHandled = false;
             for (const change of payload.changes) {
               if (

@@ -44,7 +44,7 @@ export function DropdownPill<T extends string>({
         anchorRef={containerRef}
         align="start"
         sideOffset={4}
-        width="min-w-[140px]"
+        width="min-w-[8.75rem]"
         className="overflow-hidden rounded-lg border border-gray-700 py-1 shadow-xl"
       >
         {options.map((opt) => (

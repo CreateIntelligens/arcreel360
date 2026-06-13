@@ -29,13 +29,13 @@
 ## 5. 通知聚合
 
 - [x] 5.1 实现 `groupChangesByType(changes)` 工具函数：按 `entity_type:action` 分组变更
-- [x] 5.2 实现 `formatGroupedNotificationText(group)` 和 `formatGroupedDeferredText(group)` 聚合文案函数，支持截断（超过 5 个时显示"…等"）
-- [x] 5.3 修改 useProjectEventsSSE 的 `onChanges` 回调：替换 `selectNotificationChange` → 分组后每组一条 toast；替换 `selectPrimaryChange` → 分组后每组一条 workspace notification（导航到组内第一个）
+- [x] 5.2 实现 `formatGroupedNotificationText(group)` 和 `formatGroupedDeferredText(group)` 聚合文案函数，支持截断（超过 5 個时显示"…等"）
+- [x] 5.3 修改 useProjectEventsSSE 的 `onChanges` 回调：替换 `selectNotificationChange` → 分组后每组一条 toast；替换 `selectPrimaryChange` → 分组后每组一条 workspace notification（导航到组内第一個）
 
 ## 6. 测试与验证
 
 - [x] 6.1 为通知聚合函数（groupChangesByType、formatGroupedNotificationText）编写单元测试
 - [x] 6.2 为精确缓存失效逻辑（entityRevisions 的 invalidateEntities / invalidateAllEntities）编写单元测试
-- [x] 6.3 更新现有测试中对 `mediaRevision` 的引用（stores.test.ts、useProjectAssetSync.test.tsx、OverviewCanvas.test.tsx）
+- [x] 6.3 更新現有测试中对 `mediaRevision` 的引用（stores.test.ts、useProjectAssetSync.test.tsx、OverviewCanvas.test.tsx）
 - [x] 6.4 运行全量前端测试（pnpm check）确保无回归
 - [x] 6.5 运行全量后端测试（pytest）确保无回归

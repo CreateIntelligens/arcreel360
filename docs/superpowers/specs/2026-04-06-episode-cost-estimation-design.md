@@ -2,12 +2,12 @@
 
 ## 概述
 
-为 ArcReel 新增单集费用估算功能，在 Web UI 中展示每集的**预估费用**（基于当前模型配置）和**实际费用**（基于历史 API 调用累计），支持从项目总览到单个分镜卡片的三级费用展示。
+为 ArcReel 新增单集费用估算功能，在 Web UI 中展示每集的**预估费用**（基于当前模型配置）和**实际费用**（基于历史 API 调用累计），支持从项目总览到单個分镜卡片的三级费用展示。
 
 ## 需求
 
 - **预估**：剧本变化时实时计算，基于 segment 数量 × 当前 image/video 模型定价
-- **实际**：累计所有成功的 API 调用费用（含重新生成），按 segment 精确归属
+- **实际**：累计所有成功的 API 调用费用（含生成），按 segment 精确归属
 - **费用项**：预估仅含分镜图 + 视频；实际在项目级额外包含角色/线索生成费用
 - **货币**：所有费用均为 `Record<currency, amount>` 结构，支持 USD/CNY 混合，原始货币显示
 
@@ -28,7 +28,7 @@
 
 ### `GET /api/v1/projects/{project_name}/cost-estimate`
 
-一次返回整个项目所有集的预估 + 实际费用。
+一次返回整個项目所有集的预估 + 实际费用。
 
 **请求参数**：无（从项目当前剧本和模型配置自动计算）
 
@@ -92,7 +92,7 @@
 ```python
 # 单一货币
 {"USD": 0.04}
-# 混合货币（重新生成用了不同 provider）
+# 混合货币（生成用了不同 provider）
 {"USD": 0.04, "CNY": 1.20}
 ```
 
@@ -101,11 +101,11 @@
 **预估**：
 1. 读取每集剧本 → 遍历 segments
 2. 通过 ConfigResolver 解析当前 image/video 模型 + 参数（resolution、audio、duration）
-3. 调用 CostCalculator 计算单个 segment 的 image + video 费用
+3. 调用 CostCalculator 计算单個 segment 的 image + video 费用
 
 **实际**：
 1. 从 UsageRepository 按 `project_name` + `segment_id` 查询所有成功的 ApiCall 记录
-2. 按 segment_id + call_type + currency 分组累加费用（含重新生成的累计）
+2. 按 segment_id + call_type + currency 分组累加费用（含生成的累计）
 3. 项目级：额外查询 `segment_id IS NULL` 的 image 记录（角色+线索图片共用 `call_type=image`，合并为 `character_and_clue`）
 
 ### 新增服务层
@@ -199,4 +199,4 @@
 - `test_cost_estimation_service.py`：预估计算逻辑（单货币、混合货币、无剧本、空 segment）
 - `test_cost_estimation_router.py`：API 端点（正常响应、项目不存在、无剧本）
 - `test_usage_repo.py`：新增按 segment_id 汇总查询的测试
-- 现有 `test_usage_tracker.py`：更新 start_call 签名适配
+- 現有 `test_usage_tracker.py`：更新 start_call 签名适配

@@ -122,7 +122,7 @@ class TestProjectArchiveRoutes:
             )
 
         assert response.status_code == 400
-        assert response.json()["detail"] == "导入包校验失败"
+        assert response.json()["detail"] == "匯入包校驗失敗"
         assert any("project.json" in error for error in response.json()["errors"])
         assert "diagnostics" in response.json()
 
@@ -151,7 +151,7 @@ class TestProjectArchiveRoutes:
                 )
 
         assert response.status_code == 409
-        assert response.json()["detail"] == "检测到项目编号冲突"
+        assert response.json()["detail"] == "檢測到專案編號衝突"
         assert response.json()["conflict_project_name"] == "demo"
 
     def test_export_token_endpoint(self, tmp_path, monkeypatch):

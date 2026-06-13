@@ -1,9 +1,9 @@
 ## 1. 主题基础收敛
 
-- [x] 1.1 审计 `frontend/src/index.css`、`frontend/src/css/app.css`、`frontend/src/css/styles.css` 中现有颜色、字体、边框、阴影定义，标记冲突和重复来源
+- [x] 1.1 审计 `frontend/src/index.css`、`frontend/src/css/app.css`、`frontend/src/css/styles.css` 中現有颜色、字体、边框、阴影定义，标记冲突和重复来源
 - [x] 1.2 在主题入口建立语义化 token，覆盖背景、panel、浮层、主文字、次文字、主强调色、次强调色、成功、警告、危险等角色
 - [x] 1.3 将高频交互态（hover、focus、active、disabled）整理为统一规则，避免继续在组件中零散写死 `indigo-*` 和孤立色值
-- [x] 1.4 为全局 surface / panel / status 形成可复用样式约定，并保留过渡兼容层，避免一次性打断现有页面
+- [x] 1.4 为全局 surface / panel / status 形成可复用样式约定，并保留过渡兼容层，避免一次性打断現有页面
 
 ## 2. 工作台壳层刷新
 

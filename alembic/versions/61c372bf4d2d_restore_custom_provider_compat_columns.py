@@ -31,9 +31,11 @@ def upgrade() -> None:
             "ELSE NULL END"
         )
     )
-    unmapped_provider = bind.execute(sa.text("SELECT COUNT(*) FROM custom_provider WHERE api_format IS NULL")).scalar() or 0
+    unmapped_provider = (
+        bind.execute(sa.text("SELECT COUNT(*) FROM custom_provider WHERE api_format IS NULL")).scalar() or 0
+    )
     if unmapped_provider:
-        raise RuntimeError(f"custom_provider: {unmapped_provider} 条记录的 discovery_format 无法映射回 api_format")
+        raise RuntimeError(f"custom_provider: {unmapped_provider} 條記錄的 discovery_format 無法對映回 api_format")
 
     with op.batch_alter_table("custom_provider", schema=None) as batch_op:
         batch_op.alter_column("api_format", nullable=False)
@@ -53,9 +55,11 @@ def upgrade() -> None:
             "ELSE NULL END"
         )
     )
-    unmapped_model = bind.execute(sa.text("SELECT COUNT(*) FROM custom_provider_model WHERE media_type IS NULL")).scalar() or 0
+    unmapped_model = (
+        bind.execute(sa.text("SELECT COUNT(*) FROM custom_provider_model WHERE media_type IS NULL")).scalar() or 0
+    )
     if unmapped_model:
-        raise RuntimeError(f"custom_provider_model: {unmapped_model} 条记录的 endpoint 无法映射回 media_type")
+        raise RuntimeError(f"custom_provider_model: {unmapped_model} 條記錄的 endpoint 無法對映回 media_type")
 
     with op.batch_alter_table("custom_provider_model", schema=None) as batch_op:
         batch_op.alter_column("media_type", nullable=False)

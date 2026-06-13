@@ -21,19 +21,27 @@ vi.mock("./SourceFileViewer", () => ({
 vi.mock("./timeline/TimelineCanvas", () => ({
   TimelineCanvas: ({
     episodeScript,
+    scriptFile,
     onUpdatePrompt,
     onGenerateStoryboard,
     onGenerateVideo,
   }: {
     episodeScript: unknown;
-    onUpdatePrompt?: (segmentId: string, field: string, value: unknown) => void;
+    scriptFile?: string;
+    onUpdatePrompt?: (segmentId: string, field: string, value: unknown, scriptFile?: string) => void;
     onGenerateStoryboard?: (segmentId: string) => void;
     onGenerateVideo?: (segmentId: string) => void;
   }) => (
     <div data-testid="timeline-canvas">
       <div data-testid="timeline-has-script">{episodeScript ? "yes" : "no"}</div>
-      <button onClick={() => onUpdatePrompt?.("SEG-1", "image_prompt", "new prompt")}>
+      <button onClick={() => onUpdatePrompt?.("SEG-1", "image_prompt", "new prompt", scriptFile)}>
         update-prompt
+      </button>
+      <button onClick={() => onUpdatePrompt?.("SEG-1", "novel_text", "edited source", scriptFile)}>
+        update-source
+      </button>
+      <button onClick={() => onUpdatePrompt?.("SEG-1", "scene_description", "edited scene", scriptFile)}>
+        update-scene-description
       </button>
       <button onClick={() => onGenerateStoryboard?.("SEG-1")}>generate-storyboard</button>
       <button onClick={() => onGenerateVideo?.("SEG-1")}>generate-video</button>
@@ -41,106 +49,97 @@ vi.mock("./timeline/TimelineCanvas", () => ({
   ),
 }));
 
-vi.mock("./lorebook/LorebookGallery", () => ({
-  LorebookGallery: ({
-    mode,
-    onSaveCharacter,
-    onUpdateClue,
-    onGenerateCharacter,
-    onGenerateClue,
-    onAddCharacter,
-    onAddClue,
-  }: {
-    mode: "characters" | "clues";
-    onSaveCharacter: (
-      name: string,
-      payload: {
-        description: string;
-        voiceStyle: string;
-        referenceFile?: File | null;
-      },
-    ) => Promise<void>;
-    onUpdateClue: (name: string, updates: Record<string, unknown>) => void;
-    onGenerateCharacter: (name: string) => void;
-    onGenerateClue: (name: string) => void;
-    onAddCharacter?: () => void;
-    onAddClue?: () => void;
-  }) => (
-    <div data-testid="lorebook-gallery" data-mode={mode}>
-      <button
-        onClick={() =>
-          void onSaveCharacter("Hero", {
-            description: "new desc",
-            voiceStyle: "new voice",
-            referenceFile: new File(["ref"], "hero.png", { type: "image/png" }),
-          })
-        }
-      >
-        update-character
-      </button>
-      <button onClick={() => onGenerateCharacter("Hero")}>generate-character</button>
-      <button onClick={() => onUpdateClue("Key", { description: "new clue" })}>
-        update-clue
-      </button>
-      <button onClick={() => onGenerateClue("Key")}>generate-clue</button>
-      <button onClick={() => onAddCharacter?.()}>add-character</button>
-      <button onClick={() => onAddClue?.()}>add-clue</button>
-    </div>
-  ),
-}));
+vi.mock("./lorebook/LorebookGallery", async () => {
+  const { useState, useEffect } = await vi.importActual<typeof import("react")>("react");
+  return {
+    LorebookGallery: ({
+      mode,
+      onSaveCharacter,
+      onUploadCharacterReference,
+      onUpdateClue,
+      onGenerateCharacter,
+      onGenerateClue,
+      onAddCharacterSubmit,
+      onAddClueSubmit,
+    }: {
+      mode: "characters" | "clues";
+      onSaveCharacter: (name: string, payload: { description: string; voiceStyle: string }) => Promise<void>;
+      onUploadCharacterReference: (name: string, file: File) => Promise<void> | void;
+      onUpdateClue: (name: string, updates: Record<string, unknown>) => Promise<void>;
+      onGenerateCharacter: (name: string) => void;
+      onGenerateClue: (name: string) => void;
+      onAddCharacterSubmit: (name: string, description: string, voiceStyle: string, file?: File | null) => Promise<void>;
+      onAddClueSubmit: (name: string, description: string, importance: "major" | "minor") => Promise<void>;
+    }) => {
+      const [showCharForm, setShowCharForm] = useState(false);
+      const [showClueForm, setShowClueForm] = useState(false);
 
-vi.mock("./lorebook/AddCharacterForm", () => ({
-  AddCharacterForm: ({
-    onSubmit,
-    onCancel,
-  }: {
-    onSubmit: (
-      name: string,
-      description: string,
-      voice: string,
-      referenceFile?: File | null,
-    ) => Promise<void>;
-    onCancel: () => void;
-  }) => (
-    <div data-testid="add-character-form">
-      <button
-        onClick={() =>
-          void onSubmit(
-            "NewHero",
-            "desc",
-            "voice",
-            new File(["ref"], "new-hero.png", { type: "image/png" }),
-          )
-        }
-      >
-        submit-add-character
-      </button>
-      <button onClick={onCancel}>cancel-add-character</button>
-    </div>
-  ),
-}));
+      useEffect(() => {
+        setShowCharForm(false);
+        setShowClueForm(false);
+      }, [mode]);
 
-vi.mock("./lorebook/AddClueForm", () => ({
-  AddClueForm: ({
-    onSubmit,
-    onCancel,
-  }: {
-    onSubmit: (
-      name: string,
-      clueType: string,
-      description: string,
-      importance: string,
-    ) => Promise<void>;
-    onCancel: () => void;
-  }) => (
-    <div data-testid="add-clue-form">
-      <button onClick={() => void onSubmit("NewClue", "prop", "desc", "major")}>
-        submit-add-clue
-      </button>
-      <button onClick={onCancel}>cancel-add-clue</button>
-    </div>
-  ),
-}));
+      return (
+        <div data-testid="lorebook-gallery" data-mode={mode}>
+          <button
+            onClick={() =>
+              void onSaveCharacter("Hero", {
+                description: "new desc",
+                voiceStyle: "new voice",
+              })
+            }
+          >
+            update-character
+          </button>
+          <button
+            onClick={() =>
+              void onUploadCharacterReference(
+                "Hero",
+                new File(["ref"], "hero.png", { type: "image/png" }),
+              )
+            }
+          >
+            upload-character-reference
+          </button>
+          <button onClick={() => onGenerateCharacter("Hero")}>generate-character</button>
+          <button onClick={() => void onUpdateClue("Key", { description: "new clue" })}>
+            update-clue
+          </button>
+          <button onClick={() => onGenerateClue("Key")}>generate-clue</button>
+          <button onClick={() => setShowCharForm(true)}>add-character</button>
+          <button onClick={() => setShowClueForm(true)}>add-clue</button>
+
+          {showCharForm && (
+            <div data-testid="add-character-form">
+              <button
+                onClick={() =>
+                  void onAddCharacterSubmit(
+                    "NewHero",
+                    "desc",
+                    "voice",
+                    new File(["ref"], "new-hero.png", { type: "image/png" }),
+                  )
+                }
+              >
+                submit-add-character
+              </button>
+              <button onClick={() => setShowCharForm(false)}>cancel-add-character</button>
+            </div>
+          )}
+
+          {showClueForm && (
+            <div data-testid="add-clue-form">
+              <button onClick={() => void onAddClueSubmit("NewClue", "desc", "major")}>
+                submit-add-clue
+              </button>
+              <button onClick={() => setShowClueForm(false)}>cancel-add-clue</button>
+            </div>
+          )}
+        </div>
+      );
+    },
+  };
+});
 
 function makeProjectData(overrides: Partial<ProjectData> = {}): ProjectData {
   return {
@@ -152,7 +151,7 @@ function makeProjectData(overrides: Partial<ProjectData> = {}): ProjectData {
       Hero: { description: "hero description" },
     },
     clues: {
-      Key: { type: "prop", description: "key description", importance: "major" },
+      Key: { description: "key description", importance: "major" },
     },
     ...overrides,
   };
@@ -183,6 +182,30 @@ function makeScript(): EpisodeScript {
   };
 }
 
+function makeDramaScript(): EpisodeScript {
+  return {
+    episode: 1,
+    title: "EP1",
+    content_mode: "drama",
+    duration_seconds: 8,
+    summary: "summary",
+    novel: { title: "n", chapter: "1" },
+    scenes: [
+      {
+        scene_id: "SEG-1",
+        duration_seconds: 8,
+        segment_break: false,
+        scene_type: "dialogue",
+        characters_in_scene: ["Hero"],
+        clues_in_scene: ["Key"],
+        image_prompt: "image prompt",
+        video_prompt: "video prompt",
+        transition_to_next: "cut",
+      },
+    ],
+  };
+}
+
 function renderAt(path: string) {
   const { hook } = memoryLocation({ path });
   return render(
@@ -190,6 +213,17 @@ function renderAt(path: string) {
       <StudioCanvasRouter />
     </Router>,
   );
+}
+
+/** Like renderAt, but also returns navigate so tests can switch routes mid-render. */
+function renderWithNav(path: string) {
+  const { hook, navigate } = memoryLocation({ path });
+  const utils = render(
+    <Router hook={hook}>
+      <StudioCanvasRouter />
+    </Router>,
+  );
+  return { ...utils, navigate };
 }
 
 describe("StudioCanvasRouter", () => {
@@ -235,6 +269,31 @@ describe("StudioCanvasRouter", () => {
     });
   });
 
+  it("hides the open add form when navigating to another lorebook tab", async () => {
+    useProjectsStore.setState({
+      currentProjectName: "demo",
+      currentProjectData: makeProjectData(),
+      currentScripts: { "episode_1.json": makeScript() },
+    });
+
+    const { navigate } = renderWithNav("/clues");
+
+    fireEvent.click(screen.getByText("add-clue"));
+    expect(await screen.findByTestId("add-clue-form")).toBeInTheDocument();
+
+    navigate("/characters");
+    await waitFor(() => {
+      expect(screen.getByTestId("lorebook-gallery")).toHaveAttribute("data-mode", "characters");
+    });
+    expect(screen.queryByTestId("add-clue-form")).not.toBeInTheDocument();
+
+    navigate("/clues");
+    await waitFor(() => {
+      expect(screen.getByTestId("lorebook-gallery")).toHaveAttribute("data-mode", "clues");
+    });
+    expect(screen.queryByTestId("add-clue-form")).not.toBeInTheDocument();
+  });
+
   it("runs character/clue callbacks and reports API failures with toast", async () => {
     useProjectsStore.setState({
       currentProjectName: "demo",
@@ -256,7 +315,7 @@ describe("StudioCanvasRouter", () => {
     vi.spyOn(API, "generateClue").mockRejectedValue(new Error("generate failed"));
     vi.spyOn(API, "addClue").mockResolvedValue({ success: true });
 
-    renderAt("/characters");
+    const { navigate } = renderWithNav("/characters");
 
     fireEvent.click(screen.getByText("update-character"));
     await waitFor(() => {
@@ -264,6 +323,12 @@ describe("StudioCanvasRouter", () => {
         description: "new desc",
         voice_style: "new voice",
       });
+      expect(API.uploadFile).not.toHaveBeenCalled();
+      expect(API.getProject).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByText("upload-character-reference"));
+    await waitFor(() => {
       expect(API.uploadFile).toHaveBeenNthCalledWith(
         1,
         "demo",
@@ -271,7 +336,6 @@ describe("StudioCanvasRouter", () => {
         expect.any(File),
         "Hero",
       );
-      expect(API.getProject).toHaveBeenCalled();
     });
 
     fireEvent.click(screen.getByText("generate-character"));
@@ -312,7 +376,7 @@ describe("StudioCanvasRouter", () => {
       expect(API.updateClue).toHaveBeenCalledWith("demo", "Key", {
         description: "new clue",
       });
-      expect(useAppStore.getState().toast?.text).toContain("更新線索失敗");
+      expect(useAppStore.getState().toast?.text).toContain("更新道具失敗");
       expect(useAppStore.getState().toast?.tone).toBe("error");
     });
 
@@ -322,6 +386,10 @@ describe("StudioCanvasRouter", () => {
       expect(useAppStore.getState().toast?.text).toContain("提交失敗");
     });
 
+    navigate("/clues");
+    await waitFor(() => {
+      expect(screen.getByTestId("lorebook-gallery")).toHaveAttribute("data-mode", "clues");
+    });
     fireEvent.click(screen.getByText("add-clue"));
     expect(await screen.findByTestId("add-clue-form")).toBeInTheDocument();
     fireEvent.click(screen.getByText("submit-add-clue"));
@@ -329,10 +397,35 @@ describe("StudioCanvasRouter", () => {
       expect(API.addClue).toHaveBeenCalledWith(
         "demo",
         "NewClue",
-        "prop",
         "desc",
         "major",
       );
+    });
+  });
+
+  it("shows a success toast after saving a clue description", async () => {
+    useProjectsStore.setState({
+      currentProjectName: "demo",
+      currentProjectData: makeProjectData(),
+      currentScripts: { "episode_1.json": makeScript() },
+    });
+
+    vi.spyOn(API, "getProject").mockResolvedValue({
+      project: makeProjectData(),
+      scripts: { "episode_1.json": makeScript() },
+    });
+    vi.spyOn(API, "updateClue").mockResolvedValue({ success: true });
+
+    renderWithNav("/clues");
+
+    fireEvent.click(screen.getByText("update-clue"));
+
+    await waitFor(() => {
+      expect(API.updateClue).toHaveBeenCalledWith("demo", "Key", {
+        description: "new clue",
+      });
+      expect(useAppStore.getState().toast?.text).toContain("道具「Key」已更新");
+      expect(useAppStore.getState().toast?.tone).toBe("success");
     });
   });
 
@@ -356,6 +449,7 @@ describe("StudioCanvasRouter", () => {
     fireEvent.click(screen.getByText("update-prompt"));
     await waitFor(() => {
       expect(API.updateSegment).toHaveBeenCalledWith("demo", "SEG-1", {
+        script_file: "episode_1.json",
         image_prompt: "new prompt",
       });
       expect(useAppStore.getState().toast?.text).toContain("更新 Prompt 失敗");
@@ -369,7 +463,7 @@ describe("StudioCanvasRouter", () => {
         "image prompt",
         "episode_1.json",
       );
-      expect(useAppStore.getState().toast?.text).toContain("生成分鏡失敗");
+      expect(useAppStore.getState().toast?.text).toContain("生圖失敗");
     });
 
     fireEvent.click(screen.getByText("generate-video"));
@@ -382,6 +476,87 @@ describe("StudioCanvasRouter", () => {
         4,
       );
       expect(useAppStore.getState().toast?.text).toContain("生成影片失敗");
+    });
+  });
+
+  it("updates scene prompts through scene API when the active script is drama", async () => {
+    const projectData = makeProjectData({ content_mode: "narration" });
+    const dramaScript = makeDramaScript();
+    useProjectsStore.setState({
+      currentProjectName: "demo",
+      currentProjectData: projectData,
+      currentScripts: { "episode_1.json": dramaScript },
+    });
+
+    vi.spyOn(API, "getProject").mockResolvedValue({
+      project: projectData,
+      scripts: { "episode_1.json": dramaScript },
+    });
+    vi.spyOn(API, "updateScene").mockResolvedValue({ success: true });
+    vi.spyOn(API, "updateSegment").mockResolvedValue({ success: true });
+
+    renderAt("/episodes/1");
+
+    fireEvent.click(screen.getByText("update-prompt"));
+
+    await waitFor(() => {
+      expect(API.updateScene).toHaveBeenCalledWith("demo", "SEG-1", "episode_1.json", {
+        image_prompt: "new prompt",
+      });
+    });
+    expect(API.updateSegment).not.toHaveBeenCalled();
+  });
+
+  it("invalidates the preprocessing draft after saving narration source text", async () => {
+    useProjectsStore.setState({
+      currentProjectName: "demo",
+      currentProjectData: makeProjectData(),
+      currentScripts: { "episode_1.json": makeScript() },
+    });
+    vi.spyOn(API, "getProject").mockResolvedValue({
+      project: makeProjectData(),
+      scripts: { "episode_1.json": makeScript() },
+    });
+    vi.spyOn(API, "updateSegment").mockResolvedValue({ success: true });
+
+    renderAt("/episodes/1");
+
+    expect(useAppStore.getState().getEntityRevision("draft:episode_1_step1")).toBe(0);
+    fireEvent.click(screen.getByText("update-source"));
+
+    await waitFor(() => {
+      expect(API.updateSegment).toHaveBeenCalledWith("demo", "SEG-1", {
+        script_file: "episode_1.json",
+        novel_text: "edited source",
+      });
+      expect(useAppStore.getState().getEntityRevision("draft:episode_1_step1")).toBe(1);
+    });
+  });
+
+  it("invalidates the preprocessing draft after saving drama scene description", async () => {
+    const projectData = makeProjectData({ content_mode: "drama" });
+    const dramaScript = makeDramaScript();
+    useProjectsStore.setState({
+      currentProjectName: "demo",
+      currentProjectData: projectData,
+      currentScripts: { "episode_1.json": dramaScript },
+    });
+    vi.spyOn(API, "getProject").mockResolvedValue({
+      project: projectData,
+      scripts: { "episode_1.json": dramaScript },
+    });
+    vi.spyOn(API, "updateScene").mockResolvedValue({ success: true });
+
+    renderAt("/episodes/1");
+
+    expect(useAppStore.getState().getEntityRevision("draft:episode_1_step1")).toBe(0);
+    fireEvent.click(screen.getByText("update-scene-description"));
+
+    await waitFor(() => {
+      expect(API.updateScene).toHaveBeenCalledWith("demo", "SEG-1", "episode_1.json", {
+        scene_description: "edited scene",
+      });
+      expect(useAppStore.getState().getEntityRevision("draft:episode_1_step1")).toBe(1);
     });
   });
 });

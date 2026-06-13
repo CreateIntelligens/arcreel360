@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from lib.image_backends.base import ImageGenerationResult
 from lib.media_generator import MediaGenerator
 
 
@@ -27,6 +28,8 @@ class _FakeVideoResult:
         self.video_uri = "video-uri"
         self.usage_tokens = 0
         self.generate_audio = True
+        self.duration_seconds = 8
+        self.adjusted = None
 
 
 class _FakeVideoBackend:
@@ -135,6 +138,64 @@ class TestMediaGenerator:
         assert any(item["status"] == "failed" for item in gen.usage_tracker.finished)
 
     @pytest.mark.asyncio
+    async def test_generate_image_records_quality_and_size_for_cost(self, tmp_path):
+        gen = _build_generator(tmp_path)
+
+        async def _generate(request):
+            request.output_path.parent.mkdir(parents=True, exist_ok=True)
+            request.output_path.write_bytes(b"fake-image-data")
+            return ImageGenerationResult(
+                image_path=request.output_path,
+                provider=gen._image_backend.name,
+                model=gen._image_backend.model,
+                quality="medium",
+                size="1024x1536",
+            )
+
+        gen._image_backend.generate = _generate
+
+        await gen.generate_image_async(
+            prompt="p",
+            resource_type="storyboards",
+            resource_id="E1S02",
+            aspect_ratio="9:16",
+        )
+
+        assert gen.usage_tracker.finished[-1]["quality"] == "medium"
+        assert gen.usage_tracker.finished[-1]["size"] == "1024x1536"
+
+    @pytest.mark.asyncio
+    async def test_generate_image_with_reference_images_requires_strict_reference(self, tmp_path):
+        gen = _build_generator(tmp_path)
+        ref = tmp_path / "ref.png"
+        ref.write_bytes(b"ref")
+
+        await gen.generate_image_async(
+            prompt="draw the character",
+            resource_type="storyboards",
+            resource_id="E1S03",
+            reference_images=[ref],
+        )
+
+        sent_prompt = gen._image_backend.calls[-1].prompt
+        assert "Strict reference image rule" in sent_prompt
+        assert "reference image wins" in sent_prompt
+        assert gen.usage_tracker.started[-1]["prompt"] == sent_prompt
+        assert gen.versions.add_calls[-1]["prompt"] == sent_prompt
+
+    @pytest.mark.asyncio
+    async def test_generate_image_without_reference_images_does_not_add_reference_rule(self, tmp_path):
+        gen = _build_generator(tmp_path)
+
+        await gen.generate_image_async(
+            prompt="draw the character",
+            resource_type="storyboards",
+            resource_id="E1S04",
+        )
+
+        assert "Strict reference image rule" not in gen._image_backend.calls[-1].prompt
+
+    @pytest.mark.asyncio
     async def test_generate_video_sync_and_async(self, tmp_path):
         gen = _build_generator(tmp_path)
 
@@ -160,8 +221,39 @@ class TestMediaGenerator:
         assert gen.usage_tracker.started[-1]["call_type"] == "video"
 
     @pytest.mark.asyncio
+    async def test_generate_video_with_start_image_requires_strict_reference(self, tmp_path):
+        gen = _build_generator(tmp_path)
+        start_image = tmp_path / "start.png"
+        start_image.write_bytes(b"frame")
+
+        await gen.generate_video_async(
+            prompt="walk forward",
+            resource_type="videos",
+            resource_id="E1S06",
+            start_image=start_image,
+        )
+
+        sent_prompt = gen._video_backend.calls[-1].prompt
+        assert "Strict reference image rule" in sent_prompt
+        assert "reference image wins" in sent_prompt
+        assert gen.usage_tracker.started[-1]["prompt"] == sent_prompt
+        assert gen.versions.add_calls[-1]["prompt"] == sent_prompt
+
+    @pytest.mark.asyncio
+    async def test_generate_video_without_start_image_does_not_add_reference_rule(self, tmp_path):
+        gen = _build_generator(tmp_path)
+
+        await gen.generate_video_async(
+            prompt="walk forward",
+            resource_type="videos",
+            resource_id="E1S07",
+        )
+
+        assert "Strict reference image rule" not in gen._video_backend.calls[-1].prompt
+
+    @pytest.mark.asyncio
     async def test_video_generate_audio_from_config_resolver(self, tmp_path):
-        """验证 generate_video_async 通过 ConfigResolver 获取 audio 设置。"""
+        """驗證 generate_video_async 透過 ConfigResolver 獲取 audio 設定。"""
         gen = _build_generator(tmp_path)
         gen._config = _FakeConfigResolver(video_generate_audio=False)
 
@@ -170,12 +262,12 @@ class TestMediaGenerator:
             resource_type="videos",
             resource_id="E1S03",
         )
-        # VideoBackend 路径尊重 ConfigResolver 返回的值
+        # VideoBackend 路徑尊重 ConfigResolver 返回的值
         assert gen.usage_tracker.started[-1]["generate_audio"] is False
 
     @pytest.mark.asyncio
     async def test_video_generate_audio_respects_config_true(self, tmp_path):
-        """验证 video_backend 尊重 ConfigResolver 返回的 True。"""
+        """驗證 video_backend 尊重 ConfigResolver 返回的 True。"""
         gen = _build_generator(tmp_path)
         gen._config = _FakeConfigResolver(video_generate_audio=True)
 
@@ -185,3 +277,28 @@ class TestMediaGenerator:
             resource_id="E1S04",
         )
         assert gen.usage_tracker.started[-1]["generate_audio"] is True
+
+    @pytest.mark.asyncio
+    async def test_generate_video_records_backend_adjustments_in_version_metadata(self, tmp_path):
+        gen = _build_generator(tmp_path)
+        result = _FakeVideoResult()
+        result.duration_seconds = 8
+        result.adjusted = {"duration_seconds": (4, 8), "resolution": ("4k", "1080p")}
+
+        async def _generate(_request):
+            _request.output_path.parent.mkdir(parents=True, exist_ok=True)
+            _request.output_path.write_bytes(b"fake-video-data")
+            return result
+
+        gen._video_backend.generate = _generate
+
+        await gen.generate_video_async(
+            prompt="p",
+            resource_type="videos",
+            resource_id="E1S05",
+            duration_seconds="4",
+            resolution="4k",
+        )
+
+        assert gen.versions.add_calls[-1]["duration_seconds"] == 8
+        assert gen.versions.add_calls[-1]["adjusted"] == result.adjusted

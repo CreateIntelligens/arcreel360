@@ -3,7 +3,7 @@ services:
     image: postgres:18-alpine
     environment:
       POSTGRES_USER: arcreel
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 中设置 POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?請在 .env 中設定 POSTGRES_PASSWORD}
       POSTGRES_DB: arcreel
     volumes:
       - ./pgdata:/var/lib/postgresql
@@ -17,10 +17,11 @@ services:
   arcreel:
     image: ghcr.io/arcreel/arcreel:latest
     ports:
-      - "1241:1241"
+      - "${PORT:-1241}:${PORT:-1241}"
     env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://arcreel:${POSTGRES_PASSWORD}@postgres:5432/arcreel
+      PORT: ${PORT:-1241}
     volumes:
       - ./.env:/app/.env
       - ./projects:/app/projects
@@ -31,7 +32,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:1241/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:${PORT:-1241}/health"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -1,33 +1,34 @@
-# 内容模式参考
+# 內容模式參考
 
-通过 `project.json` 的 `content_mode` 字段切换。各 skill 的脚本会自动读取并应用对应规格，无需在 prompt 中指定画面比例。
+透過 `project.json` 的 `content_mode` 欄位切換。各 skill 的指令碼會自動讀取並應用對應規格，無需在 prompt 中指定畫面比例。
 
-| 维度 | 说书+画面（narration，默认） | 剧集动画（drama） |
+| 維度 | 說書+畫面（narration，預設） | 劇集動畫（drama） |
 |------|---------------------------|-----------------|
-| 数据结构 | `segments` 数组 | `scenes` 数组 |
-| 画面比例 | 项目配置（默认 9:16 竖屏） | 项目配置（默认 16:9 横屏） |
-| 默认时长 | 项目配置（默认 4 秒/片段） | 项目配置（默认 8 秒/场景） |
-| 时长可选 | 由视频模型能力决定 | 由视频模型能力决定 |
-| 对白来源 | 后期人工配音（小说原文） | 演员对话 |
-| 视频 Prompt | 仅角色对话（如有），无旁白 | 包含对话、旁白、音效 |
-| 预处理 Agent | split-narration-segments | normalize-drama-script |
+| 資料結構 | `segments` 陣列 | `scenes` 陣列 |
+| 畫面比例 | 專案配置（預設 9:16 豎屏） | 專案配置（預設 16:9 橫屏） |
+| 預設時長 | 專案配置（預設 4 秒/片段） | 專案配置（預設 8 秒/場景） |
+| 時長可選 | 由影片模型能力決定 | 由影片模型能力決定 |
+| 對白來源 | 後期人工配音（小說原文） | 演員對話 |
+| 影片 Prompt | 僅角色對話（如有），無旁白 | 包含對話、旁白、音效 |
+| 預處理 Agent | split-narration-segments | normalize-drama-script |
 
-## 视频规格
+## 影片規格
 
-- **分辨率**：图片 1K，视频 1080p
-- **生成方式**：每个片段/场景独立生成，分镜图作为起始帧
-- **拼接方式**：ffmpeg 拼接独立片段，不使用 Veo extend 串联镜头
-- **BGM**：通过 `negative_prompt` API 参数自动排除，后期用 compose-video 添加
+- **解析度**：圖片 1K，影片 1080p
+- **生成方式**：每個片段/場景獨立生成，分鏡圖作為起始幀
+- **拼接方式**：ffmpeg 拼接獨立片段，不使用 Veo extend 串聯鏡頭
+- **BGM**：透過 `negative_prompt` API 引數自動排除，後期用 compose-video 新增
 
-## Veo 3.1 extend 说明
+## Veo 3.1 extend 說明
 
-- 仅用于延长**单个**片段/场景（每次 +7 秒，最多 148 秒）
-- **仅支持 720p**，1080p 无法延长
-- 不适合串联不同镜头
+- 僅用於延長**單個**片段/場景（每次 +7 秒，最多 148 秒）
+- **僅支援 720p**，1080p 無法延長
+- 不適合串聯不同鏡頭
 
-## Prompt 语言
+## Prompt 語言
 
-- 图片/视频生成 prompt 使用**中文**
-- 采用叙事式描述，不使用关键词罗列
+- 圖片/影片生成 prompt 使用**繁體中文**；JSON 鍵名與模型列舉值可用英文。
+- 採用敘事式描述，不使用關鍵詞羅列。
+- （Python 側真相源：`lib/prompt_language.py` 的 `PROMPT_LANGUAGE_RULE`。新增生成入口時請引用該常數，勿自寫一份。）
 
-> 参考 `docs/google-genai-docs/nano-banana.md` 第 365 行起的 Prompting guide and strategies。
+> 參考 `docs/google-genai-docs/nano-banana.md` 第 365 行起的 Prompting guide and strategies。

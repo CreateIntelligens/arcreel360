@@ -22,7 +22,7 @@ manga-workflow skill 被加载后，SHALL 自动检测当前项目的工作流�
 
 ### Requirement: 编排 skill 须定义阶段间的 dispatch 和确认协议
 
-每个阶段的 subagent 返回后，主 agent SHALL 向用户展示结果摘要并等待确认，确认后才进入下一阶段。
+每個阶段的 subagent 返回后，主 agent SHALL 向用户展示结果摘要并等待确认，确认后才进入下一阶段。
 
 #### Scenario: subagent 返回角色/线索提取结果
 - **WHEN** `analyze-characters-clues` subagent 完成并返回
@@ -30,9 +30,9 @@ manga-workflow skill 被加载后，SHALL 自动检测当前项目的工作流�
 
 #### Scenario: 用户拒绝 subagent 结果
 - **WHEN** 用户对某阶段的结果不满意
-- **THEN** 主 agent 可选择重新 dispatch 同一 subagent（附加用户反馈）或允许用户手动编辑后继续
+- **THEN** 主 agent 可選择重新 dispatch 同一 subagent（附加用户反馈）或允许用户手动编辑后继续
 
-#### Scenario: 用户选择跳过某阶段
+#### Scenario: 用户選择跳过某阶段
 - **WHEN** 用户明确表示跳过当前阶段
 - **THEN** 主 agent 跳过该阶段，直接进入下一阶段
 
@@ -74,4 +74,4 @@ manga-workflow SHALL 支持从任意阶段开始执行，而非强制从头开�
 
 #### Scenario: 批量生成分镜图
 - **WHEN** 编排进入分镜图生成阶段
-- **THEN** 主 agent dispatch subagent，subagent 内部调用 generate_storyboard.py 脚本，处理所有待生成的分镜图，返回成功/失败汇总摘要
+- **THEN** 主 agent dispatch subagent，subagent 内部调用 generate_storyboard.py 脚本，处理所有待生成的分镜图，返回成功/失敗汇总摘要

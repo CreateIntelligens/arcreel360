@@ -9,7 +9,7 @@ from lib.db.base import Base, TimestampMixin
 
 
 class ProviderCredential(TimestampMixin, Base):
-    """供应商凭证。每个供应商可有多条凭证，其中最多一条 is_active=True。"""
+    """供應商憑證。每個供應商可有多條憑證，其中最多一條 is_active=True。"""
 
     __tablename__ = "provider_credential"
     __table_args__ = (
@@ -27,14 +27,18 @@ class ProviderCredential(TimestampMixin, Base):
     provider: Mapped[str] = mapped_column(String(32), nullable=False)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     api_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 帳密型供應商（如 ai360）的使用者名稱；password 沿用 api_key 欄不適用，故 username 獨立成欄
+    username: Mapped[str | None] = mapped_column(Text, nullable=True)
     credentials_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     base_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     def overlay_config(self, config: dict[str, str]) -> dict[str, str]:
-        """将凭证字段合并到配置字典中，返回修改后的 config。"""
+        """將憑證欄位合併到配置字典中，返回修改後的 config。"""
         if self.api_key:
             config["api_key"] = self.api_key
+        if self.username:
+            config["username"] = self.username
         if self.credentials_path:
             config["credentials_path"] = self.credentials_path
         if self.base_url:

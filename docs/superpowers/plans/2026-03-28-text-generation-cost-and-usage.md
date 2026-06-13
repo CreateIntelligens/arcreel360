@@ -52,7 +52,7 @@
 - [ ] **Step 2: 生成 Alembic 迁移**
 
 Run: `uv run alembic revision --autogenerate -m "add input_tokens and output_tokens to api_calls"`
-Expected: 生成新迁移文件，包含两个 `add_column` 操作
+Expected: 生成新迁移文件，包含两個 `add_column` 操作
 
 - [ ] **Step 3: 执行迁移**
 
@@ -74,7 +74,7 @@ git commit -m "feat: add input_tokens and output_tokens columns to api_calls"
 - Test: `tests/test_usage_repo.py`
 - Modify: `lib/db/repositories/usage_repo.py`
 
-- [ ] **Step 1: 写失败测试 — text call 的 start + finish + 成本计算**
+- [ ] **Step 1: 写失敗测试 — text call 的 start + finish + 成本计算**
 
 在 `tests/test_usage_repo.py` 的 `TestMultiProviderUsage` 类末尾新增：
 
@@ -84,7 +84,7 @@ git commit -m "feat: add input_tokens and output_tokens columns to api_calls"
         call_id = await repo.start_call(
             project_name="demo",
             call_type="text",
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite",
             prompt="分析小说内容",
             provider="gemini",
         )
@@ -133,7 +133,7 @@ git commit -m "feat: add input_tokens and output_tokens columns to api_calls"
         call_id = await repo.start_call(
             project_name="demo",
             call_type="text",
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite",
             provider="gemini",
         )
 
@@ -148,7 +148,7 @@ git commit -m "feat: add input_tokens and output_tokens columns to api_calls"
         assert item["cost_amount"] == 0.0
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [ ] **Step 2: 运行测试验证失敗**
 
 Run: `uv run python -m pytest tests/test_usage_repo.py::TestMultiProviderUsage::test_text_call_gemini_cost -v`
 Expected: FAIL — `finish_call()` 不接受 `input_tokens` 参数
@@ -176,7 +176,7 @@ Expected: FAIL — `finish_call()` 不接受 `input_tokens` 参数
     ) -> None:
 ```
 
-**3b.** 在 `finish_call()` 的成本计算 `if status == "success":` 块内，在最后一个 `elif row.call_type == "video":` 块之后新增：
+**3b.** 在 `finish_call()` 的成本计算 `if status == "success":` 块内，在最后一個 `elif row.call_type == "video":` 块之后新增：
 
 ```python
             elif row.call_type == "text" and input_tokens is not None:
@@ -213,13 +213,13 @@ Expected: FAIL — `finish_call()` 不接受 `input_tokens` 参数
 - [ ] **Step 4: 运行测试验证通过**
 
 Run: `uv run python -m pytest tests/test_usage_repo.py::TestMultiProviderUsage -v`
-Expected: 全部 PASS（包括原有测试和 3 个新测试）
+Expected: 全部 PASS（包括原有测试和 3 個新测试）
 
-- [ ] **Step 5: 写失败测试 — get_stats 包含 text_count**
+- [ ] **Step 5: 写失敗测试 — get_stats 包含 text_count**
 
 在 `tests/test_usage_repo.py` 的 `TestUsageRepository` 类中的 `test_get_stats` 方法末尾新增断言覆盖：
 
-将现有 `test_get_stats` 改为也包含 text call：
+将現有 `test_get_stats` 改为也包含 text call：
 
 ```python
     async def test_get_stats_includes_text_count(self, db_session):
@@ -241,7 +241,7 @@ Expected: 全部 PASS（包括原有测试和 3 个新测试）
         assert stats["total_count"] == 3
 ```
 
-- [ ] **Step 6: 运行测试验证失败**
+- [ ] **Step 6: 运行测试验证失敗**
 
 Run: `uv run python -m pytest tests/test_usage_repo.py::TestUsageRepository::test_get_stats_includes_text_count -v`
 Expected: FAIL — `text_count` key 不存在
@@ -280,7 +280,7 @@ Expected: 全部 PASS
 
 ```bash
 git add lib/db/repositories/usage_repo.py tests/test_usage_repo.py
-git commit -m "feat: UsageRepository 支持 text call_type 成本计算和 text_count 统计"
+git commit -m "feat: UsageRepository 支持 text call_type 成本计算和 text_count 統計"
 ```
 
 ---
@@ -291,7 +291,7 @@ git commit -m "feat: UsageRepository 支持 text call_type 成本计算和 text_
 - Test: `tests/test_usage_tracker.py`
 - Modify: `lib/usage_tracker.py`
 
-- [ ] **Step 1: 写失败测试 — UsageTracker 处理 text call**
+- [ ] **Step 1: 写失敗测试 — UsageTracker 处理 text call**
 
 在 `tests/test_usage_tracker.py` 的 `TestUsageTracker` 类末尾新增：
 
@@ -300,7 +300,7 @@ git commit -m "feat: UsageRepository 支持 text call_type 成本计算和 text_
         call_id = await tracker.start_call(
             project_name="demo",
             call_type="text",
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite",
             prompt="测试 prompt",
             provider="gemini",
         )
@@ -323,7 +323,7 @@ git commit -m "feat: UsageRepository 支持 text call_type 成本计算和 text_
         assert stats["total_count"] == 1
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [ ] **Step 2: 运行测试验证失敗**
 
 Run: `uv run python -m pytest tests/test_usage_tracker.py::TestUsageTracker::test_text_call_with_token_tracking -v`
 Expected: FAIL — `finish_call()` 不接受 `input_tokens` 参数
@@ -387,7 +387,7 @@ git commit -m "feat: UsageTracker 透传 input_tokens/output_tokens 参数"
 - Create: `lib/text_generator.py`
 - Test: `tests/test_text_generator.py`
 
-- [ ] **Step 1: 写失败测试**
+- [ ] **Step 1: 写失敗测试**
 
 创建 `tests/test_text_generator.py`：
 
@@ -415,7 +415,7 @@ async def tracker():
     await engine.dispose()
 
 
-def _make_backend(provider="gemini", model="gemini-3-flash-preview"):
+def _make_backend(provider="gemini", model="gemini-3.1-flash-lite"):
     backend = AsyncMock()
     backend.name = provider
     backend.model = model
@@ -484,7 +484,7 @@ class TestTextGenerator:
         assert item["project_name"] == ""
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [ ] **Step 2: 运行测试验证失敗**
 
 Run: `uv run python -m pytest tests/test_text_generator.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'lib.text_generator'`
@@ -582,7 +582,7 @@ git commit -m "feat: TextGenerator 包装层，组合 TextBackend + UsageTracker
 
 ---
 
-### Task 5: 改造 3 个调用点
+### Task 5: 改造 3 個调用点
 
 **Files:**
 - Modify: `lib/script_generator.py:50-57,108-112`
@@ -633,7 +633,7 @@ from lib.text_generator import TextGenerator
 ```python
     @classmethod
     async def create(cls, project_path: Union[str, Path]) -> "ScriptGenerator":
-        """异步工厂方法，自动从 DB 加载供应商配置创建 backend。"""
+        """異步工厂方法，自动从 DB 加载供应商配置创建 backend。"""
         from lib.text_backends.factory import create_text_backend_for_task
 
         project_name = Path(project_path).name
@@ -644,7 +644,7 @@ from lib.text_generator import TextGenerator
 ```python
     @classmethod
     async def create(cls, project_path: Union[str, Path]) -> "ScriptGenerator":
-        """异步工厂方法，自动从 DB 加载供应商配置创建 TextGenerator。"""
+        """異步工厂方法，自动从 DB 加载供应商配置创建 TextGenerator。"""
         project_name = Path(project_path).name
         generator = await TextGenerator.create(TextTaskType.SCRIPT, project_name)
         return cls(project_path, generator)
@@ -783,7 +783,7 @@ from lib.text_generator import TextGenerator
         style_description = result.text
 ```
 
-- [ ] **Step 4: 运行现有测试确保无回归**
+- [ ] **Step 4: 运行現有测试确保无回归**
 
 Run: `uv run python -m pytest tests/ -v --ignore=tests/test_text_generator.py -k "script or usage" --timeout=30`
 Expected: 全部 PASS
@@ -792,7 +792,7 @@ Expected: 全部 PASS
 
 ```bash
 git add lib/script_generator.py lib/project_manager.py server/routers/files.py
-git commit -m "feat: 3 个调用点改用 TextGenerator，自动追踪文本生成用量"
+git commit -m "feat: 3 個调用点改用 TextGenerator，自动追踪文本生成用量"
 ```
 
 ---
@@ -844,7 +844,7 @@ import { X, Image, Video, FileText, AlertCircle, DollarSign, ChevronLeft, Chevro
   output_tokens: number | null;
 ```
 
-**2c.** 在 Stats summary 的 grid 中，在 `视频` StatBlock 之后、`失败` StatBlock 之前新增文本统计：
+**2c.** 在 Stats summary 的 grid 中，在 `视频` StatBlock 之后、`失敗` StatBlock 之前新增文本統計：
 
 将 `grid-cols-4` 改为 `grid-cols-5`：
 
@@ -912,7 +912,7 @@ import { X, Image, Video, FileText, AlertCircle, DollarSign, ChevronLeft, Chevro
 
 修改 `frontend/src/components/pages/settings/UsageStatsSection.tsx`：
 
-在统计卡片的 `<div className="mt-2 flex ...">` 内部，将时长展示改为条件渲染：
+在統計卡片的 `<div className="mt-2 flex ...">` 内部，将时长展示改为条件渲染：
 
 将：
 ```typescript

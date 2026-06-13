@@ -1,18 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ImagePlus, Upload, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Pencil, Trash2, User } from "lucide-react";
 import { API } from "@/api";
 import { VersionTimeMachine } from "@/components/canvas/timeline/VersionTimeMachine";
 import { AspectFrame } from "@/components/ui/AspectFrame";
-import { GenerateButton } from "@/components/ui/GenerateButton";
 import { ImageFlipReveal } from "@/components/ui/ImageFlipReveal";
 import { PreviewableImageFrame } from "@/components/ui/PreviewableImageFrame";
 import { useProjectsStore } from "@/stores/projects-store";
+import { useAppStore } from "@/stores/app-store";
+import { useConfirm } from "@/hooks/useConfirm";
 import type { Character } from "@/types";
+import { LorebookDescriptionField } from "./LorebookDescriptionField";
+import { LorebookImageGenerateControls } from "./LorebookImageGenerateControls";
+import { LorebookReferenceImageField } from "./LorebookReferenceImageField";
 
 interface CharacterSavePayload {
   description: string;
   voiceStyle: string;
-  referenceFile?: File | null;
+  imageBackend?: string | null;
 }
 
 interface CharacterCardProps {
@@ -20,9 +24,18 @@ interface CharacterCardProps {
   character: Character;
   projectName: string;
   onSave: (name: string, payload: CharacterSavePayload) => Promise<void>;
+  onUploadReference: (name: string, file: File) => Promise<void> | void;
+  onRemoveReference?: (name: string) => Promise<void> | void;
   onGenerate: (name: string) => void;
+  onDelete?: (name: string) => Promise<void> | void;
+  onRename?: (oldName: string, newName: string) => Promise<void> | void;
   onRestoreVersion?: () => Promise<void> | void;
   generating?: boolean;
+  modelOptions?: {
+    image: string[];
+    text?: string[];
+    providerNames: Record<string, string>;
+  };
 }
 
 export function CharacterCard({
@@ -30,10 +43,34 @@ export function CharacterCard({
   character,
   projectName,
   onSave,
+  onUploadReference,
+  onRemoveReference,
   onGenerate,
+  onDelete,
+  onRename,
   onRestoreVersion,
   generating = false,
+  modelOptions,
 }: CharacterCardProps) {
+  const confirm = useConfirm();
+  const [isEditing, setIsEditing] = useState(false);
+  const [textModel, setTextModel] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState(name);
+
+  useEffect(() => {
+    setNameDraft(name);
+  }, [name]);
+
+  const commitRename = async () => {
+    const trimmed = nameDraft.trim();
+    setRenaming(false);
+    if (!trimmed || trimmed === name || !onRename) {
+      setNameDraft(name);
+      return;
+    }
+    await onRename(name, trimmed);
+  };
   const sheetFp = useProjectsStore(
     (s) => character.character_sheet ? s.getAssetFingerprint(character.character_sheet) : null,
   );
@@ -42,78 +79,25 @@ export function CharacterCard({
   );
   const [description, setDescription] = useState(character.description);
   const [voiceStyle, setVoiceStyle] = useState(character.voice_style ?? "");
+  const [imageBackend, setImageBackend] = useState(character.image_backend ?? "");
   const [imgError, setImgError] = useState(false);
-  const [referenceFile, setReferenceFile] = useState<File | null>(null);
-  const [referencePreview, setReferencePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   useEffect(() => {
     setDescription(character.description);
     setVoiceStyle(character.voice_style ?? "");
-  }, [character.description, character.voice_style]);
+    setImageBackend(character.image_backend ?? "");
+  }, [character.description, character.voice_style, character.image_backend]);
 
   useEffect(() => {
     setImgError(false);
   }, [character.character_sheet, sheetFp]);
 
-  useEffect(() => {
-    setReferenceFile(null);
-    setReferencePreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
-  }, [character.reference_image]);
-
-  useEffect(() => {
-    return () => {
-      if (referencePreview) {
-        URL.revokeObjectURL(referencePreview);
-      }
-    };
-  }, [referencePreview]);
-
-  const autoResize = useCallback(() => {
-    const el = textareaRef.current;
-    if (el) {
-      el.style.height = "auto";
-      el.style.height = `${el.scrollHeight}px`;
-    }
-  }, []);
-
-  useEffect(() => {
-    autoResize();
-  }, [autoResize, description]);
-
   const isDirty =
     description !== character.description ||
     voiceStyle !== (character.voice_style ?? "") ||
-    referenceFile !== null;
-
-  const handleReferenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setReferenceFile(file);
-    setReferencePreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return URL.createObjectURL(file);
-    });
-    e.target.value = "";
-  };
-
-  const clearPendingReference = () => {
-    setReferenceFile(null);
-    setReferencePreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
+    imageBackend !== (character.image_backend ?? "");
 
   const handleSave = async () => {
     setSaving(true);
@@ -121,10 +105,45 @@ export function CharacterCard({
       await onSave(name, {
         description,
         voiceStyle,
-        referenceFile,
+        imageBackend: imageBackend || null,
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleModelChange = async (value: string) => {
+    setImageBackend(value);
+    setSaving(true);
+    try {
+      await onSave(name, {
+        description,
+        voiceStyle,
+        imageBackend: value || null,
+      });
+      useAppStore.getState().pushToast("模型設定已更新", "success");
+    } catch (err) {
+      useAppStore.getState().pushToast(`模型設定更新失敗: ${(err as Error).message}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleGenerateAI = async () => {
+    setAiGenerating(true);
+    try {
+      const res = await API.generateAIDescription(projectName, {
+        type: "character",
+        name,
+        description: description || name,
+        model: textModel || undefined,
+      });
+      setDescription(res.prompt);
+      useAppStore.getState().pushToast("提示詞生成成功", "success");
+    } catch (err) {
+      useAppStore.getState().pushToast(`AI 提示詞生成失敗: ${(err as Error).message}`, "error");
+    } finally {
+      setAiGenerating(false);
     }
   };
 
@@ -135,9 +154,6 @@ export function CharacterCard({
   const savedReferenceUrl = character.reference_image
     ? API.getFileUrl(projectName, character.reference_image, referenceFp)
     : null;
-
-  const displayedReferenceUrl = referencePreview ?? savedReferenceUrl;
-  const hasSavedReference = Boolean(savedReferenceUrl) && !referencePreview;
 
   return (
     <div
@@ -152,13 +168,101 @@ export function CharacterCard({
         setIsEditing(false);
       }}
     >
-      <h3 className="mb-4 truncate text-lg font-bold text-white">{name}</h3>
+      <div className="mb-4 flex items-center justify-between gap-2">
+        {renaming ? (
+          <input
+            type="text"
+            autoFocus
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onBlur={() => void commitRename()}
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void commitRename();
+              } else if (e.key === "Escape") {
+                setNameDraft(name);
+                setRenaming(false);
+              }
+            }}
+            className="flex-1 rounded border border-indigo-500 bg-gray-800 px-2 py-0.5 text-lg font-bold text-white focus:outline-none"
+            aria-label="角色名稱"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => onRename && setRenaming(true)}
+            disabled={!onRename}
+            className="group flex flex-1 min-w-0 items-center gap-1.5 text-left disabled:cursor-default"
+            title={onRename ? "點擊改名" : undefined}
+          >
+            <h3 className="truncate text-lg font-bold text-white">{name}</h3>
+            {onRename && (
+              <Pencil className="h-3 w-3 shrink-0 text-gray-600 opacity-0 transition-opacity group-hover:opacity-100" />
+            )}
+          </button>
+        )}
+        {onDelete && (
+          <button
+            type="button"
+            onClick={async () => {
+              const ok = await confirm({
+                message: `確定要刪除角色「${name}」？此操作無法復原。`,
+                danger: true,
+              });
+              if (ok) void onDelete(name);
+            }}
+            className="shrink-0 rounded p-1.5 text-gray-500 transition-colors hover:bg-red-500/10 hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
+            title="刪除角色"
+            aria-label={`刪除角色 ${name}`}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
       <div className="mb-4 space-y-3">
+        {/* 提示詞 (描述) 與模型選擇 / AI 生成按鈕 */}
+        <LorebookDescriptionField
+          value={description}
+          onChange={setDescription}
+          placeholder="輸入角色描述..."
+          onGenerateAI={handleGenerateAI}
+          aiGenerating={aiGenerating}
+          textModel={textModel}
+          onTextModelChange={setTextModel}
+          textModelOptions={modelOptions?.text ?? []}
+          providerNames={modelOptions?.providerNames ?? {}}
+        />
+
+        <label className="block text-xs font-medium text-gray-400">聲音風格</label>
+        <input
+          type="text"
+          value={voiceStyle}
+          onChange={(e) => setVoiceStyle(e.target.value)}
+          className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-indigo-500 focus:outline-none"
+          placeholder="例如：溫柔但有威嚴"
+        />
+
+        {isDirty && (
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={saving}
+            className="mt-3 w-full rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? "儲存中..." : "儲存"}
+          </button>
+        )}
+      </div>
+
+      {/* 下面是圖跟模型選單與生圖的按鈕 */}
+      <div className="mt-4 pt-4 border-t border-gray-800 space-y-3">
         <div>
           <div className="mb-1.5 flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-              角色设计图
+              角色設計圖
             </span>
             <VersionTimeMachine
               projectName={projectName}
@@ -169,18 +273,18 @@ export function CharacterCard({
           </div>
           <PreviewableImageFrame
             src={sheetUrl && !imgError ? sheetUrl : null}
-            alt={`${name} 设计图`}
+            alt={`${name} 設計圖`}
           >
             <AspectFrame ratio="3:4">
               <ImageFlipReveal
                 src={sheetUrl && !imgError ? sheetUrl : null}
-                alt={`${name} 设计图`}
+                alt={`${name} 設計圖`}
                 className="h-full w-full object-cover"
                 onError={() => setImgError(true)}
                 fallback={
                   <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-500">
                     <User className="h-10 w-10" />
-                    <span className="text-xs">点击生成</span>
+                    <span className="text-xs">暫無角色圖片</span>
                   </div>
                 }
               />
@@ -188,110 +292,22 @@ export function CharacterCard({
           </PreviewableImageFrame>
         </div>
 
-        <div>
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-              参考图
-            </span>
-            {(referenceFile || hasSavedReference) && (
-              <button
-                type="button"
-                onClick={() =>
-                  referenceFile
-                    ? clearPendingReference()
-                    : fileInputRef.current?.click()
-                }
-                className="text-xs text-gray-400 transition-colors hover:text-gray-200"
-              >
-                {referenceFile ? "取消待上传" : "替换"}
-              </button>
-            )}
-          </div>
+        <LorebookReferenceImageField
+          name={name}
+          savedUrl={savedReferenceUrl}
+          resetKey={savedReferenceUrl}
+          onUpload={(file) => onUploadReference(name, file)}
+          onRemove={onRemoveReference ? () => onRemoveReference(name) : undefined}
+        />
 
-          {displayedReferenceUrl ? (
-            <PreviewableImageFrame
-              src={displayedReferenceUrl}
-              alt={`${name} 参考图`}
-              buttonClassName="right-2.5 top-2.5"
-            >
-              <div className="relative overflow-hidden rounded-lg border border-gray-700 bg-gray-800">
-                <img
-                  src={displayedReferenceUrl}
-                  alt={`${name} 参考图`}
-                  className="h-28 w-full object-cover"
-                />
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent px-3 py-2">
-                  <span className="flex items-center gap-1.5 text-xs text-gray-200">
-                    <ImagePlus className="h-3.5 w-3.5" />
-                    {referenceFile ? "待保存参考图" : "已保存参考图"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="rounded bg-black/40 px-2 py-1 text-xs text-gray-200 transition-colors hover:bg-black/60"
-                  >
-                    更换
-                  </button>
-                </div>
-              </div>
-            </PreviewableImageFrame>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gray-700 bg-gray-800/50 px-3 py-4 text-sm text-gray-500 transition-colors hover:border-gray-500 hover:text-gray-300"
-            >
-              <Upload className="h-4 w-4" />
-              上传参考图
-            </button>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".png,.jpg,.jpeg,.webp"
-            onChange={handleReferenceChange}
-            className="hidden"
-          />
-        </div>
-      </div>
-
-      <label className="text-xs font-medium text-gray-400">描述</label>
-      <textarea
-        ref={textareaRef}
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        onInput={autoResize}
-        rows={3}
-        className="mt-1 w-full resize-none overflow-hidden rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-indigo-500 focus:outline-none"
-        placeholder="输入角色描述..."
-      />
-
-      <label className="mt-3 block text-xs font-medium text-gray-400">声音风格</label>
-      <input
-        type="text"
-        value={voiceStyle}
-        onChange={(e) => setVoiceStyle(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-indigo-500 focus:outline-none"
-        placeholder="例如：温柔但有威严"
-      />
-
-      {isDirty && (
-        <button
-          type="button"
-          onClick={() => void handleSave()}
-          disabled={saving}
-          className="mt-3 rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {saving ? "保存中..." : "保存"}
-        </button>
-      )}
-
-      <div className="mt-3">
-        <GenerateButton
-          onClick={() => onGenerate(name)}
+        <LorebookImageGenerateControls
+          value={imageBackend}
+          onChange={handleModelChange}
+          options={modelOptions?.image}
+          providerNames={modelOptions?.providerNames}
+          onGenerate={() => onGenerate(name)}
           loading={generating}
-          label={character.character_sheet ? "重新生成设计图" : "生成设计图"}
-          className="w-full justify-center"
+          label={character.character_sheet ? "生成角色" : "生成角色"}
         />
       </div>
     </div>

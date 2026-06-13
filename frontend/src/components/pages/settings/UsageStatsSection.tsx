@@ -51,7 +51,7 @@ export function UsageStatsSection() {
       <div>
         <div className="workbench-kicker text-[11px] font-semibold">Provider Cost Signals</div>
         <h3 className="mt-1 text-lg font-semibold text-[color:var(--wb-text-primary)]">用量統計</h3>
-        <p className="mt-1 text-sm text-[color:var(--wb-text-muted)]">查看各供應商的 API 呼叫統計</p>
+        <p className="mt-1 text-sm text-[color:var(--wb-text-muted)]">檢視各供應商的 API 呼叫統計</p>
       </div>
 
       {/* Filters */}
@@ -115,7 +115,7 @@ export function UsageStatsSection() {
                     : "0%"}
                 </span>
                 {s.call_type === "text" ? (
-                  s.total_calls > 0 && <span>類型：文字生成</span>
+                  s.total_calls > 0 && <span>型別：文字生成</span>
                 ) : s.total_duration_seconds !== undefined && (
                   <span>時長：{s.total_duration_seconds}s</span>
                 )}

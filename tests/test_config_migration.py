@@ -38,7 +38,7 @@ def json_file(tmp_path: Path) -> Path:
             "gemini_request_gap": 3.1,
             "image_max_workers": 3,
             "video_max_workers": 2,
-            "ark_api_key": "ark-test-key",
+            "ark_api_key": "byteplus-test-key",
         },
     }
     p = tmp_path / ".system_config.json"
@@ -52,8 +52,8 @@ async def test_migrate_provider_configs(session: AsyncSession, json_file: Path):
     config = await repo.get_all("gemini-aistudio")
     assert config["api_key"] == "AIza-test-key"
     assert config["image_rpm"] == "15"
-    config = await repo.get_all("ark")
-    assert config["api_key"] == "ark-test-key"
+    config = await repo.get_all("byteplus")
+    assert config["api_key"] == "byteplus-test-key"
 
 
 async def test_migrate_system_settings(session: AsyncSession, json_file: Path):
@@ -76,14 +76,14 @@ async def test_migrate_renames_file(session: AsyncSession, json_file: Path):
 async def test_migrate_max_workers_to_all_configured_providers(session: AsyncSession, json_file: Path):
     await migrate_json_to_db(session, json_file)
     repo = ProviderConfigRepository(session)
-    ark = await repo.get_all("ark")
-    assert ark.get("video_max_workers") == "2"
+    byteplus = await repo.get_all("byteplus")
+    assert byteplus.get("video_max_workers") == "2"
     grok = await repo.get_all("grok")
     assert "video_max_workers" not in grok
 
 
 async def test_migrate_aistudio_001_to_preview(session: AsyncSession, tmp_path: Path):
-    """AI Studio 的 001 后缀应迁移为 preview。"""
+    """AI Studio 的 001 字尾應遷移為 preview。"""
     data = {
         "overrides": {
             "video_backend": "aistudio",

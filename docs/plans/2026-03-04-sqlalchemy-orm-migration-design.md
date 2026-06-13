@@ -8,7 +8,7 @@
 
 ## 背景
 
-当前运行时状态使用 3 个独立 SQLite DB，手写 SQL，无 ORM：
+当前运行时状态使用 3 個独立 SQLite DB，手写 SQL，无 ORM：
 
 | DB | 文件路径 | 源文件 | 表数 |
 |---|---|---|---|
@@ -23,12 +23,12 @@
 
 ## 关键决策
 
-| 决策项 | 选择 | 理由 |
+| 决策项 | 選择 | 理由 |
 |---|---|---|
 | 迁移策略 | 硬切换 | 提供一次性迁移脚本，不保留旧代码 |
-| 异步模式 | 全异步 (AsyncSession) | 契合 FastAPI 异步架构，避免阻塞 event loop |
-| 数据库拓扑 | 3 个 SQLite 合并为单 DB | 简化部署，只需一个 DATABASE_URL |
-| 迁移管理 | Alembic，首个 migration 建全部表 | 标准做法，后续 schema 变更有迹可循 |
+| 異步模式 | 全異步 (AsyncSession) | 契合 FastAPI 異步架构，避免阻塞 event loop |
+| 数据库拓扑 | 3 個 SQLite 合并为单 DB | 简化部署，只需一個 DATABASE_URL |
+| 迁移管理 | Alembic，首個 migration 建全部表 | 标准做法，后续 schema 变更有迹可循 |
 | 依赖管理 | `uv add` | 自动获取最新版本并更新 lock 文件 |
 
 ## 架构设计
@@ -281,9 +281,9 @@ class SessionRepository:
     async def interrupt_running(self) -> int
 ```
 
-### 现有模块改造
+### 現有模块改造
 
-| 现有模块 | 改造方式 |
+| 現有模块 | 改造方式 |
 |---|---|
 | `GenerationQueue` | 内部改用 `TaskRepository`，所有方法 async 化。全局单例 → FastAPI Depends 注入 |
 | `UsageTracker` | 内部改用 `UsageRepository`，方法 async 化。路由通过 Depends 注入 |
@@ -311,7 +311,7 @@ alembic/
 2. 用 `sqlite3` 同步读取旧数据
 3. 用 `AsyncSession` 批量写入新数据库（每 500 条 flush）
 4. 迁移成功后旧文件重命名为 `.bak`
-5. 打印迁移统计
+5. 打印迁移統計
 
 ### 环境配置
 

@@ -32,7 +32,7 @@ def build_character_prompt(name: str, description: str, style: str = "") -> str:
 
 角色「{name}」的三视图设计稿。{description}
 
-三个等比例全身像水平排列在纯净浅灰背景上：左侧正面、中间四分之三侧面、右侧纯侧面轮廓。柔和均匀的摄影棚照明，无强烈阴影。"""
+三個等比例全身像水平排列在纯净浅灰背景上：左侧正面、中间四分之三侧面、右侧纯侧面轮廓。柔和均匀的摄影棚照明，无强烈阴影。"""
 
     return prompt
 ```
@@ -65,7 +65,7 @@ def build_character_prompt(name: str, description: str, style: str = "") -> str:
 
 **修改文件**: `.claude/skills/generate-clues/scripts/generate_clue.py`
 
-保持现有 prompt 结构不变，仅确保使用 2K 分辨率。
+保持現有 prompt 结构不变，仅确保使用 2K 分辨率。
 
 ---
 
@@ -261,7 +261,7 @@ _, new_version = await generator.generate_image_async(
 ## 7. 向后兼容性
 
 - `project.json` 中的 `aspect_ratio` 自定义配置优先级最高，可覆盖默认值
-- 现有项目的角色/线索设计图不受影响，仅新生成的图片使用新规格
+- 現有项目的角色/线索设计图不受影响，仅新生成的图片使用新规格
 - `description` 字段保持不变，无需迁移数据
 
 ---

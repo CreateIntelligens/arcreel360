@@ -9,6 +9,7 @@ is managed by the providers router.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Annotated, Any, TypedDict
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -30,7 +31,37 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_ASSISTANT_PROVIDERS = ("claude", "gemini-lite", "openai-lite")
+_ASSISTANT_PROVIDERS = ("claude", "gemini-lite", "gemini-full", "openai-lite", "openai-full")
+_BYTEPLUS_VIDEO_ENDPOINT_SETTING = "byteplus_video_endpoint_id"
+_BYTEPLUS_VIDEO_ENDPOINT_RE = re.compile(r"^ep-[A-Za-z0-9-]+$")
+
+
+def _normalize_assistant_provider(value: str) -> str:
+    return value.strip().replace("_", "-")
+
+
+def _compact_endpoint_id(value: str | None) -> str:
+    return re.sub(r"\s+", "", str(value or ""))
+
+
+def _normalize_byteplus_video_endpoint_id(value: str | None) -> str:
+    endpoint_id = _compact_endpoint_id(value)
+    if endpoint_id and not _BYTEPLUS_VIDEO_ENDPOINT_RE.fullmatch(endpoint_id):
+        raise HTTPException(
+            status_code=422,
+            detail=f"{_BYTEPLUS_VIDEO_ENDPOINT_SETTING} 必須是 ep- 開頭的 ModelArk Endpoint ID",
+        )
+    return endpoint_id
+
+
+async def _resolve_byteplus_video_endpoint_id(
+    svc: ConfigService,
+    all_settings: dict[str, str] | None,
+) -> str:
+    if all_settings is not None:
+        return _compact_endpoint_id(all_settings.get(_BYTEPLUS_VIDEO_ENDPOINT_SETTING, ""))
+    return _compact_endpoint_id(await svc.get_setting(_BYTEPLUS_VIDEO_ENDPOINT_SETTING, ""))
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -45,7 +76,11 @@ class _OptionsDict(TypedDict):
     provider_names: dict[str, str]
 
 
-async def _build_options(svc: ConfigService, session: AsyncSession) -> _OptionsDict:
+async def _build_options(
+    svc: ConfigService,
+    session: AsyncSession,
+    all_settings: dict[str, str] | None = None,
+) -> _OptionsDict:
     """Compute available backends from ready providers."""
     statuses = await svc.get_all_providers_status()
     ready_providers = {s.name for s in statuses if s.status == "ready"}
@@ -97,6 +132,7 @@ class SystemConfigPatchRequest(BaseModel):
     default_video_backend: str | None = None
     default_image_backend: str | None = None
     default_text_backend: str | None = None
+    byteplus_video_endpoint_id: str | None = None
     video_generate_audio: bool | None = None
     anthropic_api_key: str | None = None
     anthropic_base_url: str | None = None
@@ -143,12 +179,14 @@ async def get_system_config(
     video_generate_audio_raw = all_s.get("video_generate_audio", "false")
     video_generate_audio = video_generate_audio_raw.lower() in ("true", "1", "yes")
     anthropic_key = all_s.get("anthropic_api_key", "")
+    byteplus_video_endpoint_id = _compact_endpoint_id(all_s.get(_BYTEPLUS_VIDEO_ENDPOINT_SETTING, ""))
 
     settings: dict[str, Any] = {
         "assistant_provider": all_s.get("assistant_provider") or "claude",
         "default_video_backend": all_s.get("default_video_backend", ""),
         "default_image_backend": all_s.get("default_image_backend", ""),
         "default_text_backend": all_s.get("default_text_backend", ""),
+        "byteplus_video_endpoint_id": byteplus_video_endpoint_id,
         "video_generate_audio": video_generate_audio,
         "anthropic_api_key": {
             "is_set": bool(anthropic_key),
@@ -167,7 +205,7 @@ async def get_system_config(
         "text_backend_style": all_s.get("text_backend_style") or "",
     }
 
-    options = await _build_options(svc, session)
+    options = await _build_options(svc, session, all_s)
 
     return {"settings": settings, "options": options}
 
@@ -197,14 +235,20 @@ async def patch_system_config(
             await svc.set_setting(backend_key, value)
 
     if "assistant_provider" in patch:
-        value = str(patch["assistant_provider"] or "").strip() or "claude"
+        value = _normalize_assistant_provider(str(patch["assistant_provider"] or "")) or "claude"
         if value not in _ASSISTANT_PROVIDERS:
-            raise HTTPException(status_code=422, detail=f"assistant_provider 必须是 {', '.join(_ASSISTANT_PROVIDERS)} 之一")
+            raise HTTPException(
+                status_code=422, detail=f"assistant_provider 必須是 {', '.join(_ASSISTANT_PROVIDERS)} 之一"
+            )
         await svc.set_setting("assistant_provider", value)
 
     # Boolean settings
     if "video_generate_audio" in patch and patch["video_generate_audio"] is not None:
         await svc.set_setting("video_generate_audio", "true" if patch["video_generate_audio"] else "false")
+
+    if _BYTEPLUS_VIDEO_ENDPOINT_SETTING in patch:
+        endpoint_id = _normalize_byteplus_video_endpoint_id(patch[_BYTEPLUS_VIDEO_ENDPOINT_SETTING])
+        await svc.set_setting(_BYTEPLUS_VIDEO_ENDPOINT_SETTING, endpoint_id)
 
     # Anthropic API key (secret)
     if "anthropic_api_key" in patch:
@@ -225,7 +269,7 @@ async def patch_system_config(
             if not (min_val <= value <= max_val):
                 raise HTTPException(
                     status_code=422,
-                    detail=f"{key} 应在 {min_val}-{max_val} 之间",
+                    detail=f"{key} 應在 {min_val}-{max_val} 之間",
                 )
             await svc.set_setting(key, str(value))
 

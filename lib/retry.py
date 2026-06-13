@@ -1,7 +1,7 @@
-"""通用重试装饰器，带指数退避和随机抖动。
+"""通用重試裝飾器，帶指數退避和隨機抖動。
 
-不依赖任何特定供应商 SDK，可被所有后端复用。
-各供应商可通过 retryable_errors 参数注入自己的可重试异常类型。
+不依賴任何特定供應商 SDK，可被所有後端複用。
+各供應商可透過 retryable_errors 引數注入自己的可重試異常型別。
 """
 
 from __future__ import annotations
@@ -13,13 +13,13 @@ import random
 
 logger = logging.getLogger(__name__)
 
-# 基础可重试错误（不依赖任何 SDK）
+# 基礎可重試錯誤（不依賴任何 SDK）
 BASE_RETRYABLE_ERRORS: tuple[type[Exception], ...] = (
     ConnectionError,
     TimeoutError,
 )
 
-# 字符串模式匹配：覆盖异常类型不在列表中但属于瞬态的情况（大小写不敏感）
+# 字串模式匹配：覆蓋異常型別不在列表中但屬於瞬態的情況（大小寫不敏感）
 RETRYABLE_STATUS_PATTERNS = (
     "429",
     "resource_exhausted",
@@ -37,13 +37,13 @@ RETRYABLE_STATUS_PATTERNS = (
     "timeout",
 )
 
-# 默认重试配置，供各后端直接引用，避免魔法数字分散在 9+ 处
+# 預設重試配置，供各後端直接引用，避免魔法數字分散在 9+ 處
 DEFAULT_MAX_ATTEMPTS = 3
 DEFAULT_BACKOFF_SECONDS: tuple[int, ...] = (2, 4, 8)
 
 
 def _should_retry(exc: Exception, retryable_errors: tuple[type[Exception], ...]) -> bool:
-    """判断异常是否应当重试。"""
+    """判斷異常是否應當重試。"""
     if isinstance(exc, retryable_errors):
         return True
     error_lower = str(exc).lower()
@@ -55,7 +55,7 @@ def with_retry_async(
     backoff_seconds: tuple[int, ...] = DEFAULT_BACKOFF_SECONDS,
     retryable_errors: tuple[type[Exception], ...] = BASE_RETRYABLE_ERRORS,
 ):
-    """异步函数重试装饰器，带指数退避和随机抖动。"""
+    """非同步函式重試裝飾器，帶指數退避和隨機抖動。"""
 
     def decorator(func):
         @functools.wraps(func)
@@ -73,12 +73,12 @@ def with_retry_async(
                         jitter = random.uniform(0, 2)
                         wait_time = base_wait + jitter
                         logger.warning(
-                            "API 调用异常: %s - %s",
+                            "API 呼叫異常: %s - %s",
                             type(e).__name__,
                             str(e)[:200],
                         )
                         logger.warning(
-                            "重试 %d/%d, %.1f 秒后...",
+                            "重試 %d/%d, %.1f 秒後...",
                             attempt + 1,
                             max_attempts - 1,
                             wait_time,
@@ -87,7 +87,7 @@ def with_retry_async(
                     else:
                         raise
 
-            raise RuntimeError(f"with_retry_async: max_attempts={max_attempts}，未执行任何尝试")
+            raise RuntimeError(f"with_retry_async: max_attempts={max_attempts}，未執行任何嘗試")
 
         return wrapper
 

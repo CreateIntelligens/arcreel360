@@ -9,10 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from lib.config.registry import PROVIDER_REGISTRY
 from lib.config.repository import ProviderConfigRepository, SystemSettingRepository
 from lib.db.repositories.credential_repository import CredentialRepository
+from lib.providers import normalize_provider_id
 
 _DEFAULT_VIDEO_BACKEND = "gemini-aistudio/veo-3.1-lite-generate-preview"
 _DEFAULT_IMAGE_BACKEND = "gemini-aistudio/gemini-3.1-flash-image-preview"
-_DEFAULT_TEXT_BACKEND = "gemini-aistudio/gemini-3-flash-preview"
+_DEFAULT_TEXT_BACKEND = "gemini-aistudio/gemini-3.1-flash-lite"
 
 # DB setting key → environment variable name
 _ANTHROPIC_ENV_MAP: dict[str, str] = {
@@ -60,6 +61,7 @@ class ConfigService:
         self._setting_repo = SystemSettingRepository(session)
 
     async def get_provider_config(self, provider: str) -> dict[str, str]:
+        provider = normalize_provider_id(provider)
         self._validate_provider(provider)
         return await self._provider_repo.get_all(provider)
 
@@ -71,6 +73,7 @@ class ConfigService:
         *,
         flush: bool = True,
     ) -> None:
+        provider = normalize_provider_id(provider)
         self._validate_provider(provider)
         meta = PROVIDER_REGISTRY[provider]
         is_secret = key in meta.secret_keys
@@ -83,6 +86,7 @@ class ConfigService:
         *,
         flush: bool = True,
     ) -> None:
+        provider = normalize_provider_id(provider)
         self._validate_provider(provider)
         await self._provider_repo.delete(provider, key, flush=flush)
 
@@ -122,6 +126,7 @@ class ConfigService:
         return await self._provider_repo.get_all_configs_bulk()
 
     async def get_provider_config_masked(self, provider: str) -> dict[str, dict]:
+        provider = normalize_provider_id(provider)
         self._validate_provider(provider)
         return await self._provider_repo.get_all_masked(provider)
 
@@ -149,6 +154,7 @@ class ConfigService:
 
     @staticmethod
     def _validate_provider(provider: str) -> None:
+        provider = normalize_provider_id(provider)
         if provider not in PROVIDER_REGISTRY:
             raise ValueError(f"Unknown provider: {provider}")
 
@@ -156,6 +162,6 @@ class ConfigService:
     def _parse_backend(raw: str, fallback: str) -> tuple[str, str]:
         if "/" in raw:
             provider_id, model_id = raw.split("/", 1)
-            return provider_id, model_id
+            return normalize_provider_id(provider_id), model_id
         parts = fallback.split("/", 1)
-        return parts[0], parts[1]
+        return normalize_provider_id(parts[0]), parts[1]

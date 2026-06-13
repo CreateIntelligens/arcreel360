@@ -1,7 +1,7 @@
 """
-登录 API 路由测试
+登入 API 路由測試
 
-测试 server.routers.auth 中的登录和 token 验证路由。
+測試 server.routers.auth 中的登入和 token 驗證路由。
 """
 
 import os
@@ -17,7 +17,7 @@ from server.routers import auth as auth_router
 
 @pytest.fixture()
 def client():
-    """创建测试客户端，设置固定的认证环境变量"""
+    """建立測試客戶端，設定固定的認證環境變數"""
     auth_module._cached_token_secret = None
     auth_module._cached_password_hash = None
     with patch.dict(
@@ -36,7 +36,7 @@ def client():
 
 class TestLoginRoute:
     def test_login_success(self, client):
-        """正确凭据返回 200 + access_token"""
+        """正確憑據返回 200 + access_token"""
         resp = client.post(
             "/api/v1/auth/token",
             data={"username": "testuser", "password": "testpass"},
@@ -48,7 +48,7 @@ class TestLoginRoute:
         assert len(data["access_token"]) > 0
 
     def test_login_wrong_password(self, client):
-        """错误密码返回 401"""
+        """錯誤密碼返回 401"""
         resp = client.post(
             "/api/v1/auth/token",
             data={"username": "testuser", "password": "wrongpass"},
@@ -56,7 +56,7 @@ class TestLoginRoute:
         assert resp.status_code == 401
 
     def test_login_wrong_username(self, client):
-        """错误用户名返回 401"""
+        """錯誤使用者名稱返回 401"""
         resp = client.post(
             "/api/v1/auth/token",
             data={"username": "wronguser", "password": "testpass"},
@@ -66,7 +66,7 @@ class TestLoginRoute:
 
 class TestVerifyRoute:
     def test_verify_valid_token(self, client):
-        """有效 token 验证通过"""
+        """有效 token 驗證透過"""
         login_resp = client.post(
             "/api/v1/auth/token",
             data={"username": "testuser", "password": "testpass"},
@@ -88,7 +88,7 @@ class TestVerifyRoute:
         assert resp.status_code == 401
 
     def test_verify_invalid_token(self, client):
-        """无效 token 返回 401"""
+        """無效 token 返回 401"""
         resp = client.get(
             "/api/v1/auth/verify",
             headers={"Authorization": "Bearer invalid-token"},

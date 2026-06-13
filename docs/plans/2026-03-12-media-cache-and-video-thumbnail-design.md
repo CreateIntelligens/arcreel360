@@ -40,7 +40,7 @@
 ```
 
 实现：扫描项目目录下 `storyboards/`、`videos/`、`thumbnails/`、`characters/`、`clues/`，
-用 `int(file.stat().st_mtime)` 生成指纹 map。~50 个文件耗时 <1ms。
+用 `int(file.stat().st_mtime)` 生成指纹 map。~50 個文件耗时 <1ms。
 
 **2) SSE 事件携带 `asset_fingerprints`**
 
@@ -113,14 +113,14 @@ const url = API.getFileUrl(projectName, assetPath, fp);
 // → "/api/v1/files/MyProject/storyboards/scene_E1S01.png?v=1710288000"
 ```
 
-#### 缓存命中场景
+#### 缓存命中場景
 
-| 场景 | 旧方案 | 新方案 |
+| 場景 | 旧方案 | 新方案 |
 |------|--------|--------|
 | 虚拟滚动卸载再挂载 | 重新下载 | disk cache，零网络 |
 | 刷新页面 | ?v=N 重新下载 | 同 mtime → 同 URL → 缓存命中 |
 | 新 session 打开 | ?v=0 内容可能已变 | 同 mtime → 同 URL → 缓存命中 |
-| 文件重新生成 | revision+1 | mtime 变 → URL 变 → 重下 |
+| 文件生成 | revision+1 | mtime 变 → URL 变 → 重下 |
 
 ### Part 2：视频首帧缩略图
 
@@ -229,7 +229,7 @@ return {
 | `server/routers/files.py` | 添加 `Cache-Control: immutable` 响应头 |
 | `server/routers/versions.py` | restore API 返回 `asset_fingerprints` |
 | `server/services/generation_tasks.py` | SSE 事件携带 `asset_fingerprints` |
-| `server/services/project_events.py` | ProjectChange 类型扩展（可选） |
+| `server/services/project_events.py` | ProjectChange 类型扩展（可選） |
 | `lib/media_generator.py` | 视频生成后提取首帧缩略图 |
 | `lib/version_manager.py` | 版本保存时为视频提取缩略图 |
 | `lib/project_manager.py` | `create_generated_assets` 新增 `video_thumbnail` 字段 |

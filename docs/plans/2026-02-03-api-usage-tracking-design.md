@@ -1,4 +1,4 @@
-# API 调用记录与费用统计系统设计
+# API 调用记录与费用統計系统设计
 
 > 创建日期：2025-02-03
 > 状态：待实现
@@ -8,8 +8,8 @@
 为图片/视频生成 API 调用添加完整的记录与费用追踪功能，包括：
 - 调用参数信息、调用时间、调用耗时、重试次数
 - 基于分辨率/时长实时计算费用
-- 失败记录（费用为 0）
-- WebUI 费用统计查看与调用记录筛选
+- 失敗记录（费用为 0）
+- WebUI 费用統計查看与调用记录筛選
 
 ---
 
@@ -39,7 +39,7 @@ CREATE TABLE api_calls (
 
     -- 结果信息
     status          TEXT NOT NULL,           -- 'success' | 'failed'
-    error_message   TEXT,                    -- 失败时的错误信息
+    error_message   TEXT,                    -- 失敗时的错误信息
     output_path     TEXT,                    -- 输出文件路径
 
     -- 性能指标
@@ -88,7 +88,7 @@ CREATE INDEX idx_created_at ON api_calls(created_at);
 - 图片：`cost = 0.134`（2K）或 `cost = 0.24`（4K）
 - 视频：`cost = duration_seconds × 单价`
 
-**失败记录**：`cost_usd = 0.0`
+**失敗记录**：`cost_usd = 0.0`
 
 ---
 
@@ -98,8 +98,8 @@ CREATE INDEX idx_created_at ON api_calls(created_at);
 
 ```
 lib/
-├── gemini_client.py      # 现有：API 调用
-├── media_generator.py    # 现有：媒体生成中间层
+├── gemini_client.py      # 現有：API 调用
+├── media_generator.py    # 現有：媒体生成中间层
 ├── usage_tracker.py      # 新增：调用记录与费用追踪
 └── cost_calculator.py    # 新增：费用计算器
 ```
@@ -160,8 +160,8 @@ class CostCalculator:
 **职责**：
 - 管理 SQLite 数据库连接
 - 提供 `start_call()` / `finish_call()` 方法记录调用
-- 提供查询接口（按项目、时间、类型、状态筛选）
-- 提供统计汇总接口
+- 提供查询接口（按项目、时间、类型、状态筛選）
+- 提供統計汇总接口
 
 ```python
 class UsageTracker:
@@ -202,7 +202,7 @@ class UsageTracker:
         start_date: datetime = None,
         end_date: datetime = None,
     ) -> dict:
-        """获取统计摘要"""
+        """获取統計摘要"""
         # 返回：total_cost, image_count, video_count, failed_count
         ...
 
@@ -267,7 +267,7 @@ def generate_video(self, ...):
         return result
 
     except Exception as e:
-        # 记录失败
+        # 记录失敗
         if self.usage_tracker and call_id:
             self.usage_tracker.finish_call(
                 call_id=call_id,
@@ -340,7 +340,7 @@ async def get_global_stats(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ):
-    """获取全局统计摘要"""
+    """获取全局統計摘要"""
     # 返回：total_cost, image_count, video_count, failed_count
     ...
 
@@ -350,7 +350,7 @@ async def get_project_stats(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ):
-    """获取项目统计摘要"""
+    """获取项目統計摘要"""
     ...
 
 @router.get("/usage/calls")
@@ -363,13 +363,13 @@ async def get_calls(
     page: int = 1,
     page_size: int = 20,
 ):
-    """获取调用记录列表（支持筛选和分页）"""
+    """获取调用记录列表（支持筛選和分页）"""
     # 返回：items, total, page, page_size
     ...
 
 @router.get("/usage/projects")
 async def get_projects_list():
-    """获取有调用记录的项目列表（用于筛选下拉框）"""
+    """获取有调用记录的项目列表（用于筛選下拉框）"""
     ...
 ```
 
@@ -380,27 +380,27 @@ async def get_projects_list():
 ```python
 from webui.server.routers import projects, characters, clues, files, generate, versions, usage
 
-app.include_router(usage.router, prefix="/api/v1", tags=["费用统计"])
+app.include_router(usage.router, prefix="/api/v1", tags=["费用統計"])
 ```
 
 ---
 
 ## 四、WebUI 前端界面
 
-### 4.1 全局费用统计页面
+### 4.1 全局费用統計页面
 
 **文件**：`webui/usage.html`
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  视频项目管理  [首页] [费用统计]              🔄 刷新    │
+│  视频项目管理  [首页] [费用統計]              🔄 刷新    │
 ├─────────────────────────────────────────────────────────┤
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
-│  │ 总费用    │ │ 图片调用  │ │ 视频调用  │ │ 失败次数  │   │
+│  │ 总费用    │ │ 图片调用  │ │ 视频调用  │ │ 失敗次数  │   │
 │  │ $156.78  │ │ 320 次   │ │ 89 次    │ │ 15 次    │   │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │
 ├─────────────────────────────────────────────────────────┤
-│  筛选: [时间范围 ▼] [类型 ▼] [项目 ▼] [状态 ▼]  [重置]  │
+│  筛選: [时间范围 ▼] [类型 ▼] [项目 ▼] [状态 ▼]  [重置]  │
 ├─────────────────────────────────────────────────────────┤
 │  调用记录                                                │
 │  ┌────┬────────┬──────┬────────┬──────┬──────┬───────┐ │
@@ -414,27 +414,27 @@ app.include_router(usage.router, prefix="/api/v1", tags=["费用统计"])
 └─────────────────────────────────────────────────────────┘
 ```
 
-**时间范围筛选选项**：
+**时间范围筛選選項**：
 - 今天
 - 最近 7 天
 - 最近 30 天
-- 自定义（日期选择器）
+- 自定义（日期選择器）
 
 **文件**：`webui/js/usage.js`
 
-- 加载统计数据
+- 加载統計数据
 - 加载调用记录列表
-- 筛选逻辑
+- 筛選逻辑
 - 分页逻辑
 
-### 4.2 项目详情页内统计
+### 4.2 项目详情页内統計
 
 **修改**：`webui/project.html`
 
-在页面顶部添加费用统计卡片区：
+在页面顶部添加费用統計卡片区：
 
 ```html
-<!-- 费用统计卡片 -->
+<!-- 费用統計卡片 -->
 <div id="usage-stats" class="grid grid-cols-4 gap-4 mb-6">
     <div class="bg-gray-800 rounded-lg p-4">
         <div class="text-sm text-gray-400">总费用</div>
@@ -449,7 +449,7 @@ app.include_router(usage.router, prefix="/api/v1", tags=["费用统计"])
         <div class="text-2xl font-bold" id="stat-video-count">0 次</div>
     </div>
     <div class="bg-gray-800 rounded-lg p-4">
-        <div class="text-sm text-gray-400">失败次数</div>
+        <div class="text-sm text-gray-400">失敗次数</div>
         <div class="text-2xl font-bold text-red-400" id="stat-failed-count">0 次</div>
     </div>
 </div>
@@ -462,21 +462,21 @@ app.include_router(usage.router, prefix="/api/v1", tags=["费用统计"])
 
 **新增**：`webui/js/project/usage.js`
 
-- 加载项目统计数据
-- 更新统计卡片
+- 加载项目統計数据
+- 更新統計卡片
 
 ### 4.3 首页导航更新
 
 **修改**：`webui/index.html`
 
-顶部导航添加"费用统计"链接：
+顶部导航添加"费用統計"链接：
 
 ```html
 <div class="flex items-center space-x-4">
     <a href="/usage.html" class="text-gray-400 hover:text-white transition-colors">
-        费用统计
+        费用統計
     </a>
-    <!-- 现有的刷新和新建按钮 -->
+    <!-- 現有的刷新和新建按钮 -->
 </div>
 ```
 
@@ -490,10 +490,10 @@ app.include_router(usage.router, prefix="/api/v1", tags=["费用统计"])
 |------|------|
 | `lib/usage_tracker.py` | SQLite 数据库管理 + 调用记录 CRUD |
 | `lib/cost_calculator.py` | 费用计算器（封装费用表逻辑） |
-| `webui/server/routers/usage.py` | 费用统计 API 路由 |
-| `webui/usage.html` | 全局费用统计页面 |
+| `webui/server/routers/usage.py` | 费用統計 API 路由 |
+| `webui/usage.html` | 全局费用統計页面 |
 | `webui/js/usage.js` | 费用页面前端逻辑 |
-| `webui/js/project/usage.js` | 项目页内费用统计组件 |
+| `webui/js/project/usage.js` | 项目页内费用統計组件 |
 
 ### 修改文件
 
@@ -502,9 +502,9 @@ app.include_router(usage.router, prefix="/api/v1", tags=["费用统计"])
 | `lib/gemini_client.py` | 集成 UsageTracker，在 generate_image/generate_video 前后记录调用 |
 | `lib/media_generator.py` | 初始化 UsageTracker，传递 project_name 给 GeminiClient |
 | `webui/server/app.py` | 注册 usage 路由 |
-| `webui/index.html` | 顶部导航添加"费用统计"链接 |
-| `webui/project.html` | 添加费用统计卡片区 |
-| `webui/js/project.js` | 引入 usage.js，加载项目时获取费用统计 |
+| `webui/index.html` | 顶部导航添加"费用統計"链接 |
+| `webui/project.html` | 添加费用統計卡片区 |
+| `webui/js/project.js` | 引入 usage.js，加载项目时获取费用統計 |
 
 ---
 
@@ -522,13 +522,13 @@ app.include_router(usage.router, prefix="/api/v1", tags=["费用统计"])
 
 ### Phase 3 - 后端 API
 
-5. `webui/server/routers/usage.py` - 统计与查询 API
+5. `webui/server/routers/usage.py` - 統計与查询 API
 6. 修改 `webui/server/app.py` - 注册路由
 
 ### Phase 4 - 前端页面
 
 7. `webui/usage.html` + `webui/js/usage.js` - 全局费用页面
-8. 修改 `webui/project.html` + 新增 `webui/js/project/usage.js` - 项目内统计
+8. 修改 `webui/project.html` + 新增 `webui/js/project/usage.js` - 项目内統計
 9. 修改 `webui/index.html` - 导航链接
 
 ---
@@ -536,8 +536,8 @@ app.include_router(usage.router, prefix="/api/v1", tags=["费用统计"])
 ## 七、测试要点
 
 1. **费用计算准确性**：验证图片/视频费用计算是否符合费用表
-2. **失败记录**：验证失败调用的 error_message 记录和费用为 0
+2. **失敗记录**：验证失敗调用的 error_message 记录和费用为 0
 3. **重试次数**：验证重试次数正确累计
-4. **筛选功能**：验证时间范围、类型、项目、状态筛选正确
+4. **筛選功能**：验证时间范围、类型、项目、状态筛選正确
 5. **分页功能**：验证分页逻辑正确
-6. **统计汇总**：验证总费用、调用次数统计正确
+6. **統計汇总**：验证总费用、调用次数統計正确

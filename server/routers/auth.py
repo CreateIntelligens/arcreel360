@@ -1,7 +1,7 @@
 """
-认证 API 路由
+認證 API 路由
 
-提供 OAuth2 登录和 token 验证接口。
+提供 OAuth2 登入和 token 驗證介面。
 """
 
 import logging
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# ==================== 响应模型 ====================
+# ==================== 響應模型 ====================
 
 
 class TokenResponse(BaseModel):
@@ -38,20 +38,20 @@ class VerifyResponse(BaseModel):
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ):
-    """用户登录
+    """使用者登入
 
-    使用 OAuth2 标准表单格式验证凭据，成功返回 access_token。
+    使用 OAuth2 標準表單格式驗證憑據，成功返回 access_token。
     """
     if not check_credentials(form_data.username, form_data.password):
-        logger.warning("登录失败: 用户名或密码错误 (用户: %s)", form_data.username)
+        logger.warning("登入失敗: 使用者名稱或密碼錯誤 (使用者: %s)", form_data.username)
         raise HTTPException(
             status_code=401,
-            detail="用户名或密码错误",
+            detail="使用者名稱或密碼錯誤",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     token = create_token(form_data.username)
-    logger.info("用户登录成功: %s", form_data.username)
+    logger.info("使用者登入成功: %s", form_data.username)
     return TokenResponse(access_token=token, token_type="bearer")
 
 
@@ -59,8 +59,8 @@ async def login_for_access_token(
 async def verify(
     current_user: CurrentUser,
 ):
-    """验证 token 有效性
+    """驗證 token 有效性
 
-    使用 OAuth2 Bearer token 依赖自动提取和验证 token。
+    使用 OAuth2 Bearer token 依賴自動提取和驗證 token。
     """
     return VerifyResponse(valid=True, username=current_user.sub)

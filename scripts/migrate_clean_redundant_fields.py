@@ -1,12 +1,12 @@
 """
-清理现有项目中的冗余字段
+清理現有專案中的冗餘欄位
 
-此脚本用于迁移现有数据，移除已改为读时计算的冗余字段。
-运行前请确保已备份数据。
+此指令碼用於遷移現有資料，移除已改為讀時計算的冗餘欄位。
+執行前請確保已備份資料。
 
 用法:
     python scripts/migrate_clean_redundant_fields.py
-    python scripts/migrate_clean_redundant_fields.py --dry-run  # 仅预览不修改
+    python scripts/migrate_clean_redundant_fields.py --dry-run  # 僅預覽不修改
 """
 
 import argparse
@@ -16,14 +16,14 @@ from pathlib import Path
 
 def migrate_project(project_dir: Path, dry_run: bool = False) -> dict:
     """
-    清理单个项目的冗余字段
+    清理單個專案的冗餘欄位
 
     Args:
-        project_dir: 项目目录路径
-        dry_run: 是否仅预览不修改
+        project_dir: 專案目錄路徑
+        dry_run: 是否僅預覽不修改
 
     Returns:
-        迁移统计信息
+        遷移統計資訊
     """
     stats = {"project_cleaned": False, "scripts_cleaned": 0, "fields_removed": []}
 
@@ -35,13 +35,13 @@ def migrate_project(project_dir: Path, dry_run: bool = False) -> dict:
 
         original = json.dumps(project)
 
-        # 移除 status 对象（改为读时计算）
+        # 移除 status 物件（改為讀時計算）
         if "status" in project:
             stats["fields_removed"].append("project.json: status")
             if not dry_run:
                 project.pop("status", None)
 
-        # 移除 episodes 中的计算字段
+        # 移除 episodes 中的計算欄位
         for ep in project.get("episodes", []):
             if "scenes_count" in ep:
                 stats["fields_removed"].append(f"project.json: episodes[{ep.get('episode')}].scenes_count")
@@ -68,7 +68,7 @@ def migrate_project(project_dir: Path, dry_run: bool = False) -> dict:
             original = json.dumps(script)
             script_name = script_file.name
 
-            # 移除冗余字段
+            # 移除冗餘欄位
             if "characters_in_episode" in script:
                 stats["fields_removed"].append(f"{script_name}: characters_in_episode")
                 if not dry_run:
@@ -104,25 +104,25 @@ def migrate_project(project_dir: Path, dry_run: bool = False) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="清理项目中的冗余字段")
-    parser.add_argument("--dry-run", action="store_true", help="仅预览不修改")
-    parser.add_argument("--projects-root", default="projects", help="项目根目录")
+    parser = argparse.ArgumentParser(description="清理專案中的冗餘欄位")
+    parser.add_argument("--dry-run", action="store_true", help="僅預覽不修改")
+    parser.add_argument("--projects-root", default="projects", help="專案根目錄")
     args = parser.parse_args()
 
     projects_root = Path(args.projects_root)
 
     if not projects_root.exists():
-        print(f"❌ 项目根目录不存在: {projects_root}")
+        print(f"❌ 專案根目錄不存在: {projects_root}")
         return
 
     if args.dry_run:
-        print("🔍 预览模式 - 不会修改任何文件\n")
+        print("🔍 預覽模式 - 不會修改任何檔案\n")
 
     total_stats = {"projects_processed": 0, "projects_cleaned": 0, "scripts_cleaned": 0, "fields_removed": []}
 
     for project_dir in projects_root.iterdir():
         if project_dir.is_dir() and not project_dir.name.startswith("."):
-            print(f"处理项目: {project_dir.name}")
+            print(f"處理專案: {project_dir.name}")
             stats = migrate_project(project_dir, args.dry_run)
 
             total_stats["projects_processed"] += 1
@@ -135,16 +135,16 @@ def main():
                 for field in stats["fields_removed"]:
                     print(f"  - 移除: {field}")
             else:
-                print("  - 无需清理")
+                print("  - 無需清理")
 
-    print(f"\n{'预览' if args.dry_run else '迁移'}完成:")
-    print(f"  - 处理项目: {total_stats['projects_processed']}")
-    print(f"  - 清理项目: {total_stats['projects_cleaned']}")
-    print(f"  - 清理剧本: {total_stats['scripts_cleaned']}")
-    print(f"  - 移除字段: {len(total_stats['fields_removed'])}")
+    print(f"\n{'預覽' if args.dry_run else '遷移'}完成:")
+    print(f"  - 處理專案: {total_stats['projects_processed']}")
+    print(f"  - 清理專案: {total_stats['projects_cleaned']}")
+    print(f"  - 清理劇本: {total_stats['scripts_cleaned']}")
+    print(f"  - 移除欄位: {len(total_stats['fields_removed'])}")
 
     if args.dry_run and total_stats["fields_removed"]:
-        print("\n要执行实际迁移，请移除 --dry-run 参数重新运行")
+        print("\n要執行實際遷移，請移除 --dry-run 引數重新執行")
 
 
 if __name__ == "__main__":

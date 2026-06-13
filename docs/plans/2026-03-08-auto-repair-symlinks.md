@@ -10,12 +10,12 @@
 
 ---
 
-### Task 1: 为 `repair_claude_symlink` 编写失败测试
+### Task 1: 为 `repair_claude_symlink` 编写失敗测试
 
 **Files:**
 - Modify: `tests/test_project_manager_symlink.py`
 
-**Step 1: 在测试文件末尾追加两个新测试类**
+**Step 1: 在测试文件末尾追加两個新测试类**
 
 ```python
 class TestRepairClaudeSymlink:
@@ -43,7 +43,7 @@ class TestRepairClaudeSymlink:
     def test_repair_fixes_broken_symlink(self, tmp_path):
         """损坏的软连接（is_symlink but not exists）应被删除并重建。"""
         pm, project_dir = self._make_env(tmp_path)
-        # 手动创建一个指向不存在路径的损坏软连接
+        # 手动创建一個指向不存在路径的损坏软连接
         broken = project_dir / ".claude"
         broken.symlink_to(Path("../../nonexistent/.claude"))
         assert broken.is_symlink() and not broken.exists()
@@ -85,7 +85,7 @@ class TestRepairAllSymlinks:
         profile_dir = tmp_path / "agent_runtime_profile"
         (profile_dir / ".claude").mkdir(parents=True)
         (profile_dir / "CLAUDE.md").write_text("prompt")
-        # 一个无软连接的老项目
+        # 一個无软连接的老项目
         (projects_root / "old-proj").mkdir()
         pm = ProjectManager(projects_root)
 
@@ -111,7 +111,7 @@ class TestRepairAllSymlinks:
         assert stats["created"] == 0
 ```
 
-**Step 2: 运行测试，确认全部失败**
+**Step 2: 运行测试，确认全部失敗**
 
 ```bash
 python -m pytest tests/test_project_manager_symlink.py::TestRepairClaudeSymlink tests/test_project_manager_symlink.py::TestRepairAllSymlinks -v
@@ -119,7 +119,7 @@ python -m pytest tests/test_project_manager_symlink.py::TestRepairClaudeSymlink 
 
 期望：全部 FAIL，报 `AttributeError: 'ProjectManager' object has no attribute 'repair_claude_symlink'`
 
-**Step 3: Commit 失败测试**
+**Step 3: Commit 失敗测试**
 
 ```bash
 git add tests/test_project_manager_symlink.py
@@ -135,7 +135,7 @@ git commit -m "test: add failing tests for repair_claude_symlink and repair_all_
 
 **Step 1: 替换 `_create_claude_symlink` 方法，新增 `repair_all_symlinks`**
 
-找到 `lib/project_manager.py` 第 145 行的 `def _create_claude_symlink`，将整个方法替换为：
+找到 `lib/project_manager.py` 第 145 行的 `def _create_claude_symlink`，将整個方法替换为：
 
 ```python
 def repair_claude_symlink(self, project_dir: Path) -> dict:
@@ -219,7 +219,7 @@ def repair_all_symlinks(self) -> dict:
 python -m pytest tests/test_project_manager_symlink.py -v
 ```
 
-期望：全部 PASS（包含原有 4 个 + 新增 6 个，共 10 个）
+期望：全部 PASS（包含原有 4 個 + 新增 6 個，共 10 個）
 
 **Step 3: 运行全量测试，确认无回归**
 
@@ -324,7 +324,7 @@ git commit -m "feat: repair agent_runtime symlinks on server startup"
 python scripts/migrate_claude_symlinks.py --dry-run
 ```
 
-期望：输出现有项目的 SKIP 状态，无报错
+期望：输出現有项目的 SKIP 状态，无报错
 
 **Step 3: Commit**
 

@@ -102,7 +102,7 @@ describe("useProjectEventsSSE", () => {
     );
     expect(useAppStore.getState().workspaceNotifications[0]).toEqual(
       expect.objectContaining({
-        text: "AI 剛新增了 角色「hero」，點擊查看",
+        text: "AI 剛新增了 角色「hero」，點選檢視",
         target: expect.objectContaining({
           type: "character",
           id: "hero",
@@ -111,6 +111,50 @@ describe("useProjectEventsSSE", () => {
       }),
     );
     expect(useAppStore.getState().assistantToolActivitySuppressed).toBe(true);
+  });
+
+  it("navigates to a newly created episode when the backend includes episode focus", async () => {
+    let capturedOptions: ProjectEventStreamOptions | undefined;
+    vi.spyOn(API, "openProjectEventStream").mockImplementation((options) => {
+      capturedOptions = options;
+      return { close: vi.fn() } as unknown as EventSource;
+    });
+
+    renderHarness("/");
+
+    act(() => {
+      capturedOptions?.onChanges?.(
+        {
+          project_name: "demo",
+          batch_id: "batch-episode",
+          fingerprint: "fp-episode",
+          generated_at: "2026-03-01T00:00:00Z",
+          source: "filesystem",
+          changes: [
+            {
+              entity_type: "episode",
+              action: "created",
+              entity_id: "1",
+              label: "第 1 集",
+              episode: 1,
+              focus: {
+                pane: "episode",
+                episode: 1,
+                anchor_type: "episode",
+                anchor_id: "1",
+              },
+              important: true,
+            },
+          ],
+        },
+        new MessageEvent("changes"),
+      );
+    });
+
+    await waitFor(() => {
+      expect(API.getProject).toHaveBeenCalledWith("demo");
+      expect(screen.getByTestId("location")).toHaveTextContent("/episodes/1");
+    });
   });
 
   it("defers focus when the user is editing", async () => {
@@ -138,7 +182,7 @@ describe("useProjectEventsSSE", () => {
               entity_type: "clue",
               action: "updated",
               entity_id: "玉佩",
-              label: "線索「玉佩」",
+              label: "道具「玉佩」",
               focus: {
                 pane: "clues",
                 anchor_type: "clue",
@@ -255,7 +299,7 @@ describe("useProjectEventsSSE", () => {
               entity_type: "clue",
               action: "updated",
               entity_id: "玉佩",
-              label: "線索「玉佩」",
+              label: "道具「玉佩」",
               focus: {
                 pane: "clues",
                 anchor_type: "clue",
@@ -271,7 +315,7 @@ describe("useProjectEventsSSE", () => {
 
     await waitFor(() => {
       expect(API.getProject).toHaveBeenCalledWith("demo");
-      expect(useAppStore.getState().toast?.text).toBe("線索「玉佩」已更新");
+      expect(useAppStore.getState().toast?.text).toBe("道具「玉佩」已更新");
     });
 
     expect(useAppStore.getState().getEntityRevision("character:hero")).toBe(1);
@@ -281,7 +325,7 @@ describe("useProjectEventsSSE", () => {
     expect(useAppStore.getState().workspaceNotifications).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          text: "AI 剛新增了 2 個角色：hero、mage，點擊查看",
+          text: "AI 剛新增了 2 個角色：hero、mage，點選檢視",
           target: expect.objectContaining({
             type: "character",
             id: "hero",
@@ -289,7 +333,7 @@ describe("useProjectEventsSSE", () => {
           }),
         }),
         expect.objectContaining({
-          text: "AI 剛更新了 線索「玉佩」，點擊查看",
+          text: "AI 剛更新了 道具「玉佩」，點選檢視",
           target: expect.objectContaining({
             type: "clue",
             id: "玉佩",
@@ -322,7 +366,7 @@ describe("useProjectEventsSSE", () => {
               entity_type: "clue",
               action: "updated",
               entity_id: "玉佩",
-              label: "线索「玉佩」",
+              label: "線索「玉佩」",
               focus: {
                 pane: "clues",
                 anchor_type: "clue",
@@ -369,7 +413,7 @@ describe("useProjectEventsSSE", () => {
               entity_type: "clue",
               action: "updated",
               entity_id: "玉佩",
-              label: "线索「玉佩」",
+              label: "線索「玉佩」",
               focus: {
                 pane: "clues",
                 anchor_type: "clue",
@@ -412,7 +456,7 @@ describe("useProjectEventsSSE", () => {
               entity_type: "segment",
               action: "storyboard_ready",
               entity_id: "E1S01",
-              label: "分镜「E1S01」",
+              label: "分鏡「E1S01」",
               focus: null,
               important: true,
               asset_fingerprints: { "storyboards/scene_E1S01.png": 1710288000 },
@@ -423,7 +467,7 @@ describe("useProjectEventsSSE", () => {
       );
     });
 
-    // fingerprints 应立即（同步）写入 store，无需等待 getProject
+    // fingerprints 應立即（同步）寫入 store，無需等待 getProject
     expect(useProjectsStore.getState().getAssetFingerprint("storyboards/scene_E1S01.png")).toBe(1710288000);
   });
 });

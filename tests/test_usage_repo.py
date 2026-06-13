@@ -3,8 +3,13 @@
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from lib.cost_calculator import CNY_TO_USD_RATE
 from lib.db.base import Base
 from lib.db.repositories.usage_repo import UsageRepository
+
+
+def cny(amount: float) -> float:
+    return amount * CNY_TO_USD_RATE
 
 
 @pytest.fixture
@@ -91,32 +96,31 @@ class TestUsageRepository:
 
 
 class TestMultiProviderUsage:
-    async def test_ark_call_records_provider_and_tokens(self, db_session):
+    async def test_byteplus_call_records_provider_and_tokens(self, db_session):
         repo = UsageRepository(db_session)
         call_id = await repo.start_call(
             project_name="demo",
             call_type="video",
-            model="doubao-seedance-1-5-pro-251215",
+            model="doubao-seedance-2-0-260128",
             prompt="test",
             resolution="1080p",
             duration_seconds=5,
             generate_audio=True,
-            provider="ark",
+            provider="byteplus",
         )
 
         await repo.finish_call(
             call_id,
             status="success",
             usage_tokens=246840,
-            service_tier="default",
         )
 
         calls = await repo.get_calls(project_name="demo")
         item = calls["items"][0]
-        assert item["provider"] == "ark"
-        assert item["currency"] == "CNY"
+        assert item["provider"] == "byteplus"
+        assert item["currency"] == "USD"
         assert item["usage_tokens"] == 246840
-        assert item["cost_amount"] == pytest.approx(3.9494, rel=1e-3)
+        assert item["cost_amount"] == pytest.approx(cny(11.35464), rel=1e-3)
 
     async def test_gemini_call_defaults_to_usd(self, db_session):
         repo = UsageRepository(db_session)
@@ -150,32 +154,32 @@ class TestMultiProviderUsage:
         )
         await repo.finish_call(c1, status="success")
 
-        # Ark call
+        # BytePlus call
         c2 = await repo.start_call(
             project_name="demo",
             call_type="video",
-            model="doubao-seedance-1-5-pro-251215",
+            model="doubao-seedance-2-0-260128",
             duration_seconds=5,
             resolution="1080p",
             generate_audio=True,
-            provider="ark",
+            provider="byteplus",
         )
-        await repo.finish_call(c2, status="success", usage_tokens=246840, service_tier="default")
+        await repo.finish_call(c2, status="success", usage_tokens=246840)
 
         stats = await repo.get_stats(project_name="demo")
         assert stats["total_count"] == 2
         assert "cost_by_currency" in stats
-        assert stats["cost_by_currency"]["USD"] == pytest.approx(3.2)
-        assert stats["cost_by_currency"]["CNY"] == pytest.approx(3.9494, rel=1e-3)
-        assert stats["total_cost"] == pytest.approx(3.2)
+        assert stats["cost_by_currency"]["USD"] == pytest.approx(3.2 + cny(11.35464), rel=1e-3)
+        assert "CNY" not in stats["cost_by_currency"]
+        assert stats["total_cost"] == pytest.approx(3.2 + cny(11.35464), rel=1e-3)
 
     async def test_text_call_gemini_cost(self, db_session):
         repo = UsageRepository(db_session)
         call_id = await repo.start_call(
             project_name="demo",
             call_type="text",
-            model="gemini-3-flash-preview",
-            prompt="分析小说内容",
+            model="gemini-3.1-flash-lite",
+            prompt="分析小說內容",
             provider="gemini",
         )
 
@@ -195,14 +199,14 @@ class TestMultiProviderUsage:
         # cost = (1000 * 0.10 + 500 * 0.40) / 1_000_000 = 0.0003
         assert item["cost_amount"] == pytest.approx(0.0003)
 
-    async def test_text_call_ark_cost(self, db_session):
+    async def test_text_call_byteplus_cost(self, db_session):
         repo = UsageRepository(db_session)
         call_id = await repo.start_call(
             project_name="demo",
             call_type="text",
             model="doubao-seed-2-0-lite-260215",
-            prompt="分析小说内容",
-            provider="ark",
+            prompt="分析小說內容",
+            provider="byteplus",
         )
 
         await repo.finish_call(
@@ -214,16 +218,32 @@ class TestMultiProviderUsage:
 
         calls = await repo.get_calls(project_name="demo")
         item = calls["items"][0]
-        assert item["currency"] == "CNY"
-        # cost = (2000 * 0.30 + 1000 * 0.60) / 1_000_000 = 0.0012
-        assert item["cost_amount"] == pytest.approx(0.0012)
+        assert item["currency"] == "USD"
+        # cost = (2000 * 0.30 + 1000 * 0.60) / 1_000_000 = 0.0012 CNY -> USD
+        assert item["cost_amount"] == pytest.approx(cny(0.0012))
+
+    async def test_legacy_ark_provider_normalizes_to_byteplus(self, db_session):
+        repo = UsageRepository(db_session)
+        call_id = await repo.start_call(
+            project_name="demo",
+            call_type="text",
+            model="doubao-seed-2-0-lite-260215",
+            provider="ark",
+        )
+
+        await repo.finish_call(call_id, status="success", input_tokens=1000, output_tokens=500)
+
+        calls = await repo.get_calls(project_name="demo")
+        item = calls["items"][0]
+        assert item["provider"] == "byteplus"
+        assert item["currency"] == "USD"
 
     async def test_text_call_failed_zero_cost(self, db_session):
         repo = UsageRepository(db_session)
         call_id = await repo.start_call(
             project_name="demo",
             call_type="text",
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite",
             provider="gemini",
         )
 

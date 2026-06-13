@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterable
-from typing import Any, Awaitable, Callable, Literal, Protocol, runtime_checkable
+from collections.abc import AsyncIterable, Awaitable, Callable
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel
 
 from server.agent_runtime.models import SessionMeta, SessionStatus
-from server.agent_runtime.session_identity import infer_provider_id
 from server.agent_runtime.sdk_transcript_adapter import SdkTranscriptAdapter
-from server.agent_runtime.session_identity import runtime_session_id
+from server.agent_runtime.session_identity import infer_provider_id, runtime_session_id
 from server.agent_runtime.session_manager import SessionManager
 
 AssistantProviderTier = Literal["lite", "workflow-grade", "full"]

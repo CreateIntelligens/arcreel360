@@ -1,4 +1,4 @@
-"""图片生成服务层核心接口定义。"""
+"""圖片生成服務層核心介面定義。"""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from lib.video_backends.base import IMAGE_MIME_TYPES
 
 
 def image_to_base64_data_uri(image_path: Path) -> str:
-    """将本地图片转为 base64 data URI。"""
+    """將本地圖片轉為 base64 data URI。"""
     suffix = image_path.suffix.lower()
     mime_type = IMAGE_MIME_TYPES.get(suffix, "image/png")
     image_data = image_path.read_bytes()
@@ -21,7 +21,7 @@ def image_to_base64_data_uri(image_path: Path) -> str:
 
 
 class ImageCapability(StrEnum):
-    """图片后端支持的能力枚举。"""
+    """圖片後端支援的能力列舉。"""
 
     TEXT_TO_IMAGE = "text_to_image"
     IMAGE_TO_IMAGE = "image_to_image"
@@ -29,7 +29,7 @@ class ImageCapability(StrEnum):
 
 @dataclass
 class ReferenceImage:
-    """参考图片。"""
+    """參考圖片。"""
 
     path: str
     label: str = ""
@@ -37,7 +37,7 @@ class ReferenceImage:
 
 @dataclass
 class ImageGenerationRequest:
-    """通用图片生成请求。各 Backend 忽略不支持的字段。"""
+    """通用圖片生成請求。各 Backend 忽略不支援的欄位。"""
 
     prompt: str
     output_path: Path
@@ -50,7 +50,7 @@ class ImageGenerationRequest:
 
 @dataclass
 class ImageGenerationResult:
-    """通用图片生成结果。"""
+    """通用圖片生成結果。"""
 
     image_path: Path
     provider: str
@@ -59,10 +59,11 @@ class ImageGenerationResult:
     seed: int | None = None
     usage_tokens: int | None = None
     quality: str | None = None
+    size: str | None = None
 
 
 class ImageBackend(Protocol):
-    """图片生成后端协议。"""
+    """圖片生成後端協議。"""
 
     @property
     def name(self) -> str: ...

@@ -11,6 +11,10 @@ class ModelInfo:
     default: bool = False
     supported_durations: list[int] = field(default_factory=list)
     duration_resolution_constraints: dict[str, list[int]] = field(default_factory=dict)
+    supported_resolutions: list[str] = field(default_factory=list)
+    reference_image_force_duration: int | None = None
+    # 圖片模型支援的解析度尺寸，僅對 media_type == "image" 有意義；空清單 = 沿用現狀
+    supported_image_sizes: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -34,7 +38,7 @@ class ProviderMeta:
 PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
     "gemini-aistudio": ProviderMeta(
         display_name="AI Studio",
-        description="Google AI Studio 提供 Gemini 系列模型，支持图片和视频生成，适合快速原型和个人项目。",
+        description="Google AI Studio 提供 Gemini 系列模型，支援圖片和影片生成，適合快速原型和個人專案。",
         required_keys=["api_key"],
         optional_keys=["base_url", "image_rpm", "video_rpm", "request_gap", "image_max_workers", "video_max_workers"],
         secret_keys=["api_key"],
@@ -45,26 +49,23 @@ PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
                 media_type="text",
                 capabilities=["text_generation", "structured_output", "vision"],
             ),
-            "gemini-3-flash-preview": ModelInfo(
-                display_name="Gemini 3 Flash",
+            "gemini-3.1-flash-lite": ModelInfo(
+                display_name="Gemini 3.1 Flash Lite",
                 media_type="text",
                 capabilities=["text_generation", "structured_output", "vision"],
                 default=True,
-            ),
-            "gemini-3.1-flash-lite-preview": ModelInfo(
-                display_name="Gemini 3.1 Flash Lite",
-                media_type="text",
-                capabilities=["text_generation", "structured_output"],
             ),
             # --- image ---
             "gemini-3-pro-image-preview": ModelInfo(
                 display_name="Gemini 3 Pro Image",
                 media_type="image",
+                supported_image_sizes=["1K", "2K", "4K"],
                 capabilities=["text_to_image", "image_to_image"],
             ),
             "gemini-3.1-flash-image-preview": ModelInfo(
                 display_name="Gemini 3.1 Flash Image",
                 media_type="image",
+                supported_image_sizes=["512PX", "1K", "2K", "4K"],
                 capabilities=["text_to_image", "image_to_image"],
                 default=True,
             ),
@@ -74,28 +75,34 @@ PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
                 media_type="video",
                 capabilities=["text_to_video", "image_to_video", "negative_prompt", "video_extend"],
                 supported_durations=[4, 6, 8],
-                duration_resolution_constraints={"1080p": [8]},
+                supported_resolutions=["720p", "1080p", "4k"],
+                duration_resolution_constraints={"1080p": [8], "4k": [8]},
+                reference_image_force_duration=8,
             ),
             "veo-3.1-fast-generate-preview": ModelInfo(
                 display_name="Veo 3.1 Fast",
                 media_type="video",
                 capabilities=["text_to_video", "image_to_video", "negative_prompt", "video_extend"],
                 supported_durations=[4, 6, 8],
-                duration_resolution_constraints={"1080p": [8]},
+                supported_resolutions=["720p", "1080p", "4k"],
+                duration_resolution_constraints={"1080p": [8], "4k": [8]},
+                reference_image_force_duration=8,
             ),
             "veo-3.1-lite-generate-preview": ModelInfo(
                 display_name="Veo 3.1 Lite",
                 media_type="video",
-                capabilities=["text_to_video", "image_to_video", "negative_prompt", "video_extend"],
+                capabilities=["text_to_video", "image_to_video", "video_extend"],
                 default=True,
                 supported_durations=[4, 6, 8],
+                supported_resolutions=["720p", "1080p"],
                 duration_resolution_constraints={"1080p": [8]},
+                reference_image_force_duration=8,
             ),
         },
     ),
     "gemini-vertex": ProviderMeta(
         display_name="Vertex AI",
-        description="Google Cloud Vertex AI 企业级平台，支持 Gemini 和 Imagen 模型，提供更高配额和音频生成能力。",
+        description="Google Cloud Vertex AI 企業級平臺，支援 Gemini 和 Imagen 模型，提供更高配額和音訊生成能力。",
         required_keys=["credentials_path"],
         optional_keys=["gcs_bucket", "image_rpm", "video_rpm", "request_gap", "image_max_workers", "video_max_workers"],
         secret_keys=[],
@@ -106,26 +113,23 @@ PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
                 media_type="text",
                 capabilities=["text_generation", "structured_output", "vision"],
             ),
-            "gemini-3-flash-preview": ModelInfo(
-                display_name="Gemini 3 Flash",
+            "gemini-3.1-flash-lite": ModelInfo(
+                display_name="Gemini 3.1 Flash Lite",
                 media_type="text",
                 capabilities=["text_generation", "structured_output", "vision"],
                 default=True,
-            ),
-            "gemini-3.1-flash-lite-preview": ModelInfo(
-                display_name="Gemini 3.1 Flash Lite",
-                media_type="text",
-                capabilities=["text_generation", "structured_output"],
             ),
             # --- image ---
             "gemini-3-pro-image-preview": ModelInfo(
                 display_name="Gemini 3 Pro Image",
                 media_type="image",
+                supported_image_sizes=["1K", "2K", "4K"],
                 capabilities=["text_to_image", "image_to_image"],
             ),
             "gemini-3.1-flash-image-preview": ModelInfo(
                 display_name="Gemini 3.1 Flash Image",
                 media_type="image",
+                supported_image_sizes=["512PX", "1K", "2K", "4K"],
                 capabilities=["text_to_image", "image_to_image"],
                 default=True,
             ),
@@ -135,6 +139,9 @@ PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
                 media_type="video",
                 capabilities=["text_to_video", "image_to_video", "generate_audio", "negative_prompt", "video_extend"],
                 supported_durations=[4, 6, 8],
+                supported_resolutions=["720p", "1080p", "4k"],
+                duration_resolution_constraints={"1080p": [8], "4k": [8]},
+                reference_image_force_duration=8,
             ),
             "veo-3.1-fast-generate-001": ModelInfo(
                 display_name="Veo 3.1 Fast",
@@ -142,14 +149,17 @@ PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
                 capabilities=["text_to_video", "image_to_video", "generate_audio", "negative_prompt", "video_extend"],
                 default=True,
                 supported_durations=[4, 6, 8],
+                supported_resolutions=["720p", "1080p", "4k"],
+                duration_resolution_constraints={"1080p": [8], "4k": [8]},
+                reference_image_force_duration=8,
             ),
         },
     ),
-    "ark": ProviderMeta(
-        display_name="火山方舟",
-        description="字节跳动火山方舟 AI 平台，支持 Seedance 视频生成和 Seedream 图片生成，具备音频生成和种子控制能力。",
+    "byteplus": ProviderMeta(
+        display_name="BytePlus ModelArk",
+        description="BytePlus ModelArk AI 平臺，支援豆包文字模型和 Seedance 影片生成，具備音訊生成和種子控制能力。",
         required_keys=["api_key"],
-        optional_keys=["video_max_workers", "image_max_workers"],
+        optional_keys=["video_max_workers"],
         secret_keys=["api_key"],
         models={
             # --- text ---
@@ -174,53 +184,20 @@ PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
                 media_type="text",
                 capabilities=["text_generation", "structured_output", "vision"],
             ),
-            # --- image ---
-            "doubao-seedream-5-0-lite-260128": ModelInfo(
-                display_name="Seedream 5.0 Lite",
-                media_type="image",
-                capabilities=["text_to_image", "image_to_image"],
-                default=True,
-            ),
-            "doubao-seedream-5-0-260128": ModelInfo(
-                display_name="Seedream 5.0",
-                media_type="image",
-                capabilities=["text_to_image", "image_to_image"],
-            ),
-            "doubao-seedream-4-5-251128": ModelInfo(
-                display_name="Seedream 4.5",
-                media_type="image",
-                capabilities=["text_to_image", "image_to_image"],
-            ),
-            "doubao-seedream-4-0-250828": ModelInfo(
-                display_name="Seedream 4.0",
-                media_type="image",
-                capabilities=["text_to_image", "image_to_image"],
-            ),
             # --- video ---
-            "doubao-seedance-1-5-pro-251215": ModelInfo(
-                display_name="Seedance 1.5 Pro",
-                media_type="video",
-                capabilities=["text_to_video", "image_to_video", "generate_audio", "seed_control", "flex_tier"],
-                default=True,
-                supported_durations=list(range(4, 13)),
-            ),
             "doubao-seedance-2-0-260128": ModelInfo(
                 display_name="Seedance 2.0",
                 media_type="video",
                 capabilities=["text_to_video", "image_to_video", "generate_audio", "seed_control", "video_extend"],
+                default=True,
                 supported_durations=list(range(4, 16)),
-            ),
-            "doubao-seedance-2-0-fast-260128": ModelInfo(
-                display_name="Seedance 2.0 Fast",
-                media_type="video",
-                capabilities=["text_to_video", "image_to_video", "generate_audio", "seed_control", "video_extend"],
-                supported_durations=list(range(4, 16)),
+                supported_resolutions=["480p", "720p", "1080p"],
             ),
         },
     ),
     "grok": ProviderMeta(
         display_name="Grok",
-        description="xAI Grok 模型，支持视频和图片生成。",
+        description="xAI Grok 模型，支援影片和圖片生成。",
         required_keys=["api_key"],
         optional_keys=["video_max_workers", "image_max_workers"],
         secret_keys=["api_key"],
@@ -251,11 +228,13 @@ PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
             "grok-imagine-image-pro": ModelInfo(
                 display_name="Grok Imagine Image Pro",
                 media_type="image",
+                supported_image_sizes=["1K", "2K"],
                 capabilities=["text_to_image", "image_to_image"],
             ),
             "grok-imagine-image": ModelInfo(
                 display_name="Grok Imagine Image",
                 media_type="image",
+                supported_image_sizes=["1K", "2K"],
                 capabilities=["text_to_image", "image_to_image"],
                 default=True,
             ),
@@ -271,38 +250,40 @@ PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
     ),
     "openai": ProviderMeta(
         display_name="OpenAI",
-        description="OpenAI 官方平台，支持 GPT-5.4 文本、GPT Image 图片和 Sora 视频生成。",
+        description="OpenAI 官方平臺，支援 GPT-5.5 文字、GPT Image 圖片和 Sora 影片生成。",
         required_keys=["api_key"],
         optional_keys=["base_url", "image_max_workers", "video_max_workers"],
         secret_keys=["api_key"],
         models={
             # --- text ---
-            "gpt-5.4": ModelInfo(
-                display_name="GPT-5.4",
+            "gpt-5.5": ModelInfo(
+                display_name="GPT-5.5",
                 media_type="text",
                 capabilities=["text_generation", "structured_output", "vision"],
             ),
-            "gpt-5.4-mini": ModelInfo(
-                display_name="GPT-5.4 Mini",
+            "gpt-5.5-mini": ModelInfo(
+                display_name="GPT-5.5 Mini",
                 media_type="text",
                 capabilities=["text_generation", "structured_output", "vision"],
                 default=True,
             ),
-            "gpt-5.4-nano": ModelInfo(
-                display_name="GPT-5.4 Nano",
+            "gpt-5.5-nano": ModelInfo(
+                display_name="GPT-5.5 Nano",
                 media_type="text",
                 capabilities=["text_generation", "structured_output", "vision"],
             ),
             # --- image ---
-            "gpt-image-1.5": ModelInfo(
-                display_name="GPT Image 1.5",
+            "gpt-image-2": ModelInfo(
+                display_name="GPT Image 2",
                 media_type="image",
+                supported_image_sizes=["512PX", "1K", "2K", "4K"],
                 capabilities=["text_to_image", "image_to_image"],
                 default=True,
             ),
-            "gpt-image-1-mini": ModelInfo(
-                display_name="GPT Image 1 Mini",
+            "gpt-image-2-2026-04-21": ModelInfo(
+                display_name="GPT Image 2 (2026-04-21)",
                 media_type="image",
+                supported_image_sizes=["512PX", "1K", "2K", "4K"],
                 capabilities=["text_to_image", "image_to_image"],
             ),
             # --- video ---
@@ -318,6 +299,24 @@ PROVIDER_REGISTRY: dict[str, ProviderMeta] = {
                 media_type="video",
                 capabilities=["text_to_video", "image_to_video"],
                 supported_durations=[4, 8, 12],
+            ),
+        },
+    ),
+    "ai360": ProviderMeta(
+        display_name="ai360 Video Studio",
+        description="ai360 自託管影片生成服務，以帳號密碼登入取得 JWT，支援文字轉影片與參考圖生影片。",
+        required_keys=["username", "password", "base_url"],
+        optional_keys=["project_id", "video_max_workers"],
+        secret_keys=["password"],
+        models={
+            # --- video ---
+            "ai360-video": ModelInfo(
+                display_name="ai360 Video",
+                media_type="video",
+                capabilities=["text_to_video", "image_to_video", "generate_audio"],
+                default=True,
+                supported_durations=list(range(4, 16)),
+                supported_resolutions=["480p", "720p", "1080p"],
             ),
         },
     ),

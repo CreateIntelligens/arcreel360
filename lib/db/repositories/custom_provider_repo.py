@@ -9,12 +9,12 @@ from lib.db.repositories.base import BaseRepository
 
 
 class CustomProviderRepository(BaseRepository):
-    """自定义供应商 + 模型 CRUD。"""
+    """自定義供應商 + 模型 CRUD。"""
 
     @staticmethod
     def _normalize_api_format(api_format: str) -> str:
         if api_format not in {"openai", "google"}:
-            raise ValueError(f"不支持的 api_format: {api_format}")
+            raise ValueError(f"不支援的 api_format: {api_format}")
         return api_format
 
     @classmethod
@@ -31,7 +31,7 @@ class CustomProviderRepository(BaseRepository):
         try:
             return endpoint_map[(api_format, media_type)]
         except KeyError as exc:
-            raise ValueError(f"不支持的 media_type: {media_type}") from exc
+            raise ValueError(f"不支援的 media_type: {media_type}") from exc
 
     def _model_payloads(self, api_format: str, models: list[dict]) -> list[dict]:
         payloads: list[dict] = []
@@ -52,7 +52,7 @@ class CustomProviderRepository(BaseRepository):
         api_key: str,
         models: list[dict] | None = None,
     ) -> CustomProvider:
-        """创建供应商，可选同时创建模型列表。"""
+        """建立供應商，可選同時建立模型列表。"""
         api_format = self._normalize_api_format(api_format)
         provider = CustomProvider(
             display_name=display_name,
@@ -62,7 +62,7 @@ class CustomProviderRepository(BaseRepository):
             api_key=api_key,
         )
         self.session.add(provider)
-        await self.session.flush()  # 获取 provider.id
+        await self.session.flush()  # 獲取 provider.id
 
         if models:
             for m in self._model_payloads(api_format, models):
@@ -83,7 +83,7 @@ class CustomProviderRepository(BaseRepository):
         return list(result.scalars())
 
     async def update_provider(self, provider_id: int, **kwargs) -> CustomProvider | None:
-        """更新供应商字段。返回更新后的对象，若不存在返回 None。"""
+        """更新供應商欄位。返回更新後的物件，若不存在返回 None。"""
         provider = await self.get_provider(provider_id)
         if provider is None:
             return None
@@ -96,9 +96,9 @@ class CustomProviderRepository(BaseRepository):
         return provider
 
     async def delete_provider(self, provider_id: int) -> None:
-        """删除供应商及其所有模型。
+        """刪除供應商及其所有模型。
 
-        显式删除模型而非依赖 FK CASCADE，因为 SQLite 默认不启用 foreign_keys pragma。
+        顯式刪除模型而非依賴 FK CASCADE，因為 SQLite 預設不啟用 foreign_keys pragma。
         """
         await self.session.execute(delete(CustomProviderModel).where(CustomProviderModel.provider_id == provider_id))
         await self.session.execute(delete(CustomProvider).where(CustomProvider.id == provider_id))
@@ -116,7 +116,7 @@ class CustomProviderRepository(BaseRepository):
         return list(result.scalars())
 
     async def replace_models(self, provider_id: int, models: list[dict]) -> list[CustomProviderModel]:
-        """删除旧模型，插入新列表。返回新创建的模型。"""
+        """刪除舊模型，插入新列表。返回新建立的模型。"""
         provider = await self.get_provider(provider_id)
         if provider is None:
             return []
@@ -130,7 +130,7 @@ class CustomProviderRepository(BaseRepository):
         return new_models
 
     async def update_model(self, model_id: int, **kwargs) -> CustomProviderModel | None:
-        """更新模型字段。返回更新后的对象，若不存在返回 None。"""
+        """更新模型欄位。返回更新後的物件，若不存在返回 None。"""
         stmt = select(CustomProviderModel).where(CustomProviderModel.id == model_id)
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -146,12 +146,12 @@ class CustomProviderRepository(BaseRepository):
         return model
 
     async def delete_model(self, model_id: int) -> None:
-        """删除单个模型。"""
+        """刪除單個模型。"""
         await self.session.execute(delete(CustomProviderModel).where(CustomProviderModel.id == model_id))
         await self.session.flush()
 
     async def list_all_enabled_models(self) -> list[CustomProviderModel]:
-        """跨所有供应商获取全部已启用模型。"""
+        """跨所有供應商獲取全部已啟用模型。"""
         stmt = (
             select(CustomProviderModel)
             .where(CustomProviderModel.is_enabled == True)  # noqa: E712
@@ -161,7 +161,7 @@ class CustomProviderRepository(BaseRepository):
         return list(result.scalars())
 
     async def list_providers_with_models(self) -> list[tuple[CustomProvider, list[CustomProviderModel]]]:
-        """获取所有供应商及其模型，仅 2 次查询。"""
+        """獲取所有供應商及其模型，僅 2 次查詢。"""
         providers = await self.list_providers()
         if not providers:
             return []
@@ -180,7 +180,7 @@ class CustomProviderRepository(BaseRepository):
         return [(p, models_by_provider.get(p.id, [])) for p in providers]
 
     async def list_enabled_models_by_media_type(self, media_type: str) -> list[CustomProviderModel]:
-        """跨所有供应商获取指定媒体类型的已启用模型。"""
+        """跨所有供應商獲取指定媒體型別的已啟用模型。"""
         stmt = (
             select(CustomProviderModel)
             .where(
@@ -193,7 +193,7 @@ class CustomProviderRepository(BaseRepository):
         return list(result.scalars())
 
     async def get_model_by_ids(self, provider_id: int, model_id: str) -> CustomProviderModel | None:
-        """根据供应商 ID 和模型 ID 获取模型。"""
+        """根據供應商 ID 和模型 ID 獲取模型。"""
         stmt = select(CustomProviderModel).where(
             CustomProviderModel.provider_id == provider_id,
             CustomProviderModel.model_id == model_id,
@@ -202,7 +202,7 @@ class CustomProviderRepository(BaseRepository):
         return result.scalar_one_or_none()
 
     async def get_default_model(self, provider_id: int, media_type: str) -> CustomProviderModel | None:
-        """获取指定供应商 + 媒体类型的默认已启用模型。"""
+        """獲取指定供應商 + 媒體型別的預設已啟用模型。"""
         stmt = select(CustomProviderModel).where(
             CustomProviderModel.provider_id == provider_id,
             CustomProviderModel.media_type == media_type,

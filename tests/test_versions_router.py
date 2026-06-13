@@ -88,6 +88,20 @@ class TestVersionsRouter:
             assert restore_resp.json()["current_version"] == 1
             assert any(item[0] == "character" for item in fake_pm.updated)
 
+    def test_output_versions_restore_to_final_episode_file_without_metadata_sync(self, monkeypatch):
+        client, fake_pm = _client(monkeypatch)
+        with client:
+            get_resp = client.get("/api/v1/projects/demo/versions/output/1")
+            assert get_resp.status_code == 200
+            assert get_resp.json()["resource_type"] == "output"
+
+            restore_resp = client.post("/api/v1/projects/demo/versions/output/1/restore/1")
+
+        assert restore_resp.status_code == 200
+        payload = restore_resp.json()
+        assert payload["file_path"] == "output/episode_1_final.mp4"
+        assert fake_pm.updated == []
+
     def test_restore_error_mapping(self, monkeypatch):
         client, _ = _client(monkeypatch)
         with client:
@@ -125,7 +139,7 @@ class TestVersionsRouter:
         assert sorted(fake_pm.update_calls) == ["a.json", "b.json", "c.json"]
 
     def test_restore_returns_asset_fingerprints(self, monkeypatch, tmp_path):
-        """版本还原应返回受影响文件的 fingerprint"""
+        """版本還原應返回受影響檔案的 fingerprint"""
         fake_pm = _FakePM()
         fake_pm.get_project_path = lambda name: tmp_path
 

@@ -7,7 +7,7 @@
 - **WHEN** 已认证用户调用 `POST /api/v1/agent/chat`，提供 `project_name` 和 `message`，不传 `session_id`
 - **THEN** 系统创建新会话，执行 Agent 对话，返回 `session_id`、`reply`（完整文本）和 `status: "completed"`
 
-#### Scenario: 复用现有会话
+#### Scenario: 复用現有会话
 - **WHEN** 已认证用户调用该端点并提供有效的 `session_id`
 - **THEN** 系统在该会话上下文中继续对话，返回回复
 

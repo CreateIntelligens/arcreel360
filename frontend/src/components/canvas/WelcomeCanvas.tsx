@@ -2,6 +2,11 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Upload, FileText, Sparkles, Loader2, CheckCircle2, Plus } from "lucide-react";
 import { API } from "@/api";
 import { useAppStore } from "@/stores/app-store";
+import {
+  SOURCE_UPLOAD_ACCEPT,
+  SOURCE_UPLOAD_FORMAT_LABEL,
+  isSupportedSourceUploadFileName,
+} from "@/utils/source-files";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -20,7 +25,7 @@ interface WelcomeCanvasProps {
 // WelcomeCanvas — shown when a project has no overview yet.
 // Two entry states:
 //   - idle: no source files → show drag-drop upload zone
-//   - has_sources: source files exist → show file list + "开始分析" button
+//   - has_sources: source files exist → show file list + "開始分析" button
 // Then: uploading → analyzing → done
 // ---------------------------------------------------------------------------
 
@@ -114,7 +119,7 @@ export function WelcomeCanvas({
       e.preventDefault();
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
-      if (file && (file.name.endsWith(".txt") || file.name.endsWith(".md"))) {
+      if (file && isSupportedSourceUploadFileName(file.name)) {
         processFile(file);
       }
     },
@@ -148,10 +153,10 @@ export function WelcomeCanvas({
             歡迎來到 {displayProjectTitle}！
           </h1>
           <p className="mt-2 text-sm text-gray-400">
-            {phase === "idle" && "請拖曳或上傳你的小說原始檔（txt/md），AI 會先替你拆解設定。"}
-            {phase === "has_sources" && "原始檔已就緒。你可以繼續新增檔案，或點擊下方按鈕開始 AI 分析。"}
+            {phase === "idle" && "請拖曳或上傳你的小說原始檔，AI 會先替你拆解設定。"}
+            {phase === "has_sources" && "原始檔已就緒。你可以繼續新增檔案，或點選下方按鈕開始 AI 分析。"}
             {phase === "uploading" && `正在上傳「${fileName}」...`}
-            {phase === "analyzing" && "AI 正在分析小說內容，提取角色、線索與世界觀..."}
+            {phase === "analyzing" && "AI 正在分析小說內容，提取角色、道具與世界觀..."}
             {phase === "done" && "分析完成！正在載入專案總覽..."}
           </p>
         </div>
@@ -164,23 +169,22 @@ export function WelcomeCanvas({
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`w-full cursor-pointer rounded-xl border-2 border-dashed p-12 transition-colors text-center ${
-              isDragging
+            className={`w-full cursor-pointer rounded-xl border-2 border-dashed p-12 transition-colors text-center ${isDragging
                 ? "border-indigo-500 bg-indigo-500/10"
                 : "border-gray-700 hover:border-gray-600 hover:bg-gray-900/50"
-            }`}
+              }`}
           >
             <Upload
               className={`mx-auto h-8 w-8 ${isDragging ? "text-indigo-400" : "text-gray-500"}`}
             />
             <p className="mt-3 text-sm text-gray-300">拖曳檔案到此處</p>
             <p className="mt-1 text-xs text-gray-500">
-              或點擊選擇檔案（支援 .txt / .md）
+              或點選選擇檔案（支援 {SOURCE_UPLOAD_FORMAT_LABEL}）
             </p>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.md"
+              accept={SOURCE_UPLOAD_ACCEPT}
               className="hidden"
               onChange={handleFileSelect}
             />
@@ -215,7 +219,7 @@ export function WelcomeCanvas({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".txt,.md"
+                accept={SOURCE_UPLOAD_ACCEPT}
                 className="hidden"
                 onChange={handleFileSelect}
               />
@@ -227,11 +231,10 @@ export function WelcomeCanvas({
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
-              className={`w-full rounded-lg border border-dashed p-4 text-xs transition-colors ${
-                isDragging
+              className={`w-full rounded-lg border border-dashed p-4 text-xs transition-colors ${isDragging
                   ? "border-indigo-500 bg-indigo-500/10 text-indigo-400"
                   : "border-gray-700 text-gray-500 hover:border-gray-600"
-              }`}
+                }`}
             >
               或拖曳更多檔案到此處
             </button>
@@ -291,7 +294,7 @@ export function WelcomeCanvas({
             <div className="space-y-1.5 text-xs text-gray-400">
               <div className="flex items-start gap-2">
                 <FileText className="mt-0.5 h-3.5 w-3.5 text-gray-500 shrink-0" />
-                <span>AI 會分析你的小說，提取角色、線索與世界觀設定</span>
+                <span>AI 會分析你的小說，提取角色、道具與世界觀設定</span>
               </div>
               <div className="flex items-start gap-2">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 text-gray-500 shrink-0" />

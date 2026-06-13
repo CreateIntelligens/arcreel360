@@ -1,4 +1,4 @@
-"""OpenAITextBackend 单元测试。"""
+"""OpenAITextBackend 單元測試。"""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from lib.text_backends.base import (
 
 
 def _make_mock_response(content="Hello", input_tokens=10, output_tokens=5):
-    """构造 mock ChatCompletion 响应。"""
+    """構造 mock ChatCompletion 響應。"""
     usage = MagicMock()
     usage.prompt_tokens = input_tokens
     usage.completion_tokens = output_tokens
@@ -42,14 +42,14 @@ class TestOpenAITextBackend:
 
             backend = OpenAITextBackend(api_key="test-key")
             assert backend.name == PROVIDER_OPENAI
-            assert backend.model == "gpt-5.4-mini"
+            assert backend.model == "gpt-5.5-mini"
 
     def test_custom_model(self):
         with patch("lib.openai_shared.AsyncOpenAI"):
             from lib.text_backends.openai import OpenAITextBackend
 
-            backend = OpenAITextBackend(api_key="test-key", model="gpt-5.4")
-            assert backend.model == "gpt-5.4"
+            backend = OpenAITextBackend(api_key="test-key", model="gpt-5.5")
+            assert backend.model == "gpt-5.5"
 
     def test_capabilities(self):
         with patch("lib.openai_shared.AsyncOpenAI"):
@@ -73,12 +73,12 @@ class TestOpenAITextBackend:
 
         assert result.text == "Test output"
         assert result.provider == PROVIDER_OPENAI
-        assert result.model == "gpt-5.4-mini"
+        assert result.model == "gpt-5.5-mini"
         assert result.input_tokens == 15
         assert result.output_tokens == 8
 
         call_kwargs = mock_client.chat.completions.create.call_args[1]
-        assert call_kwargs["model"] == "gpt-5.4-mini"
+        assert call_kwargs["model"] == "gpt-5.5-mini"
         assert len(call_kwargs["messages"]) == 1
         assert call_kwargs["messages"][0]["role"] == "user"
         assert call_kwargs["messages"][0]["content"] == "Say hello"
@@ -150,7 +150,7 @@ class TestOpenAITextBackend:
         assert "response_format" in call_kwargs
 
     async def test_generate_usage_none_tolerant(self):
-        """usage 为 None 时不应崩溃。"""
+        """usage 為 None 時不應崩潰。"""
         response = _make_mock_response("OK")
         response.usage = None
 
@@ -170,7 +170,7 @@ class TestOpenAITextBackend:
 
 
 def _make_bad_request_error(message: str = "Invalid schema") -> BadRequestError:
-    """构造 OpenAI BadRequestError。"""
+    """構造 OpenAI BadRequestError。"""
     return BadRequestError(
         message=message,
         response=httpx.Response(400, request=httpx.Request("POST", "https://api.openai.com/v1/chat/completions")),
@@ -184,10 +184,10 @@ class _PersonSchema(BaseModel):
 
 
 class TestInstructorFallback:
-    """Instructor 降级路径测试。"""
+    """Instructor 降級路徑測試。"""
 
     async def test_native_structured_output_success_no_fallback(self):
-        """原生 response_format 成功时，不走 Instructor 降级。"""
+        """原生 response_format 成功時，不走 Instructor 降級。"""
         schema_response = json.dumps({"name": "Alice", "age": 30})
         mock_client = AsyncMock()
         mock_client.chat.completions.create = AsyncMock(return_value=_make_mock_response(schema_response))
@@ -209,7 +209,7 @@ class TestInstructorFallback:
         mock_fallback.assert_not_called()
 
     async def test_bad_request_error_triggers_instructor_fallback_pydantic(self):
-        """原生 response_format 抛 BadRequestError 且 schema 为 Pydantic 类时，走 Instructor 降级。"""
+        """原生 response_format 拋 BadRequestError 且 schema 為 Pydantic 類時，走 Instructor 降級。"""
         mock_client = AsyncMock()
         mock_client.chat.completions.create = AsyncMock(side_effect=_make_bad_request_error())
 
@@ -243,10 +243,10 @@ class TestInstructorFallback:
         assert result.output_tokens == 10
 
     async def test_bad_request_error_with_dict_schema_falls_back_to_plain(self):
-        """原生 response_format 抛 BadRequestError 且 schema 为 dict 时，降级为无结构化输出的普通调用。"""
+        """原生 response_format 拋 BadRequestError 且 schema 為 dict 時，降級為無結構化輸出的普通呼叫。"""
         mock_client = AsyncMock()
-        # 第一次调用（带 response_format）抛错
-        # 第二次调用（不带 response_format）返回正常结果
+        # 第一次呼叫（帶 response_format）拋錯
+        # 第二次呼叫（不帶 response_format）返回正常結果
         fallback_json = json.dumps({"name": "Charlie", "age": 35})
         mock_client.chat.completions.create = AsyncMock(
             side_effect=[_make_bad_request_error(), _make_mock_response(fallback_json, 12, 6)]
@@ -268,12 +268,12 @@ class TestInstructorFallback:
         assert result.text == fallback_json
         assert result.input_tokens == 12
         assert result.output_tokens == 6
-        # 验证第二次调用使用 json_object 模式（而非原生 json_schema）
+        # 驗證第二次呼叫使用 json_object 模式（而非原生 json_schema）
         second_call_kwargs = mock_client.chat.completions.create.call_args_list[1][1]
         assert second_call_kwargs.get("response_format") == {"type": "json_object"}
 
     async def test_bad_request_error_without_schema_propagates(self):
-        """没有 response_schema 时，BadRequestError 应原样抛出，不做降级。"""
+        """沒有 response_schema 時，BadRequestError 應原樣丟擲，不做降級。"""
         mock_client = AsyncMock()
         mock_client.chat.completions.create = AsyncMock(side_effect=_make_bad_request_error())
 
@@ -288,7 +288,7 @@ class TestInstructorFallback:
                 await backend.generate(request)
 
     async def test_is_schema_error_recognizes_bad_request(self):
-        """_is_schema_error 正确识别 BadRequestError。"""
+        """_is_schema_error 正確識別 BadRequestError。"""
         from lib.text_backends.openai import _is_schema_error
 
         assert _is_schema_error(_make_bad_request_error()) is True

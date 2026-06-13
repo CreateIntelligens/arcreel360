@@ -1,4 +1,4 @@
-"""文本生成服务层公共 API。"""
+"""文字生成服務層公共 API。"""
 
 from lib.text_backends.base import (
     ImageInput,
@@ -28,10 +28,10 @@ from lib.text_backends.gemini import GeminiTextBackend
 
 register_backend(PROVIDER_GEMINI, GeminiTextBackend)
 
-from lib.providers import PROVIDER_ARK
+from lib.providers import PROVIDER_BYTEPLUS
 from lib.text_backends.ark import ArkTextBackend
 
-register_backend(PROVIDER_ARK, ArkTextBackend)
+register_backend(PROVIDER_BYTEPLUS, ArkTextBackend)
 
 from lib.providers import PROVIDER_GROK
 from lib.text_backends.grok import GrokTextBackend

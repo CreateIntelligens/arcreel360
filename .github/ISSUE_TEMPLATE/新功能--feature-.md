@@ -1,6 +1,6 @@
 ---
 name: 新功能 (Feature)
-about: 提出一个新的功能想法或需求
+about: 提出一個新的功能想法或需求
 title: "[Feature] "
 labels: enhancement
 assignees: ''

@@ -32,7 +32,7 @@ async function getConfigIssues(): Promise<ConfigIssue[]> {
       issues.push({
         key: "assistant-gemini",
         tab: "providers",
-        label: "Gemini 智能體未設定可用的 Gemini 文字供應商",
+        label: "Gemini AI Agent 未設定可用的 Gemini 文字供應商",
       });
     }
   }
@@ -43,7 +43,7 @@ async function getConfigIssues(): Promise<ConfigIssue[]> {
       issues.push({
         key: "assistant-openai",
         tab: "providers",
-        label: "OpenAI / ChatGPT 智能體未設定可用的 OpenAI 文字供應商",
+        label: "OpenAI / ChatGPT AI Agent 未設定可用的 OpenAI 文字供應商",
       });
     }
   }

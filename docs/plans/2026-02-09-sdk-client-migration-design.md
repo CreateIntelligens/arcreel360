@@ -6,7 +6,7 @@
 
 ## 设计决策
 
-| 决策点 | 选择 |
+| 决策点 | 選择 |
 |--------|------|
 | 迁移目标 | 完全迁移到 ClaudeSDKClient 原生会话 |
 | 历史查询 | UI 展示 + 会话恢复（resume） |
@@ -60,7 +60,7 @@ projects/.agent_data/
 │   ├── {session_id}.json          # SDK 生成的完整对话记录
 │   └── ...
 ├── sessions.db                     # SQLite 元数据
-└── checkpoints/                    # 可选：用于 resume 的检查点数据
+└── checkpoints/                    # 可選：用于 resume 的检查点数据
 ```
 
 ### ClaudeAgentOptions 配置
@@ -126,7 +126,7 @@ class SessionManager:
 
 ### 后台运行机制
 
-1. `send_message()` 启动一个后台 task 消费 `client.receive_messages()`
+1. `send_message()` 启动一個后台 task 消费 `client.receive_messages()`
 2. 消息同时：推送到所有 `subscribers`、缓存到 `message_buffer`
 3. 前端断开时只是 `unsubscribe()`，后台 task 继续运行
 4. 前端重连时 `subscribe()`，先回放 buffer 中的消息，再接收新消息
@@ -205,7 +205,7 @@ Request:  {"content": "用户输入"}
 Response: {"status": "accepted"}  # 立即返回，消息通过 SSE 推送
 ```
 
-### 与现有 API 的变化
+### 与現有 API 的变化
 
 - 移除 `/sessions/{id}/streams/{request_id}` —— 简化为单一 `/stream` 端点
 - `/messages` GET 从 transcript 读取而非 SQLite
@@ -217,7 +217,7 @@ Response: {"status": "accepted"}  # 立即返回，消息通过 SSE 推送
 ### 核心状态
 
 ```javascript
-// 现有状态（保留）
+// 現有状态（保留）
 const [sessions, setSessions] = useState([]);
 const [currentSessionId, setCurrentSessionId] = useState("");
 const [messages, setMessages] = useState([]);        // 存储 SDK 原始消息

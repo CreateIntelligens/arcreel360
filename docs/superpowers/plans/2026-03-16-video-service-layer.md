@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 提取通用视频生成服务层抽象，接入 Seedance 1.5 作为第二个视频供应商
+**Goal:** 提取通用视频生成服务层抽象，接入 Seedance 1.5 作为第二個视频供应商
 
 **Architecture:** VideoBackend Protocol 定义通用接口，GeminiVideoBackend 从 GeminiClient 提取视频逻辑，SeedanceVideoBackend 封装火山方舟 Ark SDK。MediaGenerator 通过注入的 VideoBackend 调用，保留版本管理和用量追踪横切关注点。
 
@@ -29,7 +29,7 @@
 | Modify | `tests/test_cost_calculator.py` | 新增 Seedance 计费测试 |
 | Modify | `lib/db/models/api_call.py` | 新增 provider/currency/usage_tokens 列 |
 | Create | Alembic migration | 数据库迁移脚本 |
-| Modify | `lib/db/repositories/usage_repo.py` | provider-aware 计费 + 按币种分组统计 |
+| Modify | `lib/db/repositories/usage_repo.py` | provider-aware 计费 + 按币种分组統計 |
 | Modify | `lib/usage_tracker.py` | 传递 provider 参数 |
 | Modify | `tests/test_usage_repo.py` | 新增多供应商用量测试 |
 | Modify | `lib/system_config.py` | 新增 video_provider / ark_api_key / file_service_base_url 配置项 |
@@ -136,7 +136,7 @@ class TestVideoGenerationResult:
         assert result.task_id == "cgt-20250101"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `python -m pytest tests/test_video_backend_base.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'lib.video_backends'`
@@ -233,7 +233,7 @@ __all__ = [
 - [ ] **Step 4: 运行测试确认通过**
 
 Run: `python -m pytest tests/test_video_backend_base.py -v`
-Expected: PASS — 所有 7 个测试通过
+Expected: PASS — 所有 7 個测试通过
 
 - [ ] **Step 5: 提交**
 
@@ -281,7 +281,7 @@ class _FakeBackend:
 
 @pytest.fixture(autouse=True)
 def _clean_registry():
-    """每个测试前清空 registry，测试后恢复。"""
+    """每個测试前清空 registry，测试后恢复。"""
     saved = dict(_BACKEND_FACTORIES)
     _BACKEND_FACTORIES.clear()
     yield
@@ -311,7 +311,7 @@ class TestRegistry:
         assert backend.api_key == "overwritten"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `python -m pytest tests/test_video_backend_registry.py -v`
 Expected: FAIL — `ModuleNotFoundError`
@@ -332,7 +332,7 @@ _BACKEND_FACTORIES: dict[str, Callable[..., VideoBackend]] = {}
 
 
 def register_backend(name: str, factory: Callable[..., VideoBackend]) -> None:
-    """注册一个视频后端工厂函数。"""
+    """注册一個视频后端工厂函数。"""
     _BACKEND_FACTORIES[name] = factory
 
 
@@ -366,7 +366,7 @@ __all__ = [
 - [ ] **Step 5: 运行测试确认通过**
 
 Run: `python -m pytest tests/test_video_backend_registry.py -v`
-Expected: PASS — 所有 4 个测试通过
+Expected: PASS — 所有 4 個测试通过
 
 - [ ] **Step 6: 提交**
 
@@ -456,7 +456,7 @@ class TestSeedanceCost:
         assert amount == pytest.approx(16.0)
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `python -m pytest tests/test_cost_calculator.py::TestSeedanceCost -v`
 Expected: FAIL — `AttributeError: 'CostCalculator' object has no attribute 'calculate_seedance_video_cost'`
@@ -507,7 +507,7 @@ Expected: FAIL — `AttributeError: 'CostCalculator' object has no attribute 'ca
 - [ ] **Step 4: 运行测试确认通过**
 
 Run: `python -m pytest tests/test_cost_calculator.py -v`
-Expected: PASS — 所有测试通过（原有 + 新增 6 个）
+Expected: PASS — 所有测试通过（原有 + 新增 6 個）
 
 - [ ] **Step 5: 提交**
 
@@ -565,7 +565,7 @@ Run: `rg "cost_usd" --type py`
 - `frontend/src/stores/stores.test.ts` — `cost_usd` → `cost_amount`
 - `scripts/migrate_sqlite_to_orm.py` — `cost_usd` → `cost_amount`
 
-在本步骤中直接对以上 4 个非 Task 5 覆盖的文件执行全局替换。
+在本步骤中直接对以上 4 個非 Task 5 覆盖的文件执行全局替换。
 
 - [ ] **Step 3: 运行迁移**
 
@@ -674,7 +674,7 @@ class TestMultiProviderUsage:
         assert stats["total_cost"] == pytest.approx(3.2)
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `python -m pytest tests/test_usage_repo.py::TestMultiProviderUsage -v`
 Expected: FAIL
@@ -685,8 +685,8 @@ Expected: FAIL
 
 1. `_row_to_dict`: 将 `cost_usd` 改为 `cost_amount`，新增 `currency`、`provider`、`usage_tokens` 字段
 2. `start_call`: 新增 `provider: str = "gemini"` 参数，写入 `ApiCall.provider`
-3. `finish_call`: 新增 `usage_tokens`、`provider`、`service_tier` 可选参数；根据 provider 分派计费逻辑：
-   - `provider == "gemini"` → 现有 `cost_calculator.calculate_video_cost()`，`currency = "USD"`
+3. `finish_call`: 新增 `usage_tokens`、`provider`、`service_tier` 可選参数；根据 provider 分派计费逻辑：
+   - `provider == "gemini"` → 現有 `cost_calculator.calculate_video_cost()`，`currency = "USD"`
    - `provider == "seedance"` → `cost_calculator.calculate_seedance_video_cost()`，`currency = "CNY"`
    - 更新时写入 `cost_amount`、`currency`、`usage_tokens`
 4. `get_stats`: 新增 `cost_by_currency` 字段（按 `currency` 分组求和），保留 `total_cost`（仅 USD 部分）向后兼容
@@ -843,7 +843,7 @@ class TestGeminiVideoBackendGenerate:
         assert result.provider == "gemini"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `python -m pytest tests/test_video_backend_gemini.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'lib.video_backends.gemini'`
@@ -863,8 +863,8 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'lib.video_backends.gem
 - `__init__` 接受 `backend_type`, `api_key`, `rate_limiter`, `video_model` 参数
 - `generate()` 方法为 async，内部使用 genai SDK 的 aio API
 - duration_seconds 内部标准化为 str（"4"/"6"/"8"）
-- 使用 `with_retry_async` 装饰器复用现有重试逻辑
-- 轮询逻辑复用现有模式（poll_interval=10, max_wait_time=600）
+- 使用 `with_retry_async` 装饰器复用現有重试逻辑
+- 轮询逻辑复用現有模式（poll_interval=10, max_wait_time=600）
 - 结果写入 `request.output_path` 并返回 `VideoGenerationResult`
 
 从 `gemini_client.py` 提取的具体方法和行范围：
@@ -894,7 +894,7 @@ async def generate(self, request: VideoGenerationRequest) -> VideoGenerationResu
     image_param = self._prepare_image_param(request.start_image) if request.start_image else None
     source = self._types.GenerateVideosSource(prompt=request.prompt, image=image_param)
 
-    # 5. 调用 API + 异步轮询
+    # 5. 调用 API + 異步轮询
     operation = await self._client.aio.models.generate_videos(
         model=self._video_model, source=source, config=config
     )
@@ -1093,7 +1093,7 @@ class TestSeedanceGenerate:
             assert image_items[0]["image_url"]["url"] == "https://example.com/files/frame.png"
 
     async def test_failed_task_raises(self, backend, tmp_path):
-        """任务失败应抛出异常。"""
+        """任务失敗应抛出异常。"""
         output = tmp_path / "out.mp4"
 
         create_result = MagicMock()
@@ -1180,7 +1180,7 @@ class TestSeedanceGenerate:
         assert create_call.kwargs.get("service_tier") == "flex"
 ```
 
-- [ ] **Step 3: 运行测试确认失败**
+- [ ] **Step 3: 运行测试确认失敗**
 
 Run: `python -m pytest tests/test_video_backend_seedance.py -v`
 Expected: FAIL — `ModuleNotFoundError`
@@ -1201,7 +1201,7 @@ Expected: FAIL — `ModuleNotFoundError`
 - `_upload_image(path)`: POST 到 `{file_service_base_url}/api/v1/files/upload` 获取公网 URL
 - 轮询间隔：`default` → 10s，`flex` → 60s
 - 超时：`default` → 600s，`flex` → 172800s
-- `generate` 接受可选 `_poll_interval_override` 参数供测试用
+- `generate` 接受可選 `_poll_interval_override` 参数供测试用
 
 - [ ] **Step 5: 运行测试确认通过**
 
@@ -1267,14 +1267,14 @@ git commit -m "feat: implement SeedanceVideoBackend with Ark SDK"
 
 - [ ] **Step 2: 修改 system_config router**
 
-在 `server/routers/system_config.py` 的 GET 端点响应中新增这三个字段的读取和返回逻辑，遵循现有模式（读环境变量、mask 密钥、标记 source）。
+在 `server/routers/system_config.py` 的 GET 端点响应中新增这三個字段的读取和返回逻辑，遵循現有模式（读环境变量、mask 密钥、标记 source）。
 
 PATCH 端点的验证规则：
 - `video_provider`: 必须是 `"gemini"` 或 `"seedance"` 之一
 - `ark_api_key`: 字符串，无特殊验证
 - `file_service_base_url`: 字符串，无特殊验证
 
-- [ ] **Step 3: 运行现有系统配置测试**
+- [ ] **Step 3: 运行現有系统配置测试**
 
 Run: `python -m pytest tests/test_system_config.py tests/test_system_config_router.py -v`
 Expected: PASS — 确认无回归
@@ -1310,7 +1310,7 @@ git commit -m "feat: add video_provider, ark_api_key, file_service_base_url to s
 
 - [ ] **Step 2: 更新 MediaGenerator 测试**
 
-在 `tests/test_media_generator_module.py` 中更新受影响的测试（主要是 `video_backend` 属性重命名为 `_gemini_backend_type` 的引用），并新增一个测试验证注入 VideoBackend 时的行为。
+在 `tests/test_media_generator_module.py` 中更新受影响的测试（主要是 `video_backend` 属性重命名为 `_gemini_backend_type` 的引用），并新增一個测试验证注入 VideoBackend 时的行为。
 
 - [ ] **Step 3: 运行 MediaGenerator 测试**
 
@@ -1424,7 +1424,7 @@ def _create_video_backend(provider_name: str, provider_settings: dict) -> VideoB
         )
 ```
 
-同时更新 `GenerateVideoRequest` 模型，新增可选 `seed` 字段：
+同时更新 `GenerateVideoRequest` 模型，新增可選 `seed` 字段：
 
 ```python
 class GenerateVideoRequest(BaseModel):

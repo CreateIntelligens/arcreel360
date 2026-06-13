@@ -159,9 +159,9 @@ class TestSessionManagerProjectScope:
                     "style": "Photographic",
                     "style_description": "Soft diffused lighting, muted earth tones",
                     "overview": {
-                        "synopsis": "姜月茴重生后逆袭的故事",
-                        "genre": "古装宫斗、重生复仇",
-                        "theme": "复仇与救赎",
+                        "synopsis": "姜月茴重生後逆襲的故事",
+                        "genre": "古裝宮鬥、重生復仇",
+                        "theme": "復仇與救贖",
                         "world_setting": "架空古代皇朝",
                     },
                 },
@@ -191,9 +191,9 @@ class TestSessionManagerProjectScope:
         assert "必須使用相對路徑" in prompt
 
         # Overview fields
-        assert "姜月茴重生后逆袭的故事" in prompt
-        assert "古装宫斗" in prompt
-        assert "复仇与救赎" in prompt
+        assert "姜月茴重生後逆襲的故事" in prompt
+        assert "古裝宮鬥" in prompt
+        assert "復仇與救贖" in prompt
         assert "架空古代皇朝" in prompt
 
         await engine.dispose()
@@ -228,7 +228,7 @@ class TestSessionManagerProjectScope:
         project_json.write_text(
             json.dumps(
                 {
-                    "title": "测试项目",
+                    "title": "測試專案",
                     "content_mode": "drama",
                     # No style, style_description, or overview
                 },
@@ -248,9 +248,9 @@ class TestSessionManagerProjectScope:
 
         # Present fields should be injected
         assert "專案識別：partial" in prompt
-        assert "專案標題：测试项目" in prompt
+        assert "專案標題：測試專案" in prompt
         assert f"專案目錄（即目前工作目錄 cwd）：{project_dir.resolve()}" in prompt
-        assert "测试项目" in prompt
+        assert "測試專案" in prompt
         assert "drama" in prompt
 
         # Missing fields should NOT cause errors or appear
@@ -319,7 +319,7 @@ class TestSystemPromptProjectContext:
         project_dir = tmp_path / "projects" / "demo"
         project_dir.mkdir(parents=True)
         (project_dir / "project.json").write_text(
-            json.dumps({"title": "测试项目"}, ensure_ascii=False),
+            json.dumps({"title": "測試專案"}, ensure_ascii=False),
             encoding="utf-8",
         )
 
@@ -331,6 +331,6 @@ class TestSystemPromptProjectContext:
         )
 
         prompt = manager._build_project_context("demo")
-        assert "專案標題：测试项目" in prompt
+        assert "專案標題：測試專案" in prompt
         assert "目前專案上下文" in prompt
         await engine.dispose()

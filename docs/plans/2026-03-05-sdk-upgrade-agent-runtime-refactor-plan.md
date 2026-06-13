@@ -135,7 +135,7 @@ class TestSdkTranscriptAdapter:
         assert result[0]["content"] == [{"type": "text", "text": "Hello"}]
 ```
 
-**Step 2: 运行测试确认失败**
+**Step 2: 运行测试确认失敗**
 
 Run: `python -m pytest tests/test_sdk_transcript_adapter.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'server.agent_runtime.sdk_transcript_adapter'`
@@ -306,7 +306,7 @@ class TestTaskMessageTypes:
         assert SessionManager._TASK_MESSAGE_SUBTYPES["TaskNotificationMessage"] == "task_notification"
 ```
 
-**Step 2: 运行测试确认失败**
+**Step 2: 运行测试确认失敗**
 
 Run: `python -m pytest tests/test_task_message_types.py -v`
 Expected: FAIL with `AttributeError: type object 'SessionManager' has no attribute '_TASK_MESSAGE_SUBTYPES'`
@@ -338,7 +338,7 @@ _TASK_MESSAGE_SUBTYPES = {
 
 **Step 4: 更新 _message_to_dict 注入 subtype**
 
-在 `_message_to_dict` 方法中，现有逻辑之后添加 subtype 注入：
+在 `_message_to_dict` 方法中，現有逻辑之后添加 subtype 注入：
 
 ```python
 def _message_to_dict(self, message: Any) -> dict[str, Any]:
@@ -445,7 +445,7 @@ def test_result_between_rounds_flushes_correctly(self):
     assert [turn["type"] for turn in turns] == ["user", "assistant", "user", "assistant"]
 ```
 
-**Step 2: 运行测试确认失败**
+**Step 2: 运行测试确认失敗**
 
 Run: `python -m pytest tests/test_turn_grouper.py -v`
 Expected: FAIL on the modified test (still expects "result" in turn types)
@@ -551,7 +551,7 @@ def test_task_progress_without_assistant_creates_system_turn(self):
     assert turns[1]["content"][0]["type"] == "task_progress"
 ```
 
-**Step 2: 运行测试确认失败**
+**Step 2: 运行测试确认失敗**
 
 Run: `python -m pytest tests/test_turn_grouper.py::TestTurnGrouper::test_task_progress_attached_to_assistant_turn -v`
 Expected: FAIL
@@ -853,7 +853,7 @@ export function TaskProgressBlock({ block }: TaskProgressBlockProps) {
       >
         <span>{isCompleted ? "V" : isFailed ? "X" : "-"}</span>
         <span>
-          子任务{isCompleted ? "完成" : isFailed ? "失败" : "结束"}: {summary || description}
+          子任务{isCompleted ? "完成" : isFailed ? "失敗" : "结束"}: {summary || description}
         </span>
       </div>
     );

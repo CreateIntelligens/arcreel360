@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** 将助手“需要你的选择”区域改为逐题向导（顶部步骤条 + 单题作答），并在最后一题点击“完成并提交”时一次性提交所有答案。
+**Goal:** 将助手“需要你的選择”区域改为逐题向导（顶部步骤条 + 单题作答），并在最后一题点击“完成并提交”时一次性提交所有答案。
 
 **Architecture:** 保持后端批量提交接口不变，仅重构前端交互层。先抽出纯函数模块承载题目导航/校验/payload 组装逻辑并通过单测锁定行为，再改造 `AssistantMessageArea` 只渲染当前题并接入“上一步/下一题/完成并提交”流程。最后做回归验证，确保聊天主流程与会话状态不受影响。
 
@@ -24,10 +24,10 @@
 Run: `pwd && git branch --show-current && git status --short`  
 Expected: 位于仓库根目录；识别当前分支；只存在预期未跟踪文件（如本地配置文件）。
 
-**Step 2: 运行现有前端基线测试**
+**Step 2: 运行現有前端基线测试**
 
 Run: `node frontend/tests/landing-page.test.mjs && node frontend/tests/app-shell-floating-button.test.mjs`  
-Expected: 两个测试均 PASS。
+Expected: 两個测试均 PASS。
 
 **Step 3: 记录本次改造边界**
 
@@ -36,7 +36,7 @@ Expected: 两个测试均 PASS。
 - 不修改提交协议：`answers` 仍为整批对象
 - UI 仅改 `AssistantMessageArea` 的 pending question 区域
 
-**Step 4: 提交基线检查说明（可选）**
+**Step 4: 提交基线检查说明（可選）**
 
 若需要留痕，创建简短 commit note；否则进入 Task 2。
 
@@ -46,7 +46,7 @@ Expected: 两个测试均 PASS。
 - Create: `frontend/tests/assistant-question-wizard.test.mjs`
 - Target module (to be created in Task 3): `frontend/src/react/pages/assistant-question-wizard.js`
 
-**Step 1: 写失败测试，先定义行为契约**
+**Step 1: 写失敗测试，先定义行为契约**
 
 ```js
 import test from "node:test";
@@ -63,8 +63,8 @@ import {
 
 const questions = [
     {
-        header: "选择项目",
-        question: "你想基于哪个项目继续？",
+        header: "選择项目",
+        question: "你想基于哪個项目继续？",
         multiSelect: false,
         options: [{ label: "test" }, { label: "创建新项目" }, { label: "其他" }],
     },
@@ -113,7 +113,7 @@ test("buildAnswersPayload should map other values to custom text", () => {
     const payload = buildAnswersPayload(questions, questionAnswers, customAnswers);
 
     assert.deepEqual(payload, {
-        "你想基于哪个项目继续？": "我的旧项目",
+        "你想基于哪個项目继续？": "我的旧项目",
         "你想制作什么内容？": "使用已有素材, 补充镜头需求",
     });
 });
@@ -125,12 +125,12 @@ test("getNextVisitedSteps should keep unique and sorted visited indexes", () => 
 });
 ```
 
-**Step 2: 运行测试确认失败**
+**Step 2: 运行测试确认失敗**
 
 Run: `node frontend/tests/assistant-question-wizard.test.mjs`  
 Expected: FAIL，报 `assistant-question-wizard.js` 模块不存在或导出缺失。
 
-**Step 3: 提交失败测试（红灯）**
+**Step 3: 提交失敗测试（红灯）**
 
 ```bash
 git add frontend/tests/assistant-question-wizard.test.mjs
@@ -161,7 +161,7 @@ function isOtherOptionLabel(label) {
 
 export function buildQuestionOptions(options) {
     const normalized = (Array.isArray(options) ? options : []).map((option, index) => {
-        const label = option?.label || `选项 ${index + 1}`;
+        const label = option?.label || `選項 ${index + 1}`;
         const isOther = isOtherOptionLabel(label);
         return {
             ...option,
@@ -174,7 +174,7 @@ export function buildQuestionOptions(options) {
     if (!normalized.some((item) => item.isOther)) {
         normalized.push({
             label: ASSISTANT_OTHER_OPTION_LABEL,
-            description: "若以上选项都不符合，可自行输入",
+            description: "若以上選項都不符合，可自行输入",
             value: ASSISTANT_OTHER_OPTION_VALUE,
             isOther: true,
         });
@@ -257,7 +257,7 @@ git commit -m "feat(assistant): add question wizard pure logic module"
 - Create: `frontend/tests/assistant-message-area-wizard.test.mjs`
 - Target component: `frontend/src/react/pages/assistant-page.js`
 
-**Step 1: 先写失败的 UI 约束测试**
+**Step 1: 先写失敗的 UI 约束测试**
 
 ```js
 import test from "node:test";
@@ -291,14 +291,14 @@ function renderArea(extra = {}) {
                 id: "q-1",
                 questions: [
                     {
-                        header: "选择项目",
-                        question: "问题A：选项目",
+                        header: "選择项目",
+                        question: "问题A：選項目",
                         multiSelect: false,
                         options: [{ label: "test" }, { label: "创建新项目" }],
                     },
                     {
                         header: "视频内容",
-                        question: "问题B：选内容",
+                        question: "问题B：選内容",
                         multiSelect: false,
                         options: [{ label: "使用已有素材" }, { label: "我来描述内容" }],
                     },
@@ -315,17 +315,17 @@ test("pending question area should render wizard progress and only current quest
     assert.ok(html.includes("问题 1/2"));
     assert.ok(html.includes("下一题"));
     assert.ok(!html.includes("提交答案"));
-    assert.ok(html.includes("问题A：选项目"));
-    assert.ok(!html.includes("问题B：选内容"));
+    assert.ok(html.includes("问题A：選項目"));
+    assert.ok(!html.includes("问题B：選内容"));
 });
 ```
 
-**Step 2: 运行测试确认失败**
+**Step 2: 运行测试确认失敗**
 
 Run: `node frontend/tests/assistant-message-area-wizard.test.mjs`  
 Expected: FAIL（当前实现会显示全部问题，并出现“提交答案”按钮）。
 
-**Step 3: 提交失败测试**
+**Step 3: 提交失敗测试**
 
 ```bash
 git add frontend/tests/assistant-message-area-wizard.test.mjs
@@ -383,7 +383,7 @@ const currentQuestion = totalQuestions > 0 ? assistantPendingQuestion.questions[
 <p className="text-xs text-slate-400">{`问题 ${currentQuestionIndex + 1}/${totalQuestions}`}</p>
 ```
 
-只渲染 `currentQuestion` 的选项卡，不再 `map` 全部题目。
+只渲染 `currentQuestion` 的選項卡，不再 `map` 全部题目。
 
 **Step 3: 绑定“上一步/下一题/完成并提交”动作**
 
@@ -481,5 +481,5 @@ git commit -m "feat(assistant): implement step wizard for pending question flow"
 
 使用 `@requesting-code-review` 对最终差异做一次 review，请求重点检查：
 - 回退修改是否会产生 payload 异常
-- “其他”选项在单选/多选两类题目的边界行为
+- “其他”選項在单選/多選两类题目的边界行为
 - 提交中状态是否彻底阻断重复触发

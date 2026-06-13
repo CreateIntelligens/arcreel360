@@ -16,7 +16,7 @@ from server.agent_runtime.turn_schema import (
     normalize_turn,
 )
 
-_GROUPABLE_TYPES = {"user", "assistant", "result", "system"}
+_GROUPABLE_TYPES = {"user", "assistant", "result", "system", "tool_use", "tool_result"}
 
 
 def _coerce_index(value: Any) -> int | None:

@@ -4,12 +4,12 @@
 
 当前 AI 后端中，OpenAI 通过 `openai_shared.py` 提供 `create_openai_client()` 工厂函数，
 Gemini 通过 `gemini_shared.py` 提供共享 RateLimiter + 重试机制。
-但 Grok 和 Ark 的 image/video/text 三个后端各自独立创建客户端，存在重复的初始化逻辑、
+但 Grok 和 Ark 的 image/video/text 三個后端各自独立创建客户端，存在重复的初始化逻辑、
 校验逻辑和硬编码常量。
 
 ## 目标
 
-为 Grok 和 Ark 各创建一个共享模块（`grok_shared.py` / `ark_shared.py`），
+为 Grok 和 Ark 各创建一個共享模块（`grok_shared.py` / `ark_shared.py`），
 提供统一的客户端工厂函数，消除三处后端中的重复代码。采用与 `openai_shared.py` 相同的模式。
 
 ## 设计
@@ -75,7 +75,7 @@ def create_ark_client(*, api_key: str | None = None):
 - `__init__` 改为 `self._client = create_grok_client(api_key=api_key)`
 
 #### text_backends/grok.py（最大变更）
-- 同步 `xai_sdk.Client` 改为异步 `xai_sdk.AsyncClient`（通过 `create_grok_client()`）
+- 同步 `xai_sdk.Client` 改为異步 `xai_sdk.AsyncClient`（通过 `create_grok_client()`）
 - `asyncio.to_thread(chat.sample)` → `await chat.sample()`
 - `asyncio.to_thread(chat.parse, ...)` → `await chat.parse(...)`
 - 删除 `import asyncio`
@@ -112,7 +112,7 @@ def create_ark_client(*, api_key: str | None = None):
 | `lib/ark_shared.py` | 新增 | 工厂函数 + base_url 常量 |
 | `lib/image_backends/grok.py` | 改动 | 改用 `create_grok_client()` |
 | `lib/video_backends/grok.py` | 改动 | 改用 `create_grok_client()` |
-| `lib/text_backends/grok.py` | 改动 | 改用 `create_grok_client()` + 异步化 |
+| `lib/text_backends/grok.py` | 改动 | 改用 `create_grok_client()` + 異步化 |
 | `lib/image_backends/ark.py` | 改动 | 改用 `create_ark_client()` |
 | `lib/video_backends/ark.py` | 改动 | 改用 `create_ark_client()` |
 | `lib/text_backends/ark.py` | 改动 | 主客户端改用 `create_ark_client()` |

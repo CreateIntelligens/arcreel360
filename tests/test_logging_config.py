@@ -49,7 +49,7 @@ class TestSetupLogging:
         assert len(our_handlers) == 1
 
     def teardown_method(self):
-        """每个测试后清理 root logger handlers。"""
+        """每個測試後清理 root logger handlers。"""
         root = logging.getLogger()
         root.handlers = [h for h in root.handlers if not getattr(h, _HANDLER_ATTR, False)]
         root.setLevel(logging.WARNING)

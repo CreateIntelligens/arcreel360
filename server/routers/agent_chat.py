@@ -1,7 +1,7 @@
 """
-同步 Agent 对话端点
+同步 Agent 對話端點
 
-封装现有 SSE 流式助手为同步请求-响应模式，供 OpenClaw 等外部 Agent 调用。
+封裝現有 SSE 流式助手為同步請求-響應模式，供 OpenClaw 等外部 Agent 呼叫。
 """
 
 import asyncio
@@ -36,7 +36,7 @@ class AgentChatResponse(BaseModel):
 
 
 def _extract_text_from_assistant_message(msg: dict) -> str:
-    """从 assistant 类型消息中提取纯文本内容。"""
+    """從 assistant 型別訊息中提取純文字內容。"""
     content = msg.get("content", [])
     if isinstance(content, str):
         return content
@@ -58,10 +58,10 @@ async def _collect_reply(
     session_id: str,
     timeout: float,
 ) -> tuple[str, str]:
-    """订阅会话队列，收集 assistant 回复直到完成或超时。
+    """訂閱會話佇列，收集 assistant 回覆直到完成或超時。
 
     Returns:
-        (reply_text, status) — status 为 "completed" / "timeout" / "error"
+        (reply_text, status) — status 為 "completed" / "timeout" / "error"
     """
     queue = await service.session_manager.subscribe(session_id, replay_buffer=True)
     try:
@@ -78,12 +78,12 @@ async def _collect_reply(
             try:
                 message = await asyncio.wait_for(queue.get(), timeout=min(remaining, 5.0))
             except TimeoutError:
-                # 检查会话是否已完成
+                # 檢查會話是否已完成
                 live_status = await service.session_manager.get_status(session_id)
                 if live_status and live_status != "running":
                     status = "completed" if live_status in {"idle", "completed"} else live_status
                     break
-                # 检查是否超时
+                # 檢查是否超時
                 if loop.time() >= deadline:
                     status = "timeout"
                     break
@@ -97,7 +97,7 @@ async def _collect_reply(
                     reply_parts.append(text)
 
             elif msg_type == "result":
-                # 终结消息：提取最后一条 assistant 回复（如果还没有从队列里收到）
+                # 終結訊息：提取最後一條 assistant 回覆（如果還沒有從佇列裡收到）
                 subtype = str(message.get("subtype") or "").lower()
                 is_error = bool(message.get("is_error"))
                 if is_error or subtype.startswith("error"):
@@ -113,7 +113,7 @@ async def _collect_reply(
                     break
 
             elif msg_type == "_queue_overflow":
-                # 队列溢出，中断
+                # 佇列溢位，中斷
                 status = "error"
                 break
 
@@ -128,34 +128,34 @@ async def agent_chat(
     body: AgentChatRequest,
     _user: CurrentUser,
 ) -> AgentChatResponse:
-    """同步 Agent 对话端点。
+    """同步 Agent 對話端點。
 
-    - 若不传 session_id，则新建会话
-    - 若传入 session_id，则在该会话上下文中继续对话
-    - 内部对接 AssistantService，收集完整响应后返回
-    - 超过 120 秒返回已收集的部分响应，status 为 "timeout"
+    - 若不傳 session_id，則新建會話
+    - 若傳入 session_id，則在該會話上下文中繼續對話
+    - 內部對接 AssistantService，收集完整響應後返回
+    - 超過 120 秒返回已收集的部分響應，status 為 "timeout"
     """
     service = get_assistant_service()
 
-    # 验证项目是否存在
+    # 驗證專案是否存在
     try:
         service.pm.get_project_path(body.project_name)
     except (FileNotFoundError, KeyError):
-        raise HTTPException(status_code=404, detail=f"项目 '{body.project_name}' 不存在")
+        raise HTTPException(status_code=404, detail=f"專案 '{body.project_name}' 不存在")
 
-    # 若传入 session_id，先校验会话归属
+    # 若傳入 session_id，先校驗會話歸屬
     if body.session_id:
         session = await service.get_session(body.session_id)
         if session is None:
-            raise HTTPException(status_code=404, detail=f"会话 '{body.session_id}' 不存在")
+            raise HTTPException(status_code=404, detail=f"會話 '{body.session_id}' 不存在")
         if session.project_name != body.project_name:
             raise HTTPException(
                 status_code=400,
-                detail=f"会话 '{body.session_id}' 属于项目 '{session.project_name}'，与请求项目 '{body.project_name}' 不符",
+                detail=f"會話 '{body.session_id}' 屬於專案 '{session.project_name}'，與請求專案 '{body.project_name}' 不符",
             )
 
-    # 统一通过 send_or_create 创建或复用会话并发送消息。
-    # 依赖 replay_buffer=True 缓冲已发送的消息，不会产生竞争条件。
+    # 統一透過 send_or_create 建立或複用會話併傳送訊息。
+    # 依賴 replay_buffer=True 緩衝已傳送的訊息，不會產生競爭條件。
     try:
         result = await service.send_or_create(
             body.project_name,
@@ -166,7 +166,7 @@ async def agent_chat(
     except SessionCapacityError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
     except TimeoutError:
-        raise HTTPException(status_code=504, detail="SDK 会话创建超时")
+        raise HTTPException(status_code=504, detail="SDK 會話建立超時")
     except UnsupportedCapabilityError as exc:
         raise HTTPException(status_code=409, detail=exc.as_detail())
     except ProviderUnavailableError as exc:
@@ -174,10 +174,10 @@ async def agent_chat(
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
 
-    # 收集回复（带超时）
+    # 收集回覆（帶超時）
     reply, status = await _collect_reply(service, session_id, SYNC_CHAT_TIMEOUT)
 
-    # 若未收到文本但有快照，从 snapshot 提取最新助手回复
+    # 若未收到文字但有快照，從 snapshot 提取最新助手回覆
     if not reply:
         try:
             snapshot = await service.get_snapshot(session_id)
@@ -190,7 +190,7 @@ async def agent_chat(
                     if reply:
                         break
         except Exception as exc:
-            logger.warning("获取快照失败 session_id=%s: %s", session_id, exc)
+            logger.warning("獲取快照失敗 session_id=%s: %s", session_id, exc)
 
     return AgentChatResponse(
         session_id=session_id,

@@ -15,7 +15,7 @@
 - [x] 3.1 创建 `AgentConfigTab` 组件（ArcReel 智能体配置），内部维护 Anthropic 相关字段的草稿状态，底部嵌入 `TabSaveFooter`
 - [x] 3.2 创建 `MediaConfigTab` 组件（AI 生图/生视频配置），内部维护 Gemini/Vertex 相关字段的草稿状态，底部嵌入 `TabSaveFooter`
 - [x] 3.3 创建 `AdvancedConfigTab` 组件（高级配置），内部维护限速/并发字段的草稿状态，底部嵌入 `TabSaveFooter`
-- [x] 3.4 每个配置 Tab 组件实现 `isDirty` 检测（`deepEqual` 比较草稿与已保存值的 `useRef`）
+- [x] 3.4 每個配置 Tab 组件实现 `isDirty` 检测（`deepEqual` 比较草稿与已保存值的 `useRef`）
 
 ## 4. 顶栏 Tab 导航与徽标
 
@@ -24,12 +24,12 @@
 
 ## 5. 统一清除按钮
 
-- [x] 5.1 为所有可选字段（base_url、api key 等非必填项）统一添加清除（×）按钮，有值时显示，空时隐藏
+- [x] 5.1 为所有可選字段（base_url、api key 等非必填项）统一添加清除（×）按钮，有值时显示，空时隐藏
 - [x] 5.2 点击清除后字段值置空，触发对应 Tab 的 `isDirty` 更新
 
 ## 6. SystemConfigPage 整合与清理
 
-- [x] 6.1 将 `SystemConfigPage` 重构为编排层，组合四个 Tab 组件，移除原有全局草稿状态和底部全局保存按钮
+- [x] 6.1 将 `SystemConfigPage` 重构为编排层，组合四個 Tab 组件，移除原有全局草稿状态和底部全局保存按钮
 - [x] 6.2 保留连接测试（Connection Test）功能，确保其仍可正常工作（归入对应 Tab）
 - [x] 6.3 为页面底部添加足够的 `padding-bottom`，防止 sticky 页脚遮挡最后一行内容
 

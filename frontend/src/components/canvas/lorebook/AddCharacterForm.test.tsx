@@ -21,7 +21,7 @@ describe("AddCharacterForm", () => {
       <AddCharacterForm onSubmit={onSubmit} onCancel={vi.fn()} />,
     );
 
-    fireEvent.change(screen.getByPlaceholderText("角色名称"), {
+    fireEvent.change(screen.getByPlaceholderText("角色名稱"), {
       target: { value: "Hero" },
     });
     fireEvent.change(
@@ -30,7 +30,7 @@ describe("AddCharacterForm", () => {
         target: { value: "hero desc" },
       },
     );
-    fireEvent.change(screen.getByPlaceholderText("可选，例如：温柔但有威严"), {
+    fireEvent.change(screen.getByPlaceholderText("可選，例如：溫柔但有威嚴"), {
       target: { value: "warm" },
     });
 
@@ -39,7 +39,7 @@ describe("AddCharacterForm", () => {
     expect(fileInput).not.toBeNull();
     fireEvent.change(fileInput as HTMLInputElement, { target: { files: [file] } });
 
-    fireEvent.click(screen.getByRole("button", { name: "添加" }));
+    fireEvent.click(screen.getByRole("button", { name: "新增" }));
 
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith("Hero", "hero desc", "warm", file);

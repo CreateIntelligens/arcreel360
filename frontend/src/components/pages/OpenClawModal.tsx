@@ -1,11 +1,12 @@
 /**
- * OpenClaw 集成引导 Modal
- * 提示词区域（可复制，含动态 skill.md URL）、3 步使用说明、"获取 API 令牌"按钮
+ * OpenClaw 整合引導 Modal
+ * 提示詞區域（可複製，含動態 skill.md URL）、3 步使用說明、"獲取 API 令牌"按鈕
  */
 import { useCallback, useMemo, useState } from "react";
 import { copyText } from "@/utils/clipboard";
 import { Check, Copy, ExternalLink, X } from "lucide-react";
 import { useLocation } from "wouter";
+import { Modal } from "@/components/ui/Modal";
 
 // 🦞 SVG lobster icon (inline, no external dep)
 function LobsterIcon({ className }: { className?: string }) {
@@ -20,7 +21,7 @@ interface OpenClawModalProps {
   onClose: () => void;
 }
 
-// 使用步骤数据（静态，提升到组件外避免每次渲染重建）
+// 使用步驟資料（靜態，提升到元件外避免每次渲染重建）
 const STEPS = [
   {
     step: "01",
@@ -29,8 +30,8 @@ const STEPS = [
   },
   {
     step: "02",
-    title: "OpenClaw 從 Skill 文件學習能力",
-    desc: "OpenClaw 會自動讀取 ArcReel Skill 文件，取得所有可用工具與 API 的使用方式",
+    title: "OpenClaw 從 Skill 檔案學習能力",
+    desc: "OpenClaw 會自動讀取 ArcReel Skill 檔案，取得所有可用工具與 API 的使用方式",
   },
   {
     step: "03",
@@ -43,14 +44,14 @@ export function OpenClawModal({ onClose }: OpenClawModalProps) {
   const [, navigate] = useLocation();
   const [copied, setCopied] = useState(false);
 
-  // task 7.3：动态适配当前访问地址
+  // task 7.3：動態適配當前訪問地址
   const skillUrl = useMemo(
     () => `${window.location.origin}/skill.md`,
     [],
   );
 
   const systemPrompt = useMemo(
-    () => `學習 ${skillUrl} 然後遵循 skill，了解如何使用 ArcReel 創作影片`,
+    () => `學習 ${skillUrl} 然後遵循 skill，瞭解如何使用 ArcReel 創作影片`,
     [skillUrl],
   );
 
@@ -60,18 +61,11 @@ export function OpenClawModal({ onClose }: OpenClawModalProps) {
     setTimeout(() => setCopied(false), 2000);
   }, [systemPrompt]);
 
-  // task 7.4：跳转 API Key 管理页
+  // task 7.4：跳轉 API Key 管理頁
   const handleGoToApiKeys = useCallback(() => {
     onClose();
     navigate("/app/settings?section=api-keys");
   }, [navigate, onClose]);
-
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (e.target === e.currentTarget) onClose();
-    },
-    [onClose],
-  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -81,13 +75,9 @@ export function OpenClawModal({ onClose }: OpenClawModalProps) {
   );
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8"
-      onClick={handleBackdropClick}
-      onKeyDown={handleKeyDown}
-    >
+    <Modal className="py-8" onBackdropClick={onClose} onKeyDown={handleKeyDown}>
       <div className="relative flex w-full max-w-lg flex-col rounded-2xl border border-gray-800 bg-gray-900 shadow-2xl shadow-black/60 max-h-[90vh] overflow-y-auto">
-        {/* ——— 顶栏 ——— */}
+        {/* ——— 頂欄 ——— */}
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-800 bg-gray-900 px-5 py-4">
           <div className="flex items-center gap-2.5">
             <LobsterIcon className="text-xl leading-none" />
@@ -100,14 +90,14 @@ export function OpenClawModal({ onClose }: OpenClawModalProps) {
             type="button"
             onClick={onClose}
             className="rounded-md p-1 text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
-            aria-label="关闭"
+            aria-label="關閉"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="p-5 space-y-5">
-          {/* ——— Prompt 区域 ——— */}
+          {/* ——— Prompt 區域 ——— */}
           <div>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-medium text-gray-400">Prompt</span>
@@ -135,7 +125,7 @@ export function OpenClawModal({ onClose }: OpenClawModalProps) {
               </pre>
             </div>
             <p className="mt-1.5 text-xs text-gray-600">
-              Skill 文件地址：
+              Skill 檔案地址：
               <a
                 href={skillUrl}
                 target="_blank"
@@ -148,7 +138,7 @@ export function OpenClawModal({ onClose }: OpenClawModalProps) {
             </p>
           </div>
 
-          {/* ——— 3 步说明 ——— */}
+          {/* ——— 3 步說明 ——— */}
           <div>
             <div className="mb-3 text-xs font-medium text-gray-400">使用步驟</div>
             <div className="space-y-2">
@@ -169,14 +159,14 @@ export function OpenClawModal({ onClose }: OpenClawModalProps) {
             </div>
           </div>
 
-          {/* ——— 操作按钮 ——— */}
+          {/* ——— 操作按鈕 ——— */}
           <div className="flex gap-2 pt-1">
             <button
               type="button"
               onClick={onClose}
               className="flex-1 rounded-xl border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm text-gray-300 transition-colors hover:border-gray-600 hover:bg-gray-700"
             >
-              关闭
+              關閉
             </button>
             <button
               type="button"
@@ -188,6 +178,6 @@ export function OpenClawModal({ onClose }: OpenClawModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

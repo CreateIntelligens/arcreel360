@@ -4,8 +4,8 @@
 TimelineCanvas MUST 使用虚拟滚动技术渲染 SegmentCard 列表，仅将视口附近的 SegmentCard 挂载到 DOM 中。
 
 #### Scenario: 大量分镜的初始加载
-- **WHEN** 用户打开包含 50 个分镜的剧集
-- **THEN** DOM 中仅渲染视口可见的 SegmentCard 加上 overscan 数量（约 8-12 个），而非全部 50 个
+- **WHEN** 用户打开包含 50 個分镜的剧集
+- **THEN** DOM 中仅渲染视口可见的 SegmentCard 加上 overscan 数量（约 8-12 個），而非全部 50 個
 
 #### Scenario: 滚动浏览
 - **WHEN** 用户向下滚动时间线
@@ -15,7 +15,7 @@ TimelineCanvas MUST 使用虚拟滚动技术渲染 SegmentCard 列表，仅将�
 虚拟滚动 MUST 支持 SegmentCard 的动态高度，包括展开/折叠态导致的高度变化。
 
 #### Scenario: 展开折叠卡片
-- **WHEN** 用户展开某个 SegmentCard 导致其高度变化
+- **WHEN** 用户展开某個 SegmentCard 导致其高度变化
 - **THEN** 虚拟滚动列表正确调整后续项的位置，不出现跳跃或重叠
 
 #### Scenario: 预估高度与实际高度差异
@@ -33,7 +33,7 @@ TimelineCanvas MUST 使用虚拟滚动技术渲染 SegmentCard 列表，仅将�
 Agent 或系统触发的滚动定位（scrollTarget）MUST 在虚拟滚动环境下正常工作。
 
 #### Scenario: Agent 触发滚动到不在 DOM 中的分镜
-- **WHEN** scrollTarget 指向一个当前不在 DOM 中的 segment ID
+- **WHEN** scrollTarget 指向一個当前不在 DOM 中的 segment ID
 - **THEN** 系统通过 virtualizer.scrollToIndex 滚动到目标位置，目标 SegmentCard 被渲染并可见
 
 #### Scenario: 滚动定位后的高亮

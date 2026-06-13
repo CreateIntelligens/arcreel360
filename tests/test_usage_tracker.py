@@ -108,8 +108,8 @@ class TestUsageTracker:
         call_id = await tracker.start_call(
             project_name="demo",
             call_type="text",
-            model="gemini-3-flash-preview",
-            prompt="测试 prompt",
+            model="gemini-3.1-flash-lite",
+            prompt="測試 prompt",
             provider="gemini",
         )
         await tracker.finish_call(
@@ -160,7 +160,7 @@ class TestUsageTracker:
 
 class TestActualCostsBySegment:
     async def test_aggregates_costs_by_segment_and_type(self, tracker):
-        # E1S001: image 两次成功（累计）
+        # E1S001: image 兩次成功（累計）
         c1 = await tracker.start_call(
             "proj", "image", "gemini-3.1-flash-image-preview", resolution="1K", segment_id="E1S001"
         )
@@ -182,7 +182,7 @@ class TestActualCostsBySegment:
         )
         await tracker.finish_call(c4, status="success", output_path="c.png")
 
-        # 失败的不计入
+        # 失敗的不計入
         c5 = await tracker.start_call(
             "proj", "image", "gemini-3.1-flash-image-preview", resolution="1K", segment_id="E1S001"
         )
@@ -197,7 +197,7 @@ class TestActualCostsBySegment:
         assert result["E1S002"]["image"]["USD"] == pytest.approx(0.067)
 
     async def test_project_level_costs(self, tracker):
-        # 角色生成（无 segment_id）
+        # 角色生成（無 segment_id）
         c1 = await tracker.start_call("proj", "image", "gemini-3.1-flash-image-preview", resolution="1K")
         await tracker.finish_call(c1, status="success", output_path="char.png")
 

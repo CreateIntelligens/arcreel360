@@ -8,7 +8,7 @@ from lib.text_backends.factory import create_text_backend_for_task
 
 
 def _make_mock_resolver(**async_methods):
-    """创建带 session() 上下文管理器的 mock resolver。"""
+    """建立帶 session() 上下文管理器的 mock resolver。"""
     mock = MagicMock()
     for name, return_value in async_methods.items():
         setattr(mock, name, AsyncMock(return_value=return_value))
@@ -23,7 +23,7 @@ def _make_mock_resolver(**async_methods):
 
 async def test_creates_gemini_aistudio_backend():
     mock_resolver = _make_mock_resolver(
-        text_backend_for_task=("gemini-aistudio", "gemini-3-flash-preview"),
+        text_backend_for_task=("gemini-aistudio", "gemini-3.1-flash-lite"),
         provider_config={"api_key": "test-key", "base_url": ""},
     )
 
@@ -39,15 +39,15 @@ async def test_creates_gemini_aistudio_backend():
         mock_create.assert_called_once_with(
             "gemini",
             api_key="test-key",
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite",
             base_url="",
         )
         assert result is mock_backend
 
 
-async def test_creates_ark_backend():
+async def test_creates_byteplus_backend():
     mock_resolver = _make_mock_resolver(
-        text_backend_for_task=("ark", "doubao-seed-2-0-lite-260215"),
+        text_backend_for_task=("byteplus", "doubao-seed-2-0-lite-260215"),
         provider_config={"api_key": "ark-key"},
     )
 
@@ -61,7 +61,7 @@ async def test_creates_ark_backend():
         result = await create_text_backend_for_task(TextTaskType.OVERVIEW, "my-project")
 
         mock_create.assert_called_once_with(
-            "ark",
+            "byteplus",
             api_key="ark-key",
             model="doubao-seed-2-0-lite-260215",
         )
@@ -70,7 +70,7 @@ async def test_creates_ark_backend():
 
 async def test_creates_vertex_backend():
     mock_resolver = _make_mock_resolver(
-        text_backend_for_task=("gemini-vertex", "gemini-3-flash-preview"),
+        text_backend_for_task=("gemini-vertex", "gemini-3.1-flash-lite"),
         provider_config={"gcs_bucket": "my-bucket"},
     )
 
@@ -85,7 +85,7 @@ async def test_creates_vertex_backend():
 
         mock_create.assert_called_once_with(
             "gemini",
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite",
             backend="vertex",
             gcs_bucket="my-bucket",
         )

@@ -22,7 +22,7 @@ from lib.project_change_hints import (
     register_project_change_batch_listener,
     register_project_change_listener,
 )
-from lib.project_manager import ProjectManager
+from lib.project_manager import ProjectManager, _episode_from_filename
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +174,7 @@ class ProjectEventService:
         channel.pending_sources.add(source)
         channel.scan_now.set()
         logger.debug(
-            "项目变更 hint project=%s source=%s paths=%s",
+            "專案變更 hint project=%s source=%s paths=%s",
             project_name,
             source,
             changed_paths,
@@ -192,7 +192,7 @@ class ProjectEventService:
 
         channel.scan_now.clear()
 
-        # 文件 I/O 下沉到线程池，状态更新和广播留在事件循环
+        # 檔案 I/O 下沉到執行緒池，狀態更新和廣播留在事件迴圈
         task = asyncio.create_task(
             self._async_rebuild_and_broadcast(project_name, channel, source, changes),
             name=f"batch-rebuild-{project_name}",
@@ -207,14 +207,14 @@ class ProjectEventService:
         source: ProjectChangeSource,
         changes: tuple[ProjectChangeBatch, ...],
     ) -> None:
-        """文件 I/O 在线程中执行，状态更新和广播在事件循环线程中执行。"""
+        """檔案 I/O 線上程中執行，狀態更新和廣播在事件迴圈執行緒中執行。"""
         try:
             snapshot, fingerprint = await asyncio.to_thread(self._rebuild_snapshot, project_name)
         except Exception:
-            logger.exception("构建显式项目事件快照失败 project=%s", project_name)
+            logger.exception("構建顯式專案事件快照失敗 project=%s", project_name)
             return
 
-        # 以下在事件循环线程中执行，线程安全
+        # 以下在事件迴圈執行緒中執行，執行緒安全
         channel.snapshot = snapshot
         channel.fingerprint = fingerprint
         channel.pending_sources.clear()
@@ -230,7 +230,7 @@ class ProjectEventService:
         self._broadcast(project_name, channel, "changes", payload)
 
     def _rebuild_snapshot(self, project_name: str) -> tuple[dict[str, Any], str]:
-        """同步方法（在线程池中执行）：重建快照并返回 (snapshot, fingerprint)。"""
+        """同步方法（線上程池中執行）：重建快照並返回 (snapshot, fingerprint)。"""
         self._ensure_script_index_synced(project_name)
         snapshot = self._build_snapshot(project_name)
         return snapshot, _fingerprint(snapshot)
@@ -239,14 +239,14 @@ class ProjectEventService:
         try:
             while channel.subscribers:
                 try:
-                    # 仅文件 I/O 在线程中执行
+                    # 僅檔案 I/O 線上程中執行
                     snapshot, fingerprint = await asyncio.to_thread(self._rebuild_snapshot, project_name)
-                    # 状态更新和广播在事件循环线程中执行（线程安全）
+                    # 狀態更新和廣播在事件迴圈執行緒中執行（執行緒安全）
                     self._apply_scan_result(project_name, channel, snapshot, fingerprint)
                 except asyncio.CancelledError:
                     raise
                 except Exception:
-                    logger.exception("项目事件扫描失败 project=%s", project_name)
+                    logger.exception("專案事件掃描失敗 project=%s", project_name)
                 finally:
                     channel.ready_event.set()
 
@@ -266,7 +266,7 @@ class ProjectEventService:
         snapshot: dict[str, Any],
         fingerprint: str,
     ) -> None:
-        """在事件循环线程中更新 channel 状态并广播变更。"""
+        """在事件迴圈執行緒中更新 channel 狀態並廣播變更。"""
         if channel.snapshot is None:
             channel.snapshot = snapshot
             channel.fingerprint = fingerprint
@@ -333,7 +333,7 @@ class ProjectEventService:
             channel.subscribers.discard(subscriber)
         if stale:
             logger.warning(
-                "项目事件订阅队列溢出，移除 %s 个订阅者 project=%s",
+                "專案事件訂閱佇列溢位，移除 %s 個訂閱者 project=%s",
                 len(stale),
                 project_name,
             )
@@ -358,13 +358,29 @@ class ProjectEventService:
             try:
                 script = self.pm.load_script(project_name, script_path.name)
             except Exception:
-                logger.warning("跳过无法读取的剧本文件 project=%s file=%s", project_name, script_path.name)
+                logger.warning("跳過無法讀取的劇本檔案 project=%s file=%s", project_name, script_path.name)
                 continue
 
             episode = script.get("episode")
             if not isinstance(episode, int):
                 continue
-            title = str(script.get("title") or "")
+
+            filename_episode = _episode_from_filename(script_path.name)
+            if filename_episode is not None and filename_episode != episode:
+                # 檔名與內容不一致時跳過，避免同一集被不同劇本輪流改寫索引。
+                logger.warning(
+                    "劇本檔名集數與內容 episode 不一致，跳過索引同步 project=%s file=%s 檔名集數=%s 內容episode=%s",
+                    project_name,
+                    script_path.name,
+                    filename_episode,
+                    episode,
+                )
+                continue
+
+            title = str(script.get("title") or "").strip()
+            if not title:
+                continue
+
             expected_script_file = f"scripts/{script_path.name}"
             existing = current_episodes.get(episode)
             if existing and existing["title"] == title and existing["script_file"] == expected_script_file:
@@ -441,7 +457,7 @@ class ProjectEventService:
                 try:
                     script = self.pm.load_script(project_name, script_path.name)
                 except Exception:
-                    logger.warning("跳过无法解析的剧本快照 project=%s file=%s", project_name, script_path.name)
+                    logger.warning("跳過無法解析的劇本快照 project=%s file=%s", project_name, script_path.name)
                     continue
                 scripts[script_path.name] = self._normalize_script_snapshot(script)
 
@@ -572,7 +588,7 @@ class ProjectEventService:
                     entity_type=entity_type,
                     action="created",
                     entity_id=name,
-                    label=f"{'角色' if entity_type == 'character' else '線索'}「{name}」",
+                    label=f"{'角色' if entity_type == 'character' else '道具'}「{name}」",
                     focus={
                         "pane": pane,
                         "anchor_type": entity_type,
@@ -587,7 +603,7 @@ class ProjectEventService:
                     entity_type=entity_type,
                     action="deleted",
                     entity_id=name,
-                    label=f"{'角色' if entity_type == 'character' else '線索'}「{name}」",
+                    label=f"{'角色' if entity_type == 'character' else '道具'}「{name}」",
                     focus=None,
                     important=False,
                 )
@@ -600,7 +616,7 @@ class ProjectEventService:
                     entity_type=entity_type,
                     action="updated",
                     entity_id=name,
-                    label=f"{'角色' if entity_type == 'character' else '線索'}「{name}」",
+                    label=f"{'角色' if entity_type == 'character' else '道具'}「{name}」",
                     focus={
                         "pane": pane,
                         "anchor_type": entity_type,
@@ -629,7 +645,7 @@ class ProjectEventService:
                     label=f"第 {episode['episode']} 集",
                     script_file=episode.get("script_file"),
                     episode=episode["episode"],
-                    focus=None,
+                    focus=self._build_episode_focus(episode["episode"], episode_key),
                     important=True,
                 )
             )
@@ -645,11 +661,20 @@ class ProjectEventService:
                     label=f"第 {episode['episode']} 集",
                     script_file=episode.get("script_file"),
                     episode=episode["episode"],
-                    focus=None,
+                    focus=self._build_episode_focus(episode["episode"], episode_key),
                     important=True,
                 )
             )
         return changes
+
+    @staticmethod
+    def _build_episode_focus(episode: int, episode_key: str) -> dict[str, Any]:
+        return {
+            "pane": "episode",
+            "episode": episode,
+            "anchor_type": "episode",
+            "anchor_id": episode_key,
+        }
 
     def _diff_script_items(
         self,
@@ -752,7 +777,7 @@ class ProjectEventService:
     @staticmethod
     def _build_script_item_label(item_id: str, script_meta: dict[str, Any]) -> str:
         content_mode = str(script_meta.get("content_mode") or "narration")
-        noun = "分镜" if content_mode == "narration" else "场景"
+        noun = "分鏡" if content_mode == "narration" else "場景"
         return f"{noun}「{item_id}」"
 
     def _build_script_item_change(

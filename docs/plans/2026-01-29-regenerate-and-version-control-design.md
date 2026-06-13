@@ -1,4 +1,4 @@
-# WebUI 图片/视频重新生成与版本控制设计
+# WebUI 图片/视频生成与版本控制设计
 
 **日期**: 2026-01-29
 **状态**: 待实现
@@ -7,7 +7,7 @@
 
 ## 需求概述
 
-1. 在 WebUI 编辑模态框中添加生成/重新生成按钮，调用 GeminiClient 异步方法生成图片/视频
+1. 在 WebUI 编辑模态框中添加生成/生成按钮，调用 GeminiClient 異步方法生成图片/视频
 2. 对分镜图、视频、角色图、线索图引入版本号机制，保留历史版本并可还原
 3. 历史版本的图片/视频与对应的 prompt 绑定
 
@@ -15,14 +15,14 @@
 
 ## 设计决策
 
-| 决策项 | 选择 |
+| 决策项 | 選择 |
 |--------|------|
-| 覆盖场景 | 片段/场景分镜图、视频、角色设计图、线索设计图（共 4 类） |
+| 覆盖場景 | 片段/場景分镜图、视频、角色设计图、线索设计图（共 4 类） |
 | 生成交互 | 模态框内 loading 状态，不阻断其他编辑 |
 | 版本存储 | `versions/` 集中目录，当前版本保持原路径 |
 | 版本元数据 | `versions/versions.json` 统一管理 |
 | 历史保留 | 无限制保留所有版本 |
-| 版本切换 UI | 预览区上方下拉选择器 |
+| 版本切换 UI | 预览区上方下拉選择器 |
 | 宫格图 | 不纳入版本管理（仅 `scene_*.png` 需要版本控制） |
 
 ---
@@ -211,7 +211,7 @@ async def generate_storyboard(name, segment_id, prompt, script_file):
     current_file = f"storyboards/scene_{segment_id}.png"
 
     if current_file exists:
-        # 有现有文件 → 备份到版本目录
+        # 有現有文件 → 备份到版本目录
         backup_to_versions(current_file, prompt)
 
     # 调用 GeminiClient 生成新图片
@@ -237,15 +237,15 @@ async def generate_storyboard(name, segment_id, prompt, script_file):
 
 ### 1. 编辑模态框改造
 
-在片段/场景、角色、线索的编辑模态框中，预览区域增加：
-- **版本下拉选择器**：显示在预览图上方
-- **生成按钮**：无图时显示「生成」，有图时显示「重新生成」
+在片段/場景、角色、线索的编辑模态框中，预览区域增加：
+- **版本下拉選择器**：显示在预览图上方
+- **生成按钮**：无图时显示「生成」，有图时显示「生成」
 
 ```
 ┌─────────────────────────────────────┐
 │  分镜图预览                          │
 │  ┌─────────────────────┬──────────┐ │
-│  │ 版本: [v2 当前 ▼]    │ 🔄 重新生成│ │
+│  │ 版本: [v2 当前 ▼]    │ 🔄 生成│ │
 │  └─────────────────────┴──────────┘ │
 │  ┌─────────────────────────────────┐ │
 │  │                                 │ │
@@ -256,23 +256,23 @@ async def generate_storyboard(name, segment_id, prompt, script_file):
 └─────────────────────────────────────┘
 ```
 
-### 2. 版本下拉选择器行为
+### 2. 版本下拉選择器行为
 
 - 切换版本时：预览区显示对应版本的图片，下方显示该版本的 prompt（只读）
 - 当前编辑框中的 prompt 保持独立（用于生成新版本）
-- 选择非当前版本时，显示「还原此版本」按钮
+- 選择非当前版本时，显示「还原此版本」按钮
 
 ### 3. 生成按钮状态
 
 | 状态 | 按钮文案 | 样式 |
 |------|---------|------|
 | 无图片 | 生成 | 绿色主按钮 |
-| 有图片 | 重新生成 | 蓝色按钮 |
+| 有图片 | 生成 | 蓝色按钮 |
 | 生成中 | ⏳ 生成中... | 灰色禁用 + loading 动画 |
 
 ### 4. 还原交互
 
-当用户选择非当前版本时：
+当用户選择非当前版本时：
 
 ```
 ┌─────────────────────────────────────┐
@@ -291,7 +291,7 @@ async def generate_storyboard(name, segment_id, prompt, script_file):
 
 点击「还原」后：
 1. 将当前版本备份到 `versions/` 目录
-2. 将选中的历史版本文件复制到当前路径
+2. 将選中的历史版本文件复制到当前路径
 3. 更新 `versions.json` 的 `current_version`
 4. 将历史版本的 prompt 填充到编辑框
 5. 刷新预览和版本列表
@@ -309,9 +309,9 @@ async def generate_storyboard(name, segment_id, prompt, script_file):
 | `webui/server/routers/versions.py` | 新增 | 版本管理 API 路由 |
 | `webui/server/app.py` | 修改 | 注册新路由 |
 | `webui/js/api.js` | 修改 | 添加生成和版本相关 API 调用 |
-| `webui/js/project.js` | 修改 | 添加版本选择器、生成按钮交互逻辑 |
-| `webui/project.html` | 修改 | 更新模态框 UI（版本选择器、生成按钮） |
-| `webui/css/styles.css` | 修改 | 添加版本选择器和 loading 状态样式 |
+| `webui/js/project.js` | 修改 | 添加版本選择器、生成按钮交互逻辑 |
+| `webui/project.html` | 修改 | 更新模态框 UI（版本選择器、生成按钮） |
+| `webui/css/styles.css` | 修改 | 添加版本選择器和 loading 状态样式 |
 
 ### 2. lib/version_manager.py 核心类
 
@@ -352,9 +352,9 @@ class VersionManager:
 
 | 阶段 | 内容 | 预估工作量 |
 |------|------|-----------|
-| Phase 1 | `VersionManager` + 生成 API（支持首次生成和重新生成） | 中 |
+| Phase 1 | `VersionManager` + 生成 API（支持首次生成和生成） | 中 |
 | Phase 2 | 前端生成按钮和 loading 状态 | 小 |
-| Phase 3 | 版本列表 API + 前端版本选择器 | 中 |
+| Phase 3 | 版本列表 API + 前端版本選择器 | 中 |
 | Phase 4 | 还原 API + 前端还原交互 | 小 |
 
 ---
@@ -363,6 +363,6 @@ class VersionManager:
 
 1. **宫格图排除**：`grid_*.png` 不纳入版本管理，仅处理 `scene_*.png`
 2. **参考图传递**：生成分镜图/视频时，自动获取 segment/scene 中的 `characters_in_segment` 和 `clues_in_segment`，传递对应的设计图作为参考
-3. **画面比例**：根据 `content_mode` 自动选择（narration: 9:16, drama: 16:9）
+3. **画面比例**：根据 `content_mode` 自动選择（narration: 9:16, drama: 16:9）
 4. **并发安全**：`versions.json` 读写需要加锁，防止并发冲突
-5. **错误处理**：API 调用失败时保留原文件，不影响现有版本
+5. **错误处理**：API 调用失敗时保留原文件，不影响現有版本

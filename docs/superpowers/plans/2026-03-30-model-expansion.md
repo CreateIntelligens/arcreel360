@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为 4 个供应商新增 12 个模型条目，修正 Seed 2.0 Lite 的 capabilities 声明错误，并重排所有 models dict 为 media_type 分组 + 梯度排列。
+**Goal:** 为 4 個供应商新增 12 個模型条目，修正 Seed 2.0 Lite 的 capabilities 声明错误，并重排所有 models dict 为 media_type 分组 + 梯度排列。
 
-**Architecture:** 纯 registry 数据变更，仅修改 `lib/config/registry.py` 中 `PROVIDER_REGISTRY` 的 `models` 字段。所有新模型已被现有 Backend 支持，无需任何代码逻辑改动。
+**Architecture:** 纯 registry 数据变更，仅修改 `lib/config/registry.py` 中 `PROVIDER_REGISTRY` 的 `models` 字段。所有新模型已被現有 Backend 支持，无需任何代码逻辑改动。
 
 **Tech Stack:** Python dataclass（ModelInfo, ProviderMeta）
 
@@ -12,7 +12,7 @@
 
 ---
 
-### Task 1: gemini-aistudio 供应商 — 新增 3 个模型 + 重排
+### Task 1: gemini-aistudio 供应商 — 新增 3 個模型 + 重排
 
 **Files:**
 - Modify: `lib/config/registry.py:33-65`（gemini-aistudio 的 models dict）
@@ -29,16 +29,11 @@ models={
         media_type="text",
         capabilities=["text_generation", "structured_output", "vision"],
     ),
-    "gemini-3-flash-preview": ModelInfo(
-        display_name="Gemini 3 Flash",
+    "gemini-3.1-flash-lite": ModelInfo(
+        display_name="Gemini 3.1 Flash Lite",
         media_type="text",
         capabilities=["text_generation", "structured_output", "vision"],
         default=True,
-    ),
-    "gemini-3.1-flash-lite-preview": ModelInfo(
-        display_name="Gemini 3.1 Flash Lite",
-        media_type="text",
-        capabilities=["text_generation", "structured_output"],
     ),
     # --- image ---
     "gemini-3-pro-image-preview": ModelInfo(
@@ -70,11 +65,11 @@ models={
 - [ ] **Step 2: 运行测试验证**
 
 Run: `uv run python -m pytest tests/test_config_registry_models.py -v`
-Expected: 全部 PASS（7 个模型，text/image/video 各有 1 个 default）
+Expected: 全部 PASS（7 個模型，text/image/video 各有 1 個 default）
 
 ---
 
-### Task 2: gemini-vertex 供应商 — 新增 3 个模型 + 重排
+### Task 2: gemini-vertex 供应商 — 新增 3 個模型 + 重排
 
 **Files:**
 - Modify: `lib/config/registry.py:66-98`（gemini-vertex 的 models dict）
@@ -91,16 +86,11 @@ models={
         media_type="text",
         capabilities=["text_generation", "structured_output", "vision"],
     ),
-    "gemini-3-flash-preview": ModelInfo(
-        display_name="Gemini 3 Flash",
+    "gemini-3.1-flash-lite": ModelInfo(
+        display_name="Gemini 3.1 Flash Lite",
         media_type="text",
         capabilities=["text_generation", "structured_output", "vision"],
         default=True,
-    ),
-    "gemini-3.1-flash-lite-preview": ModelInfo(
-        display_name="Gemini 3.1 Flash Lite",
-        media_type="text",
-        capabilities=["text_generation", "structured_output"],
     ),
     # --- image ---
     "gemini-3-pro-image-preview": ModelInfo(
@@ -136,16 +126,16 @@ Expected: 全部 PASS
 
 ---
 
-### Task 3: ark 供应商 — 新增 3 个模型 + bugfix + 重排
+### Task 3: ark 供应商 — 新增 3 個模型 + bugfix + 重排
 
 **Files:**
 - Modify: `lib/config/registry.py:99-143`（ark 的 models dict）
 
 - [ ] **Step 1: 替换 ark 的 models dict**
 
-注意两个关键变更：
+注意两個关键变更：
 1. `doubao-seed-2-0-lite-260215` 的 capabilities 移除 `structured_output`（bugfix）
-2. 新增 Pro、Mini、Seed 1.8 三个文本模型
+2. 新增 Pro、Mini、Seed 1.8 三個文本模型
 
 ```python
 models={
@@ -210,7 +200,7 @@ Expected: 全部 PASS
 
 ---
 
-### Task 4: grok 供应商 — 新增 3 个模型 + 重排
+### Task 4: grok 供应商 — 新增 3 個模型 + 重排
 
 **Files:**
 - Modify: `lib/config/registry.py:144-177`（grok 的 models dict）

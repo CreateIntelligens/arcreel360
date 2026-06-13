@@ -1,4 +1,4 @@
-"""GeminiVideoBackend 单元测试 — mock genai SDK。"""
+"""GeminiVideoBackend 單元測試 — mock genai SDK。"""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -21,7 +21,7 @@ def mock_rate_limiter():
 
 @pytest.fixture
 def backend(mock_rate_limiter):
-    """创建 aistudio 模式的 GeminiVideoBackend（mock genai SDK）。"""
+    """建立 aistudio 模式的 GeminiVideoBackend（mock genai SDK）。"""
     with patch("google.genai"), patch("google.genai.types"):
         from lib.video_backends.gemini import GeminiVideoBackend
 
@@ -35,7 +35,7 @@ def backend(mock_rate_limiter):
         yield b
 
 
-# ── 属性测试 ──────────────────────────────────────────────
+# ── 屬性測試 ──────────────────────────────────────────────
 
 
 class TestGeminiVideoBackendProperties:
@@ -51,7 +51,7 @@ class TestGeminiVideoBackendProperties:
         assert VideoCapability.GENERATE_AUDIO not in caps
 
     def test_capabilities_vertex(self, mock_rate_limiter, tmp_path):
-        # 准备 mock vertex 凭证文件
+        # 準備 mock vertex 憑證檔案
         creds_file = tmp_path / "vertex_credentials.json"
         creds_file.write_text('{"project_id": "test-project"}')
 
@@ -73,11 +73,11 @@ class TestGeminiVideoBackendProperties:
             assert VideoCapability.GENERATE_AUDIO in b.capabilities
 
 
-# ── 生成测试 ──────────────────────────────────────────────
+# ── 生成測試 ──────────────────────────────────────────────
 
 
 def _make_done_operation(video_uri="gs://bucket/video.mp4"):
-    """构造一个已完成的 operation mock。"""
+    """構造一個已完成的 operation mock。"""
     mock_video = MagicMock()
     mock_video.uri = video_uri
     mock_video.video_bytes = b"fake-video-bytes"
@@ -117,7 +117,7 @@ class TestGeminiVideoBackendGenerate:
         assert result.video_path == output
         assert result.duration_seconds == 8
 
-        # 确认调用了 API
+        # 確認呼叫了 API
         backend._client.aio.models.generate_videos.assert_awaited_once()
 
     async def test_generate_image_to_video(self, backend, tmp_path):
@@ -132,6 +132,7 @@ class TestGeminiVideoBackendGenerate:
             prompt="cat moves forward",
             output_path=output,
             start_image=frame,
+            duration_seconds=8,
         )
 
         result = await backend.generate(request)
@@ -140,7 +141,7 @@ class TestGeminiVideoBackendGenerate:
         assert result.video_path == output
 
     async def test_generate_polls_until_done(self, backend, tmp_path):
-        """测试轮询逻辑：先返回未完成，再返回已完成。"""
+        """測試輪詢邏輯：先返回未完成，再返回已完成。"""
         output = tmp_path / "out.mp4"
 
         pending_op = MagicMock()
@@ -154,16 +155,17 @@ class TestGeminiVideoBackendGenerate:
         request = VideoGenerationRequest(
             prompt="a sunset",
             output_path=output,
+            duration_seconds=8,
         )
 
-        # patch asyncio.sleep 以避免实际等待
+        # patch asyncio.sleep 以避免實際等待
         with patch("lib.video_backends.gemini.asyncio.sleep", new_callable=AsyncMock):
             result = await backend.generate(request)
 
         assert result.provider == "gemini"
 
     async def test_generate_empty_result_raises(self, backend, tmp_path):
-        """API 返回空结果时应抛出 RuntimeError。"""
+        """API 返回空結果時應丟擲 RuntimeError。"""
         output = tmp_path / "out.mp4"
 
         mock_op = MagicMock()
@@ -177,13 +179,14 @@ class TestGeminiVideoBackendGenerate:
         request = VideoGenerationRequest(
             prompt="test",
             output_path=output,
+            duration_seconds=8,
         )
 
-        with pytest.raises(RuntimeError, match="API 返回空结果"):
+        with pytest.raises(RuntimeError, match="API 返回空結果"):
             await backend.generate(request)
 
     async def test_generate_error_in_operation(self, backend, tmp_path):
-        """operation 包含 error 时应抛出 RuntimeError。"""
+        """operation 包含 error 時應丟擲 RuntimeError。"""
         output = tmp_path / "out.mp4"
 
         mock_op = MagicMock()
@@ -196,13 +199,14 @@ class TestGeminiVideoBackendGenerate:
         request = VideoGenerationRequest(
             prompt="test",
             output_path=output,
+            duration_seconds=8,
         )
 
-        with pytest.raises(RuntimeError, match="视频生成失败"):
+        with pytest.raises(RuntimeError, match="影片生成失敗"):
             await backend.generate(request)
 
     async def test_rate_limiter_called(self, backend, mock_rate_limiter, tmp_path):
-        """确认 generate 会调用限流器。"""
+        """確認 generate 會呼叫限流器。"""
         output = tmp_path / "out.mp4"
 
         mock_op = _make_done_operation()
@@ -211,14 +215,17 @@ class TestGeminiVideoBackendGenerate:
         request = VideoGenerationRequest(
             prompt="test",
             output_path=output,
+            duration_seconds=8,
         )
 
         await backend.generate(request)
         mock_rate_limiter.acquire_async.assert_called_once_with(backend._video_model)
 
     async def test_default_negative_prompt(self, backend, tmp_path):
-        """未指定 negative_prompt 时使用默认值。"""
+        """未指定 negative_prompt 時使用預設值（前提：model 支援 negative_prompt）。"""
         output = tmp_path / "out.mp4"
+        # 強制使用支援 negative_prompt 的 model（lite preview 變體不支援）
+        backend._video_model = "veo-3.1-generate-001"
 
         mock_op = _make_done_operation()
         backend._client.aio.models.generate_videos = AsyncMock(return_value=mock_op)
@@ -231,16 +238,36 @@ class TestGeminiVideoBackendGenerate:
 
         await backend.generate(request)
 
-        # 验证 GenerateVideosConfig 被调用时包含默认 negative_prompt
+        # 驗證 GenerateVideosConfig 被呼叫時包含預設 negative_prompt
         config_call = backend._types.GenerateVideosConfig.call_args
         assert "music" in config_call.kwargs.get("negative_prompt", "")
 
+    async def test_lite_model_skips_negative_prompt(self, backend, tmp_path):
+        """veo-3.1-lite-* 不支援 negativePrompt，必須從 config 中省略。"""
+        output = tmp_path / "out.mp4"
+        backend._video_model = "veo-3.1-lite-generate-preview"
+
+        mock_op = _make_done_operation()
+        backend._client.aio.models.generate_videos = AsyncMock(return_value=mock_op)
+
+        request = VideoGenerationRequest(
+            prompt="test",
+            output_path=output,
+            negative_prompt="some custom negative",
+            duration_seconds=8,
+        )
+
+        await backend.generate(request)
+
+        config_call = backend._types.GenerateVideosConfig.call_args
+        assert "negative_prompt" not in config_call.kwargs
+
 
 class TestGeminiRetryBehavior:
-    """测试任务创建与轮询的重试分离行为。"""
+    """測試任務建立與輪詢的重試分離行為。"""
 
     async def test_poll_transient_error_retries_without_recreating_task(self, backend, tmp_path):
-        """轮询阶段瞬态错误应重试轮询，而不是重新创建任务。"""
+        """輪詢階段瞬態錯誤應重試輪詢，而不是重新建立任務。"""
         output = tmp_path / "out.mp4"
 
         pending_op = MagicMock()
@@ -249,30 +276,30 @@ class TestGeminiRetryBehavior:
         done_op = _make_done_operation()
 
         backend._client.aio.models.generate_videos = AsyncMock(return_value=pending_op)
-        # 第一次轮询抛 ConnectionError，第二次返回完成
+        # 第一次輪詢拋 ConnectionError，第二次返回完成
         backend._client.aio.operations.get = AsyncMock(side_effect=[ConnectionError("connection reset"), done_op])
 
-        request = VideoGenerationRequest(prompt="test", output_path=output)
+        request = VideoGenerationRequest(prompt="test", output_path=output, duration_seconds=8)
         with patch("lib.video_backends.gemini.asyncio.sleep", new_callable=AsyncMock):
             result = await backend.generate(request)
 
         assert result.provider == "gemini"
-        # 关键断言：任务只创建了一次
+        # 關鍵斷言：任務只建立了一次
         backend._client.aio.models.generate_videos.assert_awaited_once()
-        # 轮询调用了两次（一次失败 + 一次成功）
+        # 輪詢呼叫了兩次（一次失敗 + 一次成功）
         assert backend._client.aio.operations.get.await_count == 2
 
     async def test_create_retries_on_transient_error(self, backend, tmp_path):
-        """任务创建阶段的瞬态错误应由 @with_retry_async 重试。"""
+        """任務建立階段的瞬態錯誤應由 @with_retry_async 重試。"""
         output = tmp_path / "out.mp4"
 
         done_op = _make_done_operation()
-        # 第一次创建抛 ConnectionError，第二次成功
+        # 第一次建立拋 ConnectionError，第二次成功
         backend._client.aio.models.generate_videos = AsyncMock(
             side_effect=[ConnectionError("connection reset"), done_op]
         )
 
-        request = VideoGenerationRequest(prompt="test", output_path=output)
+        request = VideoGenerationRequest(prompt="test", output_path=output, duration_seconds=8)
         with (
             patch("lib.video_backends.gemini.asyncio.sleep", new_callable=AsyncMock),
             patch("lib.retry.asyncio.sleep", new_callable=AsyncMock),
@@ -280,11 +307,11 @@ class TestGeminiRetryBehavior:
             result = await backend.generate(request)
 
         assert result.provider == "gemini"
-        # 创建调用了两次（一次失败 + 一次成功）
+        # 建立呼叫了兩次（一次失敗 + 一次成功）
         assert backend._client.aio.models.generate_videos.await_count == 2
 
     async def test_poll_non_retryable_error_propagates(self, backend, tmp_path):
-        """轮询阶段不可重试的错误应直接抛出。"""
+        """輪詢階段不可重試的錯誤應直接丟擲。"""
         output = tmp_path / "out.mp4"
 
         pending_op = MagicMock()
@@ -293,18 +320,18 @@ class TestGeminiRetryBehavior:
         backend._client.aio.models.generate_videos = AsyncMock(return_value=pending_op)
         backend._client.aio.operations.get = AsyncMock(side_effect=ValueError("invalid response"))
 
-        request = VideoGenerationRequest(prompt="test", output_path=output)
+        request = VideoGenerationRequest(prompt="test", output_path=output, duration_seconds=8)
         with pytest.raises(ValueError, match="invalid response"):
             with patch("lib.video_backends.gemini.asyncio.sleep", new_callable=AsyncMock):
                 await backend.generate(request)
 
-        # 创建只调用一次
+        # 建立只呼叫一次
         backend._client.aio.models.generate_videos.assert_awaited_once()
-        # 轮询只尝试一次就抛出
+        # 輪詢只嘗試一次就丟擲
         assert backend._client.aio.operations.get.await_count == 1
 
 
-# ── _prepare_image_param 测试 ─────────────────────────────
+# ── _prepare_image_param 測試 ─────────────────────────────
 
 
 class TestPrepareImageParam:
@@ -326,7 +353,7 @@ class TestPrepareImageParam:
         assert result is not None
 
 
-# ── _download_video 测试 ──────────────────────────────────
+# ── _download_video 測試 ──────────────────────────────────
 
 
 class TestDownloadVideo:
@@ -356,5 +383,5 @@ class TestDownloadVideo:
 
         mock_ref = MagicMock(spec=[])  # no attributes
 
-        with pytest.raises(RuntimeError, match="无法获取视频数据"):
+        with pytest.raises(RuntimeError, match="無法獲取影片資料"):
             backend._download_video(mock_ref, output)

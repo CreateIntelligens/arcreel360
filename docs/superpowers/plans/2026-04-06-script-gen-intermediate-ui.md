@@ -41,7 +41,7 @@
 - Modify: `lib/status_calculator.py:88-102`
 - Test: `tests/test_status_calculator.py`
 
-- [ ] **Step 1: 写失败测试 — drama 模式 step1 检测**
+- [ ] **Step 1: 写失敗测试 — drama 模式 step1 检测**
 
 在 `tests/test_status_calculator.py` 的 `test_load_episode_script` 方法末尾追加：
 
@@ -62,7 +62,7 @@
         assert script5 is None
 ```
 
-- [ ] **Step 2: 运行测试，确认失败**
+- [ ] **Step 2: 运行测试，确认失敗**
 
 Run: `uv run python -m pytest tests/test_status_calculator.py::TestStatusCalculator::test_load_episode_script -v`
 Expected: FAIL — `_load_episode_script() got an unexpected keyword argument 'content_mode'`
@@ -152,7 +152,7 @@ git commit -m "fix: StatusCalculator 支持 drama 模式 step1 检测"
 - Modify: `server/routers/files.py:360-482`
 - Test: `tests/test_files_router.py`
 
-- [ ] **Step 1: 写失败测试 — step2/step3 返回 400**
+- [ ] **Step 1: 写失敗测试 — step2/step3 返回 400**
 
 在 `tests/test_files_router.py` 的 `test_source_decode_and_draft_mode_helpers` 方法中，在已有的 `missing_step` 断言之后追加：
 
@@ -169,7 +169,7 @@ git commit -m "fix: StatusCalculator 支持 drama 模式 step1 检测"
             assert step3_resp.status_code == 400
 ```
 
-- [ ] **Step 2: 运行测试，确认失败**
+- [ ] **Step 2: 运行测试，确认失敗**
 
 Run: `uv run python -m pytest tests/test_files_router.py::TestFilesRouter::test_source_decode_and_draft_mode_helpers -v`
 Expected: FAIL — step2 返回 200（目前 step2 是合法的）
@@ -198,7 +198,7 @@ def _get_step_title(filename: str) -> str:
 
 - [ ] **Step 4: 更新 helper 函数测试**
 
-在 `tests/test_files_router.py` 的 `test_files_helper_functions` 中，替换整个方法体：
+在 `tests/test_files_router.py` 的 `test_files_helper_functions` 中，替换整個方法体：
 
 ```python
     def test_files_helper_functions(self, tmp_path):
@@ -274,7 +274,7 @@ async def update_draft_content(
         try:
             emit_project_change_batch(project_name, [change], source="worker")
         except Exception:
-            pass  # 事件发射失败不影响主流程
+            pass  # 事件发射失敗不影响主流程
 
         return {"success": True, "path": str(draft_path.relative_to(project_dir))}
 
@@ -327,7 +327,7 @@ export interface ProjectChangeFocus {
 - [ ] **Step 3: 构建检查**
 
 Run: `cd frontend && pnpm build`
-Expected: 成功（新联合成员仅扩展类型，不破坏现有代码）
+Expected: 成功（新联合成员仅扩展类型，不破坏現有代码）
 
 - [ ] **Step 4: 提交**
 
@@ -399,7 +399,7 @@ const CHANGE_PRIORITY: Record<string, number> = {
 
 - [ ] **Step 2: 在 onChanges 回调中添加 draft 自动导航**
 
-在 `frontend/src/hooks/useProjectEventsSSE.ts` 的 `onChanges` 回调中（约第246行），在 `groupedChanges` 循环（非 webui 的 toast 推送）之后、现有 `nextFocusTarget` 逻辑之前，插入 draft 导航逻辑：
+在 `frontend/src/hooks/useProjectEventsSSE.ts` 的 `onChanges` 回调中（约第246行），在 `groupedChanges` 循环（非 webui 的 toast 推送）之后、現有 `nextFocusTarget` 逻辑之前，插入 draft 导航逻辑：
 
 将第246-263行的代码块替换为：
 
@@ -585,7 +585,7 @@ export function PreprocessingView({
       setEditing(false);
       pushToast("预处理内容已保存", "success");
     } catch {
-      pushToast("保存失败", "error");
+      pushToast("保存失敗", "error");
     } finally {
       setSaving(false);
     }
@@ -755,7 +755,7 @@ export function TimelineCanvas({
   if (!projectData || (!episodeScript && !hasDraft)) {
     return (
       <div className="flex h-full items-center justify-center text-gray-500">
-        请在左侧选择剧集
+        请在左侧選择剧集
       </div>
     );
   }

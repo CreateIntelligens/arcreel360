@@ -271,7 +271,7 @@ git commit -m "feat(api): 添加风格参考图上传/删除/更新端点"
 
 **Step 1: 添加风格图相关 API 方法**
 
-在 `// ==================== 费用统计 API ====================` 之前添加：
+在 `// ==================== 费用統計 API ====================` 之前添加：
 
 ```javascript
 // ==================== 风格参考图 API ====================
@@ -296,7 +296,7 @@ static async uploadStyleImage(projectName, file) {
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ detail: response.statusText }));
-        throw new Error(error.detail || '上传失败');
+        throw new Error(error.detail || '上传失敗');
     }
 
     return response.json();
@@ -342,12 +342,12 @@ git commit -m "feat(frontend): 添加风格参考图 API 方法"
 
 **Step 1: 在 index.html 添加风格图上传区**
 
-在 `<!-- 按钮 -->` 注释之前，`project-style` 选择框之后添加：
+在 `<!-- 按钮 -->` 注释之前，`project-style` 選择框之后添加：
 
 ```html
 <div>
     <label class="block text-sm font-medium text-gray-300 mb-1">
-        风格参考图（可选）
+        风格参考图（可選）
     </label>
     <div id="style-image-upload" class="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center cursor-pointer hover:border-gray-500 transition-colors">
         <div id="style-image-placeholder">
@@ -466,7 +466,7 @@ async function createProject() {
             try {
                 await API.uploadStyleImage(name, pendingStyleImage);
             } catch (error) {
-                console.error('风格图上传失败:', error);
+                console.error('风格图上传失敗:', error);
                 // 不阻断创建流程，只记录错误
             }
         }
@@ -475,7 +475,7 @@ async function createProject() {
         loadProjects();
 
     } catch (error) {
-        alert('创建失败: ' + error.message);
+        alert('创建失敗: ' + error.message);
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
@@ -600,7 +600,7 @@ export function setupStyleImageEvents() {
     // 点击上传区域
     uploadArea?.addEventListener('click', () => fileInput.click());
 
-    // 文件选择
+    // 文件選择
     fileInput?.addEventListener('change', handleStyleImageUpload);
 
     // 更换图片
@@ -643,7 +643,7 @@ async function handleStyleImageUpload(e) {
         renderStyleImageSection();
 
     } catch (error) {
-        alert('上传失败: ' + error.message);
+        alert('上传失敗: ' + error.message);
         renderStyleImageSection();
     } finally {
         e.target.value = '';
@@ -667,7 +667,7 @@ async function handleDeleteStyleImage() {
         renderStyleImageSection();
 
     } catch (error) {
-        alert('删除失败: ' + error.message);
+        alert('删除失敗: ' + error.message);
     }
 }
 
@@ -687,7 +687,7 @@ async function handleSaveStyleDescription() {
         alert('描述已保存');
 
     } catch (error) {
-        alert('保存失败: ' + error.message);
+        alert('保存失敗: ' + error.message);
     }
 }
 ```
@@ -742,7 +742,7 @@ def build_direct_scene_prompt(
     clue_field: str = 'clues_in_segment'
 ) -> str:
     """
-    构建直接生成场景图的 prompt（narration 模式，无多宫格参考）
+    构建直接生成場景图的 prompt（narration 模式，无多宫格参考）
     """
     image_prompt = segment.get('image_prompt', '')
     if not image_prompt:
@@ -856,7 +856,7 @@ git commit -m "feat(generate): 角色和线索生成使用风格描述"
 在适当位置添加：
 
 ```markdown
-### 风格参考图（可选）
+### 风格参考图（可選）
 
 项目支持上传风格参考图，系统会自动分析并生成风格描述。后续所有图片生成（角色、线索、分镜）都会使用该风格描述，确保整体风格一致。
 
@@ -867,7 +867,7 @@ git commit -m "feat(generate): 角色和线索生成使用风格描述"
 | `style_description` | AI 分析生成的详细风格描述（可手动编辑） |
 
 **使用方式**：
-1. 在 WebUI 新建项目时上传风格参考图（可选）
+1. 在 WebUI 新建项目时上传风格参考图（可選）
 2. 或在项目概览页面上传/更换风格参考图
 3. 系统自动分析并生成风格描述
 4. 可手动编辑风格描述进行微调

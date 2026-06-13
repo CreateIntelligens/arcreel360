@@ -1,11 +1,12 @@
-"""quality 参数传递链单元测试。
+"""quality 引數傳遞鏈單元測試。
 
-覆盖范围：
-1. ImageGenerationResult 接受并存储 quality 字段
-2. ImageGenerationResult quality 默认为 None
-3. OpenAIImageBackend._save_and_return 在结果中填充 quality
-4. UsageTracker.finish_call 透传 quality 到 UsageRepository
-5. UsageRepository.finish_call 透传 quality 到 CostCalculator
+覆蓋範圍：
+1. ImageGenerationResult 接受並儲存 quality 欄位
+2. ImageGenerationResult quality 預設為 None
+3. OpenAIImageBackend._save_and_return 在結果中填充 quality
+4. UsageTracker.finish_call 透傳 quality 到 UsageRepository
+5. UsageRepository.finish_call 透傳 quality 到 CostCalculator
+6. OpenAI 圖片實際 size 會跟 quality 一起傳入費用計算
 """
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ class TestImageGenerationResultQualityField:
         result = ImageGenerationResult(
             image_path=Path("/tmp/img.png"),
             provider="openai",
-            model="gpt-image-1.5",
+            model="gpt-image-2",
         )
         assert result.quality is None
 
@@ -37,7 +38,7 @@ class TestImageGenerationResultQualityField:
             result = ImageGenerationResult(
                 image_path=Path("/tmp/img.png"),
                 provider="openai",
-                model="gpt-image-1.5",
+                model="gpt-image-2",
                 quality=quality_value,
             )
             assert result.quality == quality_value
@@ -48,10 +49,31 @@ class TestImageGenerationResultQualityField:
         result = ImageGenerationResult(
             image_path=Path("/tmp/img.png"),
             provider="openai",
-            model="gpt-image-1.5",
+            model="gpt-image-2",
             quality=None,
         )
         assert result.quality is None
+
+    def test_size_defaults_to_none(self):
+        from lib.image_backends.base import ImageGenerationResult
+
+        result = ImageGenerationResult(
+            image_path=Path("/tmp/img.png"),
+            provider="openai",
+            model="gpt-image-2",
+        )
+        assert result.size is None
+
+    def test_size_can_be_set(self):
+        from lib.image_backends.base import ImageGenerationResult
+
+        result = ImageGenerationResult(
+            image_path=Path("/tmp/img.png"),
+            provider="openai",
+            model="gpt-image-2",
+            size="1024x1536",
+        )
+        assert result.size == "1024x1536"
 
 
 # ---------------------------------------------------------------------------
@@ -60,7 +82,7 @@ class TestImageGenerationResultQualityField:
 
 
 def _make_mock_image_response(b64_data: str = "aW1hZ2VfZGF0YQ=="):
-    """构造 mock ImagesResponse。"""
+    """構造 mock ImagesResponse。"""
     datum = MagicMock()
     datum.b64_json = b64_data
     response = MagicMock()
@@ -70,7 +92,7 @@ def _make_mock_image_response(b64_data: str = "aW1hZ2VfZGF0YQ=="):
 
 class TestOpenAIImageBackendQuality:
     async def test_generate_result_contains_quality(self, tmp_path: Path):
-        """generate() 返回的 ImageGenerationResult 应包含正确的 quality 值。"""
+        """generate() 返回的 ImageGenerationResult 應包含正確的 quality 值。"""
         b64_data = base64.b64encode(b"fake-png").decode()
         mock_client = AsyncMock()
         mock_client.images.generate = AsyncMock(return_value=_make_mock_image_response(b64_data))
@@ -89,9 +111,10 @@ class TestOpenAIImageBackendQuality:
             result = await backend.generate(request)
 
         assert result.quality == "medium"
+        assert result.size == "1024x1536"
 
     async def test_quality_propagated_for_all_sizes(self, tmp_path: Path):
-        """所有 image_size 值都应正确映射到 quality 字段。"""
+        """所有 image_size 值都應正確對映到 quality 欄位。"""
         b64_data = base64.b64encode(b"img").decode()
         mock_client = AsyncMock()
         mock_client.images.generate = AsyncMock(return_value=_make_mock_image_response(b64_data))
@@ -119,7 +142,7 @@ class TestOpenAIImageBackendQuality:
                 assert result.quality == expected_quality, f"image_size={img_size}"
 
     async def test_unknown_size_defaults_to_medium(self, tmp_path: Path):
-        """未知 image_size 应 fallback 到 'medium'。"""
+        """未知 image_size 應 fallback 到 'medium'。"""
         b64_data = base64.b64encode(b"img").decode()
         mock_client = AsyncMock()
         mock_client.images.generate = AsyncMock(return_value=_make_mock_image_response(b64_data))
@@ -141,13 +164,13 @@ class TestOpenAIImageBackendQuality:
 
 
 # ---------------------------------------------------------------------------
-# 4: UsageTracker.finish_call 透传 quality
+# 4: UsageTracker.finish_call 透傳 quality
 # ---------------------------------------------------------------------------
 
 
 class TestUsageTrackerQualityPropagation:
     async def test_finish_call_passes_quality_to_repo(self):
-        """UsageTracker.finish_call 应将 quality 传递给 UsageRepository.finish_call。"""
+        """UsageTracker.finish_call 應將 quality 傳遞給 UsageRepository.finish_call。"""
         mock_repo = AsyncMock()
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
@@ -167,14 +190,16 @@ class TestUsageTrackerQualityPropagation:
                 status="success",
                 output_path="/tmp/img.png",
                 quality="high",
+                size="1024x1536",
             )
 
         mock_repo.finish_call.assert_awaited_once()
         call_kwargs = mock_repo.finish_call.call_args[1]
         assert call_kwargs.get("quality") == "high"
+        assert call_kwargs.get("size") == "1024x1536"
 
     async def test_finish_call_quality_defaults_none(self):
-        """未传 quality 时，UsageTracker 应传 quality=None 给 repo。"""
+        """未傳 quality 時，UsageTracker 應傳 quality=None 給 repo。"""
         mock_repo = AsyncMock()
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
@@ -193,16 +218,17 @@ class TestUsageTrackerQualityPropagation:
 
         call_kwargs = mock_repo.finish_call.call_args[1]
         assert call_kwargs.get("quality") is None
+        assert call_kwargs.get("size") is None
 
 
 # ---------------------------------------------------------------------------
-# 5: UsageRepository.finish_call 透传 quality 到 CostCalculator
+# 5: UsageRepository.finish_call 透傳 quality 到 CostCalculator
 # ---------------------------------------------------------------------------
 
 
 class TestUsageRepositoryQualityToCostCalculator:
     async def test_quality_passed_to_calculate_cost(self):
-        """UsageRepository.finish_call 应将 quality 传给 CostCalculator.calculate_cost。"""
+        """UsageRepository.finish_call 應將 quality 傳給 CostCalculator.calculate_cost。"""
         from lib.db.models.api_call import ApiCall
         from lib.providers import PROVIDER_OPENAI
 
@@ -210,7 +236,7 @@ class TestUsageRepositoryQualityToCostCalculator:
         mock_row.id = 1
         mock_row.provider = PROVIDER_OPENAI
         mock_row.call_type = "image"
-        mock_row.model = "gpt-image-1.5"
+        mock_row.model = "gpt-image-2"
         mock_row.resolution = "1K"
         mock_row.duration_seconds = None
         mock_row.generate_audio = True
@@ -235,14 +261,16 @@ class TestUsageRepositoryQualityToCostCalculator:
                 1,
                 status="success",
                 quality="high",
+                size="1024x1536",
             )
 
         mock_calc.calculate_cost.assert_called_once()
         call_kwargs = mock_calc.calculate_cost.call_args[1]
         assert call_kwargs.get("quality") == "high"
+        assert call_kwargs.get("size") == "1024x1536"
 
     async def test_quality_none_when_not_provided(self):
-        """未传 quality 时，CostCalculator 应收到 quality=None。"""
+        """未傳 quality 時，CostCalculator 應收到 quality=None。"""
         from lib.db.models.api_call import ApiCall
         from lib.providers import PROVIDER_OPENAI
 
@@ -250,7 +278,7 @@ class TestUsageRepositoryQualityToCostCalculator:
         mock_row.id = 1
         mock_row.provider = PROVIDER_OPENAI
         mock_row.call_type = "image"
-        mock_row.model = "gpt-image-1.5"
+        mock_row.model = "gpt-image-2"
         mock_row.resolution = "1K"
         mock_row.duration_seconds = None
         mock_row.generate_audio = True
@@ -275,3 +303,4 @@ class TestUsageRepositoryQualityToCostCalculator:
 
         call_kwargs = mock_calc.calculate_cost.call_args[1]
         assert call_kwargs.get("quality") is None
+        assert call_kwargs.get("size") is None

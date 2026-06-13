@@ -1,4 +1,4 @@
-"""GrokImageBackend — xAI Grok (Aurora) 图片生成后端。"""
+"""GrokImageBackend — xAI Grok (Aurora) 圖片生成後端。"""
 
 from __future__ import annotations
 
@@ -40,14 +40,14 @@ _SUPPORTED_ASPECT_RATIOS = {
 
 
 def _validate_aspect_ratio(aspect_ratio: str) -> str:
-    """校验 aspect_ratio 是否在 Grok 支持列表中，不支持则 warning 并透传。"""
+    """校驗 aspect_ratio 是否在 Grok 支援列表中，不支援則 warning 並透傳。"""
     if aspect_ratio not in _SUPPORTED_ASPECT_RATIOS:
-        logger.warning("Grok 可能不支持 aspect_ratio=%s，将透传给 API", aspect_ratio)
+        logger.warning("Grok 可能不支援 aspect_ratio=%s，將透傳給 API", aspect_ratio)
     return aspect_ratio
 
 
 class GrokImageBackend:
-    """xAI Grok (Aurora) 图片生成后端，支持 T2I 和 I2I。"""
+    """xAI Grok (Aurora) 圖片生成後端，支援 T2I 和 I2I。"""
 
     def __init__(
         self,
@@ -76,7 +76,7 @@ class GrokImageBackend:
 
     @with_retry_async()
     async def generate(self, request: ImageGenerationRequest) -> ImageGenerationResult:
-        """生成图片（T2I 或 I2I）。"""
+        """生成圖片（T2I 或 I2I）。"""
         generate_kwargs: dict = {
             "prompt": request.prompt,
             "model": self._model,
@@ -84,7 +84,7 @@ class GrokImageBackend:
             "resolution": _map_image_size_to_resolution(request.image_size),
         }
 
-        # I2I：将所有参考图转为 base64 data URI 列表
+        # I2I：將所有參考圖轉為 base64 data URI 列表
         if request.reference_images:
             data_uris = []
             for ref in request.reference_images:
@@ -93,19 +93,19 @@ class GrokImageBackend:
                     data_uris.append(image_to_base64_data_uri(ref_path))
             if data_uris:
                 generate_kwargs["image_urls"] = data_uris
-                logger.info("Grok I2I 模式: %d 张参考图", len(data_uris))
+                logger.info("Grok I2I 模式: %d 張參考圖", len(data_uris))
 
-        logger.info("Grok 图片生成开始: model=%s", self._model)
+        logger.info("Grok 圖片生成開始: model=%s", self._model)
         response = await self._client.image.sample(**generate_kwargs)
 
-        # 审核检查
+        # 稽核檢查
         if not response.respect_moderation:
-            raise RuntimeError("Grok 图片生成被内容审核拒绝")
+            raise RuntimeError("Grok 圖片生成被內容稽核拒絕")
 
-        # 下载图片到本地
+        # 下載圖片到本地
         await _download_image(response.url, request.output_path)
 
-        logger.info("Grok 图片下载完成: %s", request.output_path)
+        logger.info("Grok 圖片下載完成: %s", request.output_path)
 
         return ImageGenerationResult(
             image_path=request.output_path,
@@ -116,7 +116,7 @@ class GrokImageBackend:
 
 
 def _map_image_size_to_resolution(image_size: str) -> str:
-    """将通用 image_size（如 '1K', '2K'）映射为 Grok resolution 参数。"""
+    """將通用 image_size（如 '1K', '2K'）對映為 Grok resolution 引數。"""
     mapping = {
         "1K": "1k",
         "2K": "2k",
@@ -127,7 +127,7 @@ def _map_image_size_to_resolution(image_size: str) -> str:
 
 
 async def _download_image(url: str, output_path: Path, *, timeout: int = 60) -> None:
-    """从 URL 下载图片到本地文件。"""
+    """從 URL 下載圖片到本地檔案。"""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     async with httpx.AsyncClient() as http_client:
         resp = await http_client.get(url, timeout=timeout)

@@ -2,7 +2,7 @@ from lib.config.registry import PROVIDER_REGISTRY, ModelInfo, ProviderMeta
 
 
 def test_all_providers_registered():
-    assert set(PROVIDER_REGISTRY.keys()) == {"gemini-aistudio", "gemini-vertex", "ark", "grok", "openai"}
+    assert set(PROVIDER_REGISTRY.keys()) == {"gemini-aistudio", "gemini-vertex", "byteplus", "grok", "openai", "ai360"}
 
 
 def test_provider_meta_fields():
@@ -16,10 +16,12 @@ def test_provider_meta_fields():
     assert "text_to_video" in meta.capabilities
 
 
-def test_ark_supports_video_and_image():
-    meta = PROVIDER_REGISTRY["ark"]
+def test_byteplus_supports_text_and_video_only():
+    meta = PROVIDER_REGISTRY["byteplus"]
     assert "video" in meta.media_types
-    assert "image" in meta.media_types
+    assert "text" in meta.media_types
+    assert "image" not in meta.media_types
+    assert meta.display_name == "BytePlus ModelArk"
 
 
 def test_required_keys_are_subset_of_all_keys():
@@ -38,40 +40,42 @@ def test_secret_keys_are_subset_of_required_or_optional():
 
 class TestModelInfoDurations:
     def test_video_models_have_supported_durations(self):
-        """所有预置视频模型必须声明 supported_durations。"""
+        """所有預置影片模型必須宣告 supported_durations。"""
         for provider_id, meta in PROVIDER_REGISTRY.items():
             for model_id, model_info in meta.models.items():
                 if model_info.media_type == "video":
                     assert len(model_info.supported_durations) > 0, (
-                        f"{provider_id}/{model_id} 是视频模型但未声明 supported_durations"
+                        f"{provider_id}/{model_id} 是影片模型但未宣告 supported_durations"
                     )
 
     def test_non_video_models_have_empty_durations(self):
-        """非视频模型的 supported_durations 应为空列表。"""
+        """非影片模型的 supported_durations 應為空列表。"""
         for provider_id, meta in PROVIDER_REGISTRY.items():
             for model_id, model_info in meta.models.items():
                 if model_info.media_type != "video":
                     assert model_info.supported_durations == [], (
-                        f"{provider_id}/{model_id} 不是视频模型但有 supported_durations"
+                        f"{provider_id}/{model_id} 不是影片模型但有 supported_durations"
                     )
 
     def test_aistudio_veo_has_resolution_constraints(self):
-        """AI Studio Veo 模型在 1080p 下只支持 8s。"""
+        """AI Studio Veo 模型在 1080p 下只支援 8s。"""
         meta = PROVIDER_REGISTRY["gemini-aistudio"]
-        for model_id, model_info in meta.models.items():
+        for _model_id, model_info in meta.models.items():
             if model_info.media_type == "video":
                 assert "1080p" in model_info.duration_resolution_constraints
                 assert model_info.duration_resolution_constraints["1080p"] == [8]
 
-    def test_vertex_veo_has_no_resolution_constraints(self):
-        """Vertex Veo 模型无分辨率约束。"""
+    def test_vertex_veo_has_resolution_constraints(self):
+        """Vertex Veo 模型在 1080p / 4k 下強制 8 秒，與 AI Studio 規則一致。"""
         meta = PROVIDER_REGISTRY["gemini-vertex"]
-        for model_id, model_info in meta.models.items():
+        for _model_id, model_info in meta.models.items():
             if model_info.media_type == "video":
-                assert model_info.duration_resolution_constraints == {}
+                assert model_info.duration_resolution_constraints.get("1080p") == [8]
+                assert model_info.duration_resolution_constraints.get("4k") == [8]
+                assert model_info.reference_image_force_duration == 8
 
     def test_model_info_default_values(self):
-        """ModelInfo 新字段的默认值。"""
+        """ModelInfo 新欄位的預設值。"""
         mi = ModelInfo(display_name="test", media_type="text", capabilities=[])
         assert mi.supported_durations == []
         assert mi.duration_resolution_constraints == {}

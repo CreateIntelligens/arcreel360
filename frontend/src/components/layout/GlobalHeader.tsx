@@ -14,8 +14,9 @@ import { ExportScopeDialog } from "./ExportScopeDialog";
 import { API } from "@/api";
 import { ArchiveDiagnosticsDialog } from "@/components/shared/ArchiveDiagnosticsDialog";
 import type { ExportDiagnostics, WorkspaceNotification } from "@/types";
+import { sortEpisodesForDisplay } from "@/utils/episodes";
 
-/** 通过隐藏 <a> 触发浏览器下载，避免 window.open 产生空白标签页 */
+/** 透過隱藏 <a> 觸發瀏覽器下載，避免 window.open 產生空白標籤頁 */
 function triggerBrowserDownload(url: string) {
   const a = document.createElement("a");
   a.href = url;
@@ -30,10 +31,11 @@ function triggerBrowserDownload(url: string) {
 // ---------------------------------------------------------------------------
 
 const PHASES = [
-  { key: "setup", label: "准备中" },
-  { key: "worldbuilding", label: "世界观" },
-  { key: "scripting", label: "剧本创作" },
-  { key: "production", label: "制作中" },
+  { key: "setup", label: "專案概述" },
+  { key: "lorebook", label: "角色場景" },
+  { key: "scripting", label: "劇本創作" },
+  { key: "storyboard", label: "分鏡圖" },
+  { key: "video", label: "影片" },
   { key: "completed", label: "已完成" },
 ] as const;
 
@@ -45,13 +47,15 @@ type PhaseKey = (typeof PHASES)[number]["key"];
 
 function PhaseStepper({
   currentPhase,
+  onNavigate,
 }: {
   currentPhase: string | undefined;
+  onNavigate: (phase: PhaseKey) => void;
 }) {
   const currentIdx = PHASES.findIndex((p) => p.key === currentPhase);
 
   return (
-    <nav className="flex items-center gap-1" aria-label="工作流阶段">
+    <nav className="flex items-center gap-1" aria-label="工作流階段">
       {PHASES.map((phase, idx) => {
         const isCompleted = currentIdx > idx;
         const isCurrent = currentIdx === idx;
@@ -77,17 +81,22 @@ function PhaseStepper({
             {/* Connector line (before each step except the first) */}
             {idx > 0 && (
               <div
-                className={`h-px w-4 shrink-0 ${
-                  isCompleted ? "bg-[color:var(--wb-success)]" : "bg-[color:var(--wb-border-soft)]"
-                }`}
+                className={`h-px w-4 shrink-0 ${isCompleted ? "bg-[color:var(--wb-success)]" : "bg-[color:var(--wb-border-soft)]"
+                  }`}
               />
             )}
 
-            {/* Step circle + label */}
-            <div className="flex items-center gap-1.5">
+            {/* Step circle + label — 點擊跳到該階段對應工作區 */}
+            <button
+              type="button"
+              onClick={() => onNavigate(phase.key)}
+              aria-current={isCurrent ? "step" : undefined}
+              title={`前往「${phase.label}」`}
+              className="flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors hover:bg-[rgba(136,163,255,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[color:var(--wb-accent)]"
+            >
               <span className={circleClass}>{idx + 1}</span>
               <span className={labelClass}>{phase.label}</span>
-            </div>
+            </button>
           </div>
         );
       })}
@@ -131,14 +140,14 @@ export function GlobalHeader({ onNavigateBack }: GlobalHeaderProps) {
     currentProjectData?.title?.trim() || currentProjectName || "未選擇專案";
   const unreadNotificationCount = workspaceNotifications.filter((item) => !item.read).length;
 
-  // 加载费用统计数据（任务完成时自动刷新）
+  // 載入費用統計資料（任務完成時自動重新整理）
   const completedTaskCount = stats.succeeded + stats.failed;
   useEffect(() => {
     API.getUsageStats(currentProjectName ? { projectName: currentProjectName } : {})
       .then((res) => {
         setUsageStats(res as unknown as UsageStats);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [currentProjectName, completedTaskCount, setUsageStats]);
 
   useEffect(() => {
@@ -148,7 +157,7 @@ export function GlobalHeader({ onNavigateBack }: GlobalHeaderProps) {
 
   // Format content mode badge text
   const modeBadgeText =
-    contentMode === "drama" ? "劇集動畫 16:9" : "說書模式 9:16";
+    contentMode === "drama" ? "劇本動畫 16:9" : "說書模式 9:16";
 
   // Format cost display – show multi-currency summary
   const costByCurrency = usageStats?.cost_by_currency ?? {};
@@ -156,6 +165,24 @@ export function GlobalHeader({ onNavigateBack }: GlobalHeaderProps) {
     .filter(([, v]) => v > 0)
     .map(([currency, amount]) => `${currency === "CNY" ? "¥" : "$"}${amount.toFixed(2)}`)
     .join(" + ") || "$0.00";
+
+  const handlePhaseNavigate = (phase: PhaseKey) => {
+    // lorebook 跳到全域圖鑑頁，scripting / storyboard / video 為集內階段，跳到第一集工作區；其餘跳全域頁
+    const firstEpisode = sortEpisodesForDisplay(currentProjectData?.episodes ?? [])[0];
+    let route: string;
+    if (phase === "lorebook") {
+      route = "/lorebook";
+    } else if (phase === "scripting") {
+      route = firstEpisode ? `/episodes/${firstEpisode.episode}` : "/";
+    } else if (phase === "storyboard" || phase === "video") {
+      route = firstEpisode ? `/episodes/${firstEpisode.episode}?tab=${phase}` : "/";
+    } else {
+      route = "/";
+    }
+    startTransition(() => {
+      setLocation(route);
+    });
+  };
 
   const handleNotificationNavigate = (notification: WorkspaceNotification) => {
     if (!notification.target) return;
@@ -262,7 +289,7 @@ export function GlobalHeader({ onNavigateBack }: GlobalHeaderProps) {
 
       {/* ---- Center section ---- */}
       <div className="hidden md:flex">
-        <PhaseStepper currentPhase={currentPhase} />
+        <PhaseStepper currentPhase={currentPhase} onNavigate={handlePhaseNavigate} />
       </div>
 
       {/* ---- Right section ---- */}
@@ -271,11 +298,10 @@ export function GlobalHeader({ onNavigateBack }: GlobalHeaderProps) {
           <button
             type="button"
             onClick={() => setNotificationDrawerOpen(!notificationDrawerOpen)}
-            className={`relative flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${
-              notificationDrawerOpen
+            className={`relative flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${notificationDrawerOpen
                 ? "workbench-status-warning"
                 : "workbench-button-secondary"
-            }`}
+              }`}
             title={`會話通知：${workspaceNotifications.length} 則`}
             aria-label="開啟通知中心"
           >
@@ -299,11 +325,10 @@ export function GlobalHeader({ onNavigateBack }: GlobalHeaderProps) {
           <button
             type="button"
             onClick={() => setUsageDrawerOpen(!usageDrawerOpen)}
-            className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${
-              usageDrawerOpen
+            className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${usageDrawerOpen
                 ? "workbench-panel-strong text-[color:var(--wb-accent)]"
                 : "workbench-button-secondary"
-            }`}
+              }`}
             title={`專案總花費：${costText}`}
           >
             <span className="font-mono">{costText}</span>
@@ -321,11 +346,10 @@ export function GlobalHeader({ onNavigateBack }: GlobalHeaderProps) {
           <button
             type="button"
             onClick={() => setTaskHudOpen(!taskHudOpen)}
-            className={`relative rounded-md p-1.5 transition-colors ${
-              taskHudOpen
+            className={`relative rounded-md p-1.5 transition-colors ${taskHudOpen
                 ? "workbench-panel-strong text-[color:var(--wb-accent)]"
                 : "workbench-button-secondary"
-            }`}
+              }`}
             title={`任務狀態：${stats.running} 執行中，${stats.queued} 排隊中`}
             aria-label="切換任務面板"
           >

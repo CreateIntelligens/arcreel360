@@ -20,20 +20,20 @@
 
 - 使用 `SSE (text/event-stream)` 实现 assistant 响应流式返回
 - 前端可增量渲染 token，并显示状态事件（开始、工具调用、完成、错误）
-- 保持现有会话存储结构，最小化改动
+- 保持現有会话存储结构，最小化改动
 - 保留同步接口作为降级路径
 
 ### 2.2 非目标
 
 - 本期不引入 WebSocket
-- 本期不重构现有 skill 执行逻辑
+- 本期不重构現有 skill 执行逻辑
 - 本期不引入复杂任务队列系统（如 Celery）
 
 ---
 
-## 3. 方案选择
+## 3. 方案選择
 
-在“前后端分离 + 单向生成流”场景中，优先选 SSE：
+在“前后端分离 + 单向生成流”場景中，优先選 SSE：
 - 协议简单，浏览器原生支持 `EventSource`
 - 服务端改造成本低，适配 FastAPI 容易
 - 语义匹配“用户发一次请求，服务端持续输出”
@@ -59,7 +59,7 @@ POST /messages                     GET /streams/{request_id}
 设计原则：
 - 发送消息与消费流解耦（两步）
 - 先落 user 消息，再开流
-- assistant 最终消息在 `done` 时一次落库（可选扩展 chunk 落库）
+- assistant 最终消息在 `done` 时一次落库（可選扩展 chunk 落库）
 
 ---
 
@@ -91,7 +91,7 @@ POST /messages                     GET /streams/{request_id}
 
 说明：
 - `stream=true` 时返回 `stream_url`，不直接返回 assistant 全量文本
-- `client_message_id` 用于客户端重试幂等（可选）
+- `client_message_id` 用于客户端重试幂等（可選）
 
 ## 5.2 订阅流
 
@@ -147,15 +147,15 @@ data: {"ts":"2026-02-06T16:00:00Z"}
 - `delta`：文本增量
 - `tool_call`：工具调用开始
 - `tool_result`：工具调用结果摘要
-- `meta`：模型/技能信息（可选）
+- `meta`：模型/技能信息（可選）
 - `ping`：保活心跳
 - `done`：完成并落库
-- `error`：失败并结束
+- `error`：失敗并结束
 
 状态机：
 - `created -> streaming -> done`
 - `created -> streaming -> error`
-- `created -> cancelled`（客户端断开可选）
+- `created -> cancelled`（客户端断开可選）
 
 ---
 
@@ -171,7 +171,7 @@ data: {"ts":"2026-02-06T16:00:00Z"}
 - `webui/server/agent_runtime/service.py`
   - 增加 `start_stream_request(...)`
   - 增加 `stream_events(...)`（async generator）
-  - 将 Claude SDK 异步消息映射为 SSE 事件
+  - 将 Claude SDK 異步消息映射为 SSE 事件
 - `webui/server/routers/assistant.py`
   - `POST /messages` 增加 `stream=true` 分支
   - 新增 `GET /streams/{request_id}`
@@ -179,7 +179,7 @@ data: {"ts":"2026-02-06T16:00:00Z"}
 ## 7.2 关键实现点
 
 1. 生产者-消费者模型  
-- 生产者：拉取 Claude SDK `query()` 异步消息
+- 生产者：拉取 Claude SDK `query()` 異步消息
 - 消费者：SSE generator 持续 `yield` 事件
 - Claude SDK 需启用 `include_partial_messages=true`，并解析 `stream_event` 的 `text_delta` 才能实现真正逐步输出
 
@@ -193,7 +193,7 @@ data: {"ts":"2026-02-06T16:00:00Z"}
 - 异常时可落一条错误摘要消息（便于排障）
 
 4. 顺序保证  
-- 每个事件带单调递增 `id`
+- 每個事件带单调递增 `id`
 - `done/error` 必须是终止事件
 
 5. 降级策略  
@@ -221,7 +221,7 @@ data: {"ts":"2026-02-06T16:00:00Z"}
 Streamdown 集成建议：
 - assistant 消息统一通过 `Streamdown` 组件渲染
 - 开启不完整 Markdown 解析（`parseIncompleteMarkdown`），避免流式阶段代码块/列表闪烁
-- 若 CDN 组件加载失败，前端降级为纯文本渲染，保证可用性
+- 若 CDN 组件加载失敗，前端降级为纯文本渲染，保证可用性
 
 ## 8.3 与 Slash 提示兼容
 
@@ -234,7 +234,7 @@ Streamdown 集成建议：
 
 1. 鉴权  
 - 若后续需要 Header 鉴权，原生 `EventSource` 不支持自定义 Header  
-- 可选方案：
+- 可選方案：
   - 短期：`stream_url` 使用一次性短时 token
   - 中期：改为 `fetch + event-stream parser`（仍是 SSE 协议）
 

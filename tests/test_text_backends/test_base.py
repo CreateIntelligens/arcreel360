@@ -72,7 +72,7 @@ class TestTextGenerationResult:
     def test_with_tokens(self):
         result = TextGenerationResult(
             text="output",
-            provider="ark",
+            provider="byteplus",
             model="seed",
             input_tokens=100,
             output_tokens=50,
@@ -126,7 +126,7 @@ class TestResolveSchema:
         }
         import pytest
 
-        with pytest.raises(ValueError, match="循环引用"):
+        with pytest.raises(ValueError, match="迴圈引用"):
             resolve_schema(schema)
 
     def test_preserves_extra_keys_on_ref(self):

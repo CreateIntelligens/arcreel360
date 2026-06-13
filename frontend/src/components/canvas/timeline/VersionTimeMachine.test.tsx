@@ -80,11 +80,11 @@ describe("VersionTimeMachine", () => {
     expect(await screen.findByRole("button", { name: "v1" })).toBeInTheDocument();
     expect(API.getVersions).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "v1" }));
-    expect(await screen.findByAltText("版本 v1 预览")).toBeInTheDocument();
+    expect(await screen.findByAltText("版本 v1 預覽")).toBeInTheDocument();
     expect(screen.getByText("old prompt")).toBeInTheDocument();
 
     // Click restore button in header
-    fireEvent.click(screen.getByRole("button", { name: /切换到此版本/ }));
+    fireEvent.click(screen.getByRole("button", { name: /切換到此版本/ }));
 
     await waitFor(() => {
       expect(API.restoreVersion).toHaveBeenCalledWith(
@@ -95,7 +95,7 @@ describe("VersionTimeMachine", () => {
       );
       expect(onRestore).toHaveBeenCalledWith(1);
       expect(API.getVersions).toHaveBeenCalledTimes(2);
-      expect(useAppStore.getState().toast?.text).toBe("已切换到 v1");
+      expect(useAppStore.getState().toast?.text).toBe("已切換到 v1");
     });
   });
 
@@ -139,8 +139,47 @@ describe("VersionTimeMachine", () => {
     // Click v1 pill to preview
     fireEvent.click(screen.getByRole("button", { name: "v1" }));
 
-    const previewImage = await screen.findByAltText("版本 v1 预览");
+    const previewImage = await screen.findByAltText("版本 v1 預覽");
     expect(previewImage).toHaveClass("object-contain");
     expect(previewImage.parentElement).toHaveClass("h-80");
+  });
+
+  it("shows output versions as video previews with source clip metadata", async () => {
+    vi.spyOn(API, "getVersions").mockResolvedValue({
+      resource_type: "output",
+      resource_id: "1",
+      current_version: 1,
+      versions: [
+        {
+          version: 1,
+          filename: "1_v1.mp4",
+          created_at: "2026-06-08T00:00:00Z",
+          file_size: 1024,
+          is_current: true,
+          prompt: "compose episode 1",
+          file_url: "/api/v1/files/demo/versions/output/1_v1.mp4",
+          source_clips: ["videos/scene_E1S01.mp4", "videos/scene_E1S02.mp4"],
+        },
+      ],
+    });
+
+    render(
+      <VersionTimeMachine
+        projectName="demo"
+        resourceType="output"
+        resourceId="1"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /版本管理/i }));
+    expect(await screen.findByRole("button", { name: "v1" })).toBeInTheDocument();
+    expect(API.getVersions).toHaveBeenCalledWith("demo", "output", "1");
+
+    fireEvent.click(screen.getByRole("button", { name: "v1" }));
+
+    const previewVideo = await screen.findByLabelText("版本 v1 預覽");
+    expect(previewVideo.tagName).toBe("VIDEO");
+    expect(screen.getByText("來源影片")).toBeInTheDocument();
+    expect(screen.getByText("videos/scene_E1S01.mp4、videos/scene_E1S02.mp4")).toBeInTheDocument();
   });
 });

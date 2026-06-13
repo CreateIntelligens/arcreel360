@@ -2,12 +2,12 @@
 
 ## 背景
 
-当前说书/剧集动画两种模式在生成 JSON 剧本前各有一个前置步骤：
+当前说书/剧集动画两种模式在生成 JSON 剧本前各有一個前置步骤：
 
 - **narration 模式**：`split-narration-segments` subagent 生成 `step1_segments.md`（片段拆分表）
 - **drama 模式**：`normalize-drama-script` subagent 生成 `step1_normalized_script.md`（规范化剧本表）
 
-这些中间产物对用户完全不可见——前端无 UI 展示、无事件通知、侧边栏也不显示仅有 step1 的剧集。用户无法查看拆分/规范化的结果，也无法感知这个过程。
+这些中间产物对用户完全不可见——前端无 UI 展示、无事件通知、侧边栏也不显示仅有 step1 的剧集。用户无法查看拆分/规范化的结果，也无法感知这個过程。
 
 ## 目标
 
@@ -63,11 +63,11 @@ STEP_FILES = {1: "step1_segments.md"}
 STEP_FILES = {1: "step1_normalized_script.md"}
 ```
 
-API 端点 `GET/PUT/DELETE /drafts/{episode}/step1` 内部根据 `project.json` 的 `content_mode` 决定实际读写哪个文件。前端统一调用 step1，无需感知文件名差异。
+API 端点 `GET/PUT/DELETE /drafts/{episode}/step1` 内部根据 `project.json` 的 `content_mode` 决定实际读写哪個文件。前端统一调用 step1，无需感知文件名差异。
 
 #### 1.4 事件触发集成
 
-drafts PUT 端点在保存成功后，调用 `ProjectEventService` 发射 `draft:created` 或 `draft:updated` 事件。subagent 通过现有 drafts API 保存文件时自然触发事件链。
+drafts PUT 端点在保存成功后，调用 `ProjectEventService` 发射 `draft:created` 或 `draft:updated` 事件。subagent 通过現有 drafts API 保存文件时自然触发事件链。
 
 ### 二、前端变更
 
@@ -83,7 +83,7 @@ drafts PUT 端点在保存成功后，调用 `ProjectEventService` 发射 `draft
 
 #### 2.2 TimelineCanvas Tab 改造
 
-在标题区域下方新增 Tab 栏，两个 Tab：「预处理」和「剧本时间线」。
+在标题区域下方新增 Tab 栏，两個 Tab：「预处理」和「剧本时间线」。
 
 Tab 可见性与激活规则：
 
@@ -91,7 +91,7 @@ Tab 可见性与激活规则：
 |------|--------|---------|
 | 只有 step1，无剧本 | 显示，「剧本时间线」Tab 禁用 | 预处理 |
 | step1 + 剧本都有 | 显示，两者都可点击 | 剧本时间线 |
-| 只有剧本，无 step1 | 不显示 Tab 栏 | —（保持现有行为） |
+| 只有剧本，无 step1 | 不显示 Tab 栏 | —（保持現有行为） |
 
 Tab 样式：
 - 激活态：`text-indigo-400`，底部 2px `border-indigo-500`
@@ -122,8 +122,8 @@ Tab 样式：
 
 **Toast 通知**：
 - `draft:created`：重要通知（`important: true`），弹出 Toast
-  - narration：「第 N 集片段拆分完成 · XX 个片段 · 约 XXs」
-  - drama：「第 N 集规范化剧本完成 · XX 个场景 · 约 XXs」
+  - narration：「第 N 集片段拆分完成 · XX 個片段 · 约 XXs」
+  - drama：「第 N 集规范化剧本完成 · XX 個場景 · 约 XXs」
 - `draft:updated`：非重要通知
 
 **自动导航**：

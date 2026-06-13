@@ -228,7 +228,7 @@ def _normalize_provider_id(raw: str) -> str:
 - [ ] **Step 16: 运行测试验证重命名无破坏**
 
 Run: `uv run python -m pytest -x -q`
-Expected: 全部 PASS（或仅存在与本次无关的已有失败）
+Expected: 全部 PASS（或仅存在与本次无关的已有失敗）
 
 - [ ] **Step 17: 提交**
 
@@ -275,7 +275,7 @@ uv run alembic upgrade head
 
 - [ ] **Step 4: 验证 migration 数据转换**
 
-在测试或 Python shell 中验证：向 DB 插入 `seedance` provider_config 行，运行 migration，断言变为 `ark`。也验证空表场景不报错。
+在测试或 Python shell 中验证：向 DB 插入 `seedance` provider_config 行，运行 migration，断言变为 `ark`。也验证空表場景不报错。
 
 - [ ] **Step 5: 提交**
 
@@ -342,7 +342,7 @@ def test_image_generation_result():
     assert result.usage_tokens is None
 ```
 
-- [ ] **Step 3: 运行测试验证失败**
+- [ ] **Step 3: 运行测试验证失敗**
 
 Run: `uv run python -m pytest tests/test_image_backends/test_base.py -v`
 Expected: FAIL (模块不存在)
@@ -490,7 +490,7 @@ _BACKEND_FACTORIES: dict[str, Callable[..., ImageBackend]] = {}
 
 
 def register_backend(name: str, factory: Callable[..., ImageBackend]) -> None:
-    """注册一个图片后端工厂函数。"""
+    """注册一個图片后端工厂函数。"""
     _BACKEND_FACTORIES[name] = factory
 
 
@@ -568,7 +568,7 @@ class FakeImageBackend:
         return {ImageCapability.TEXT_TO_IMAGE, ImageCapability.IMAGE_TO_IMAGE}
 
     async def generate(self, request: ImageGenerationRequest) -> ImageGenerationResult:
-        # 写一个 1x1 PNG 到 output_path
+        # 写一個 1x1 PNG 到 output_path
         request.output_path.parent.mkdir(parents=True, exist_ok=True)
         request.output_path.write_bytes(
             b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
@@ -669,7 +669,7 @@ def test_name_vertex():
     assert backend.name == "gemini-vertex"
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [ ] **Step 2: 运行测试验证失敗**
 
 Run: `uv run python -m pytest tests/test_image_backends/test_gemini.py -v`
 Expected: FAIL
@@ -888,7 +888,7 @@ git commit -m "feat: implement GeminiImageBackend with T2I and I2I support"
 
 测试 `ArkImageBackend` 的构造、capabilities、`generate()` SDK 参数转换（mock `volcenginesdkarkruntime.Ark`）。
 
-- [ ] **Step 2: 运行测试验证失败**
+- [ ] **Step 2: 运行测试验证失敗**
 
 Run: `uv run python -m pytest tests/test_image_backends/test_ark.py -v`
 
@@ -930,7 +930,7 @@ git commit -m "feat: implement ArkImageBackend (Seedream) with T2I and I2I"
 
 测试 `GrokImageBackend` 的构造、capabilities、`generate()` SDK 参数转换（mock `xai_sdk.AsyncClient`）。
 
-- [ ] **Step 2: 运行测试验证失败**
+- [ ] **Step 2: 运行测试验证失敗**
 
 - [ ] **Step 3: 创建 `lib/image_backends/grok.py`**
 
@@ -992,7 +992,7 @@ def test_grok_image_cost_pro():
     assert cost == pytest.approx(0.07)
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [ ] **Step 2: 运行测试验证失敗**
 
 - [ ] **Step 3: 在 `CostCalculator` 中新增方法和常量**
 
@@ -1130,7 +1130,7 @@ async def get_media_generator(project_name: str, payload: dict | None = None, *,
         image_provider_id, {}, resolver, default_image_model=image_model,
     )
 
-    # 解析 video backend（保持现有逻辑）
+    # 解析 video backend（保持現有逻辑）
     video_backend, video_backend_type, video_model = await _resolve_video_backend(
         project_name, resolver, payload,
     )
@@ -1208,7 +1208,7 @@ async def generate_image_async(self, prompt, resource_type, resource_id,
             call_id=call_id, status="success", output_path=str(output_path),
         )
     except Exception as e:
-        logger.exception("生成失败 (image)")
+        logger.exception("生成失敗 (image)")
         await self.usage_tracker.finish_call(
             call_id=call_id, status="failed", error_message=str(e),
         )
@@ -1255,7 +1255,7 @@ git commit -m "feat: integrate ImageBackend into generation pipeline"
 
 - [ ] **Step 2: 迁移 `ReferenceImageInput` / `ReferenceImageValue` 类型别名**
 
-在 `lib/image_backends/base.py` 中，`ReferenceImage` dataclass 已替代这两个类型别名。在 `lib/gemini_client.py` 中删除 `ReferenceImageValue` 和 `ReferenceImageInput` 定义。更新所有使用 `ReferenceImageInput` 的 import 站点：
+在 `lib/image_backends/base.py` 中，`ReferenceImage` dataclass 已替代这两個类型别名。在 `lib/gemini_client.py` 中删除 `ReferenceImageValue` 和 `ReferenceImageInput` 定义。更新所有使用 `ReferenceImageInput` 的 import 站点：
 - `lib/media_generator.py` — 不再需要此类型（内部已使用 `ReferenceImage`）
 - 其他通过 `lib/__init__.py` 导出的引用也需清理
 

@@ -32,7 +32,7 @@ export function TaskProgressBlock({ block }: TaskProgressBlockProps) {
       <div className="my-1 flex items-center gap-1.5 text-xs text-slate-400">
         <span className="inline-block h-3 w-3 animate-spin rounded-full border border-slate-500 border-t-transparent" />
         <span>
-          {status === "task_started" ? `子任务开始: ${description}` : description}
+          {status === "task_started" ? `子任務開始: ${description}` : description}
           {tokens != null && ` (tokens: ${tokens})`}
         </span>
       </div>

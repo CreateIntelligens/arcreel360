@@ -37,3 +37,9 @@ def test_image_generation_result():
     assert result.image_uri is None
     assert result.seed is None
     assert result.usage_tokens is None
+
+
+def test_byteplus_image_backend_is_not_registered():
+    from lib.image_backends import get_registered_backends
+
+    assert "byteplus" not in get_registered_backends()

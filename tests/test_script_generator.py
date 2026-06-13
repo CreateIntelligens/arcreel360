@@ -22,7 +22,7 @@ def _valid_narration_response() -> dict:
         "content_mode": "narration",
         "duration_seconds": 4,
         "summary": "摘要",
-        "novel": {"title": "小说", "chapter": "1"},
+        "novel": {"title": "小說", "chapter": "1"},
         "segments": [
             {
                 "segment_id": "E1S01",
@@ -33,17 +33,17 @@ def _valid_narration_response() -> dict:
                 "characters_in_segment": ["姜月茴"],
                 "clues_in_segment": ["玉佩"],
                 "image_prompt": {
-                    "scene": "场景",
+                    "scene": "場景",
                     "composition": {
                         "shot_type": "Medium Shot",
                         "lighting": "暖光",
-                        "ambiance": "薄雾",
+                        "ambiance": "薄霧",
                     },
                 },
                 "video_prompt": {
-                    "action": "转身",
+                    "action": "轉身",
                     "camera_motion": "Static",
-                    "ambiance_audio": "风声",
+                    "ambiance_audio": "風聲",
                     "dialogue": [],
                 },
             }
@@ -76,7 +76,7 @@ class _FakeTextBackend:
 
 
 class _FakeTextGenerator:
-    """模拟 TextGenerator，包装 _FakeTextBackend。"""
+    """模擬 TextGenerator，包裝 _FakeTextBackend。"""
 
     def __init__(self, response_text: str = "{}"):
         self.backend = _FakeTextBackend(response_text)
@@ -88,23 +88,23 @@ class _FakeTextGenerator:
 
 class TestScriptGenerator:
     async def test_build_prompt_uses_step1_content(self, tmp_path):
-        """build_prompt 无需 client 即可使用（dry-run 模式）。"""
+        """build_prompt 無需 client 即可使用（dry-run 模式）。"""
         project_path = tmp_path / "demo"
         _write_json(
             project_path / "project.json",
             {
-                "title": "项目",
+                "title": "專案",
                 "content_mode": "narration",
                 "overview": {"synopsis": "概述"},
                 "characters": {"姜月茴": {}},
                 "clues": {"玉佩": {}},
-                "style": "古风",
+                "style": "古風",
                 "style_description": "cinematic",
             },
         )
         _write(project_path / "drafts" / "episode_1" / "step1_segments.md", "E1S01 | 片段")
 
-        generator = ScriptGenerator(project_path)  # 无 client
+        generator = ScriptGenerator(project_path)  # 無 client
         prompt = generator.build_prompt(1)
 
         assert "E1S01 | 片段" in prompt
@@ -115,7 +115,7 @@ class TestScriptGenerator:
         _write_json(
             project_path / "project.json",
             {
-                "title": "项目",
+                "title": "專案",
                 "content_mode": "narration",
                 "overview": {},
                 "characters": {},
@@ -130,7 +130,7 @@ class TestScriptGenerator:
 
     async def test_parse_response_invalid_json_raises(self, tmp_path):
         project_path = tmp_path / "demo"
-        _write_json(project_path / "project.json", {"title": "项目"})
+        _write_json(project_path / "project.json", {"title": "專案"})
 
         generator = ScriptGenerator(project_path)
         with pytest.raises(ValueError):
@@ -138,7 +138,7 @@ class TestScriptGenerator:
 
     async def test_parse_response_validation_error_returns_raw_data(self, tmp_path):
         project_path = tmp_path / "demo"
-        _write_json(project_path / "project.json", {"title": "项目"})
+        _write_json(project_path / "project.json", {"title": "專案"})
 
         generator = ScriptGenerator(project_path)
         parsed = generator._parse_response('{"foo": "bar"}', 1)
@@ -149,12 +149,12 @@ class TestScriptGenerator:
         _write_json(
             project_path / "project.json",
             {
-                "title": "项目",
+                "title": "專案",
                 "content_mode": "narration",
                 "overview": {},
                 "characters": {"姜月茴": {}},
                 "clues": {"玉佩": {}},
-                "style": "古风",
+                "style": "古風",
                 "style_description": "cinematic",
             },
         )
@@ -172,36 +172,36 @@ class TestScriptGenerator:
         assert "created_at" in payload["metadata"]
 
     async def test_generate_passes_pydantic_class_as_schema(self, tmp_path):
-        """generate 应传入 Pydantic 类而非 model_json_schema() dict。"""
+        """generate 應傳入 Pydantic 類而非 model_json_schema() dict。"""
         project_path = tmp_path / "demo"
         _write_json(
             project_path / "project.json",
             {
-                "title": "项目",
+                "title": "專案",
                 "content_mode": "drama",
                 "overview": {},
                 "characters": {"姜月茴": {}},
                 "clues": {"玉佩": {}},
-                "style": "古风",
+                "style": "古風",
                 "style_description": "cinematic",
             },
         )
-        _write(project_path / "drafts" / "episode_1" / "step1_normalized_script.md", "E1S01 | 场景")
+        _write(project_path / "drafts" / "episode_1" / "step1_normalized_script.md", "E1S01 | 場景")
 
         from lib.script_models import DramaEpisodeScript
 
         fake = _FakeTextGenerator(json.dumps({"foo": "bar"}))
         generator = ScriptGenerator(project_path, generator=fake)
-        # generate 会因验证失败但 schema 已传入，检查传入的 schema 是否为类
+        # generate 會因驗證失敗但 schema 已傳入，檢查傳入的 schema 是否為類
         await generator.generate(1)
         assert fake.backend.last_request.response_schema is DramaEpisodeScript
 
     async def test_generate_without_backend_raises(self, tmp_path):
-        """未注入 backend 时调用 generate() 应抛 RuntimeError。"""
+        """未注入 backend 時呼叫 generate() 應拋 RuntimeError。"""
         project_path = tmp_path / "demo"
-        _write_json(project_path / "project.json", {"title": "项目"})
+        _write_json(project_path / "project.json", {"title": "專案"})
         _write(project_path / "drafts" / "episode_1" / "step1_segments.md", "content")
 
-        generator = ScriptGenerator(project_path)  # 无 backend
+        generator = ScriptGenerator(project_path)  # 無 backend
         with pytest.raises(RuntimeError, match="TextGenerator 未初始化"):
             await generator.generate(1)

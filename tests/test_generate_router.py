@@ -117,7 +117,7 @@ class TestGenerateRouter:
                     "script_file": "episode_1.json",
                     "prompt": {
                         "scene": "雨夜",
-                        "composition": {"shot_type": "Medium Shot", "lighting": "暖光", "ambiance": "薄雾"},
+                        "composition": {"shot_type": "Medium Shot", "lighting": "暖光", "ambiance": "薄霧"},
                     },
                 },
             )
@@ -150,7 +150,7 @@ class TestGenerateRouter:
                     "prompt": {
                         "action": "奔跑",
                         "camera_motion": "Static",
-                        "ambiance_audio": "雨声",
+                        "ambiance_audio": "雨聲",
                         "dialogue": [{"speaker": "Alice", "line": "快走"}],
                     },
                 },
@@ -165,6 +165,56 @@ class TestGenerateRouter:
             assert call["media_type"] == "video"
             assert call["payload"]["duration_seconds"] == 5
 
+    def test_storyboard_enqueue_carries_scene_image_size(self, tmp_path, monkeypatch):
+        project_path = _prepare_files(tmp_path)
+        fake_pm = _FakePM(project_path)
+        # E1S02 declares a per-scene image_size override
+        fake_pm.script["segments"][1]["image_size"] = "720p"
+        fake_queue = _FakeQueue()
+        client = _client(monkeypatch, fake_pm, fake_queue)
+
+        with client:
+            sb = client.post(
+                "/api/v1/projects/demo/generate/storyboard/E1S02",
+                json={"script_file": "episode_1.json", "prompt": "雨夜"},
+            )
+            assert sb.status_code == 200
+            assert fake_queue.calls[0]["payload"]["image_size"] == "720p"
+
+    def test_storyboard_enqueue_without_override_omits_image_size(self, tmp_path, monkeypatch):
+        project_path = _prepare_files(tmp_path)
+        fake_pm = _FakePM(project_path)
+        fake_queue = _FakeQueue()
+        client = _client(monkeypatch, fake_pm, fake_queue)
+
+        with client:
+            sb = client.post(
+                "/api/v1/projects/demo/generate/storyboard/E1S02",
+                json={"script_file": "episode_1.json", "prompt": "雨夜"},
+            )
+            assert sb.status_code == 200
+            assert "image_size" not in fake_queue.calls[0]["payload"]
+
+    def test_video_enqueue_carries_scene_resolution(self, tmp_path, monkeypatch):
+        project_path = _prepare_files(tmp_path)
+        fake_pm = _FakePM(project_path)
+        # E1S01 declares a per-scene video_resolution override
+        fake_pm.script["segments"][0]["video_resolution"] = "720p"
+        fake_queue = _FakeQueue()
+        client = _client(monkeypatch, fake_pm, fake_queue)
+
+        with client:
+            video = client.post(
+                "/api/v1/projects/demo/generate/video/E1S01",
+                json={
+                    "script_file": "episode_1.json",
+                    "duration_seconds": 5,
+                    "prompt": {"action": "奔跑", "camera_motion": "Static"},
+                },
+            )
+            assert video.status_code == 200
+            assert fake_queue.calls[0]["payload"]["video_resolution"] == "720p"
+
     def test_character_enqueue_success(self, tmp_path, monkeypatch):
         project_path = _prepare_files(tmp_path)
         fake_pm = _FakePM(project_path)
@@ -174,7 +224,7 @@ class TestGenerateRouter:
         with client:
             character = client.post(
                 "/api/v1/projects/demo/generate/character/Alice",
-                json={"prompt": "女主，冷静"},
+                json={"prompt": "女主，冷靜"},
             )
             assert character.status_code == 200
             body = character.json()
@@ -195,7 +245,7 @@ class TestGenerateRouter:
         with client:
             clue = client.post(
                 "/api/v1/projects/demo/generate/clue/玉佩",
-                json={"prompt": "古朴玉佩"},
+                json={"prompt": "古樸玉佩"},
             )
             assert clue.status_code == 200
             body = clue.json()

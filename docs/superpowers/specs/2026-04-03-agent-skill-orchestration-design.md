@@ -2,7 +2,7 @@
 
 ## 背景
 
-对 `agent_runtime_profile/` 的全面审查发现 11 个需要修复的问题，涉及准确性错误、架构缺陷、信息冗余和路径不一致。本设计为方案 B（引入 Asset Generation Agent + 信息去重）。
+对 `agent_runtime_profile/` 的全面审查发现 11 個需要修复的问题，涉及准确性错误、架构缺陷、信息冗余和路径不一致。本设计为方案 B（引入 Asset Generation Agent + 信息去重）。
 
 ## 问题清单
 
@@ -10,14 +10,14 @@
 |---|--------|------|------|
 | 1 | P0 | Agent 名称引用错误：`novel-to-narration-script` / `novel-to-storyboard-script` 应为 `split-narration-segments` / `normalize-drama-script` | `CLAUDE.md:51` |
 | 2 | P0 | 幽灵 skill 权限：`edit-script-items` 在 settings.json 中有 allow 规则但 skill 不存在 | `settings.json:29` |
-| 3 | P0 | `add_characters_clues.py` 调用方式不一致：agent 定义中多了一个不存在的 `{项目名}` 位置参数 | `analyze-characters-clues.md:60` |
+| 3 | P0 | `add_characters_clues.py` 调用方式不一致：agent 定义中多了一個不存在的 `{项目名}` 位置参数 | `analyze-characters-clues.md:60` |
 | 4 | P1 | 阶段 5-8 说 "dispatch general-purpose subagent" 但没有对应的 agent 定义 | `manga-workflow/SKILL.md:134` |
 | 6 | P1 | Persona Prompt 与 CLAUDE.md 信息重叠（语言规范、编排模式两处定义） | `session_manager.py:316` vs `CLAUDE.md` |
 | 7 | P1 | 阶段 5（角色设计）和阶段 6（线索设计）互相独立，可并行 dispatch 但当前串行 | `manga-workflow/SKILL.md` |
 | 8 | P2 | 内容模式表在 CLAUDE.md、references/content-modes.md、session_manager.py 三处重复 | 多处 |
-| 9 | P2 | 脚本调用路径假设不一致：部分用 `cd projects/{name} && python ../../.claude/skills/...`，部分用 `python .claude/skills/...` | 多个 SKILL.md |
+| 9 | P2 | 脚本调用路径假设不一致：部分用 `cd projects/{name} && python ../../.claude/skills/...`，部分用 `python .claude/skills/...` | 多個 SKILL.md |
 | 10 | P2 | `--segment-ids` 和 `--scene-ids` 在 generate-storyboard SKILL.md 中同时出现，未说明是别名关系 | `generate-storyboard/SKILL.md:23-24` |
-| 11 | P2 | reference 路径引用有误：写 `references/content-modes.md` 但实际位于 `.claude/references/content-modes.md` | 多个 SKILL.md |
+| 11 | P2 | reference 路径引用有误：写 `references/content-modes.md` 但实际位于 `.claude/references/content-modes.md` | 多個 SKILL.md |
 
 ## 设计方案
 
@@ -37,14 +37,14 @@ description: "统一资产生成 subagent。接收任务清单（包含资产类
 **工作流程**：
 1. 读取 `{项目路径}/project.json` 了解项目状态
 2. 按主 agent 提供的脚本命令逐条执行
-3. 单条失败记录错误继续后续，不阻断整体
+3. 单条失敗记录错误继续后续，不阻断整体
 4. 按主 agent 指定的验证方式检查结果
 5. 返回结构化状态
 
 **返回状态协议**：
 - **DONE**：全部成功
 - **DONE_WITH_CONCERNS**：全部完成但有异常
-- **PARTIAL**：部分成功，部分失败
+- **PARTIAL**：部分成功，部分失敗
 - **BLOCKED**：无法执行（前置条件不满足）
 
 **返回摘要格式**：
@@ -58,7 +58,7 @@ description: "统一资产生成 subagent。接收任务清单（包含资产类
 | 项目 | 状态 | 备注 |
 |------|------|------|
 | {项1} | ✅ 成功 | |
-| {项2} | ❌ 失败 | {错误原因} |
+| {项2} | ❌ 失敗 | {错误原因} |
 ```
 
 **核心约束**：
@@ -75,7 +75,7 @@ description: "统一资产生成 subagent。接收任务清单（包含资产类
 3. 分集规划 → 主 agent 直接执行
 4. 单集预处理 → dispatch `split-narration-segments`（narration）或 `normalize-drama-script`（drama）
 5. JSON 剧本生成 → dispatch `create-episode-script`
-6. 角色设计 + 线索设计 → **并行** dispatch 两个 `generate-assets`（互不依赖时）
+6. 角色设计 + 线索设计 → **并行** dispatch 两個 `generate-assets`（互不依赖时）
 7. 分镜图生成 → dispatch `generate-assets`
 8. 视频生成 → dispatch `generate-assets`
 
@@ -83,7 +83,7 @@ description: "统一资产生成 subagent。接收任务清单（包含资产类
 
 #### 阶段 6：角色设计 + 线索设计（可并行）
 
-两个任务互不依赖，**同时 dispatch 两个 `generate-assets` subagent**。
+两個任务互不依赖，**同时 dispatch 两個 `generate-assets` subagent**。
 
 **subagent A — 角色设计**（触发：有角色缺少 character_sheet）：
 
@@ -111,8 +111,8 @@ dispatch `generate-assets` subagent：
   验证方式：重新读取 project.json，检查对应线索的 clue_sheet 字段
 ```
 
-如果只有其中一个需要执行，只 dispatch 对应的一个。
-两个 subagent 全部返回后，合并摘要展示给用户，进入阶段间确认。
+如果只有其中一個需要执行，只 dispatch 对应的一個。
+两個 subagent 全部返回后，合并摘要展示给用户，进入阶段间确认。
 
 #### 阶段 7：分镜图生成
 
@@ -123,7 +123,7 @@ dispatch `generate-assets` subagent：
   项目路径：projects/{project_name}/
   脚本命令：
     python .claude/skills/generate-storyboard/scripts/generate_storyboard.py episode_{N}.json
-  验证方式：重新读取 scripts/episode_{N}.json，检查各场景的 storyboard_image 字段
+  验证方式：重新读取 scripts/episode_{N}.json，检查各場景的 storyboard_image 字段
 ```
 
 #### 阶段 8：视频生成
@@ -135,7 +135,7 @@ dispatch `generate-assets` subagent：
   项目路径：projects/{project_name}/
   脚本命令：
     python .claude/skills/generate-video/scripts/generate_video.py episode_{N}.json --episode {N}
-  验证方式：重新读取 scripts/episode_{N}.json，检查各场景的 video_clip 字段
+  验证方式：重新读取 scripts/episode_{N}.json，检查各場景的 video_clip 字段
 ```
 
 #### 状态检测更新
@@ -148,8 +148,8 @@ dispatch `generate-assets` subagent：
 4. `scripts/episode_{N}.json` 不存在？ → **阶段 4**（JSON 剧本）
 5. 有角色缺少 character_sheet？ → **阶段 5**（角色设计）—— 与阶段 6 可并行
 6. 有 importance=major 线索缺少 clue_sheet？ → **阶段 6**（线索设计）—— 与阶段 5 可并行
-7. 有场景缺少分镜图？ → **阶段 7**（分镜图）
-8. 有场景缺少视频？ → **阶段 8**（视频）
+7. 有場景缺少分镜图？ → **阶段 7**（分镜图）
+8. 有場景缺少视频？ → **阶段 8**（视频）
 9. 全部完成 → 工作流结束，引导用户在 Web 端导出剪映草稿
 
 ### 3. 信息去重
@@ -196,12 +196,12 @@ dispatch `generate-assets` subagent：
 _PERSONA_PROMPT = """\
 ## 身份
 
-你是 ArcReel 智能体，一个专业的 AI 视频内容创作助手。你的职责是将小说转化为可发布的短视频内容。
+你是 ArcReel 智能体，一個专业的 AI 视频内容创作助手。你的职责是将小说转化为可发布的短视频内容。
 
 ## 行为准则
 
 - 主动引导用户完成视频创作工作流，而不仅仅被动回答问题
-- 遇到不确定的创作决策时，向用户提出选项并给出建议，而不是自行决定
+- 遇到不确定的创作决策时，向用户提出選項并给出建议，而不是自行决定
 - 涉及多步骤任务时，使用 TodoWrite 跟踪进度并向用户汇报
 - 你是用户的视频制作搭档，专业、友善、高效"""
 ```

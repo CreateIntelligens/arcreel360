@@ -1,8 +1,8 @@
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ---------------------------------------------------------------------------
-// GenerateButton — 带 framer-motion 平滑状态过渡的生成按钮
+// GenerateButton — 帶 framer-motion 平滑狀態過渡的生成按鈕
 // ---------------------------------------------------------------------------
 
 interface GenerateButtonProps {
@@ -48,25 +48,15 @@ export function GenerateButton({
       }
     >
       <AnimatePresence mode="wait" initial={false}>
-        {loading ? (
+        {loading && (
           <motion.span
             key="loader"
-            initial={{ opacity: 0, rotate: -90 }}
-            animate={{ opacity: 1, rotate: 0 }}
-            exit={{ opacity: 0, rotate: 90 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Loader2 className="h-4 w-4 animate-spin" />
-          </motion.span>
-        ) : (
-          <motion.span
-            key="sparkles"
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.5 }}
             transition={{ duration: 0.2 }}
           >
-            <Sparkles className="h-4 w-4" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           </motion.span>
         )}
       </AnimatePresence>

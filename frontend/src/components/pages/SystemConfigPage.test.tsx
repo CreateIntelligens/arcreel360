@@ -20,6 +20,7 @@ function makeConfigResponse(
       default_video_backend: "gemini/veo-3",
       default_image_backend: "gemini/imagen-4",
       default_text_backend: "",
+      byteplus_video_endpoint_id: "",
       text_backend_script: "",
       text_backend_overview: "",
       text_backend_style: "",
@@ -39,6 +40,7 @@ function makeConfigResponse(
       video_backends: ["gemini/veo-3"],
       image_backends: ["gemini/imagen-4"],
       text_backends: [],
+      assistant_providers: ["claude", "gemini-lite", "gemini-full", "openai-lite", "openai-full"],
     },
   };
 }
@@ -104,17 +106,42 @@ describe("SystemConfigPage", () => {
 
   it("renders all 5 sidebar sections", () => {
     renderPage();
-    expect(screen.getByRole("button", { name: /智能體/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /AI Agent/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /供應商/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /模型選擇/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /用量統計/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /API 管理/ })).toBeInTheDocument();
   });
 
-  it("defaults to the 智能體 section", () => {
+  it("defaults to the AI Agent section", () => {
     renderPage();
-    const agentButton = screen.getByRole("button", { name: /智能體/ });
+    const agentButton = screen.getByRole("button", { name: /AI Agent/ });
     expect(agentButton.className).toContain("workbench-panel-strong");
+  });
+
+  it("keeps assistant runtime provider columns visually aligned", async () => {
+    renderPage();
+
+    expect(await screen.findByText("執行時供應商與模式")).toBeInTheDocument();
+
+    const grid = screen.getByTestId("assistant-runtime-grid");
+    expect(grid).toHaveClass("grid");
+    expect(grid.className).toContain("grid-cols-[8rem_repeat(3,minmax(7.5rem,1fr))]");
+    for (const provider of ["Gemini", "OpenAI", "Claude"]) {
+      expect(screen.getByText(provider)).toHaveClass("justify-center");
+    }
+  });
+
+  it("allows selecting OpenAI workflow mode", async () => {
+    renderPage();
+
+    const openaiWorkflow = await screen.findByRole("button", { name: "OpenAI 工作流模式 選擇" });
+    expect(openaiWorkflow).toBeEnabled();
+
+    fireEvent.click(openaiWorkflow);
+
+    expect(await screen.findByText("OpenAI · 工作流模式")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "OpenAI 工作流模式 使用中" })).toHaveTextContent("✓ 使用中");
   });
 
   it("clicking 供應商 makes it the active section", async () => {
@@ -132,6 +159,25 @@ describe("SystemConfigPage", () => {
     fireEvent.click(mediaButton);
     await waitFor(() => {
       expect(mediaButton.className).toContain("workbench-panel-strong");
+    });
+  });
+
+  it("saves BytePlus video endpoint id from the model section", async () => {
+    const updateSpy = vi
+      .spyOn(API, "updateSystemConfig")
+      .mockResolvedValue(makeConfigResponse({ byteplus_video_endpoint_id: "ep-20260508120826-lkcjf" }));
+
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: /模型選擇/ }));
+
+    const endpointInput = await screen.findByLabelText("BytePlus ModelArk Endpoint ID");
+    fireEvent.change(endpointInput, { target: { value: "ep-20260508120826-lkcjf" } });
+    fireEvent.click(screen.getByRole("button", { name: "儲存" }));
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith({
+        byteplus_video_endpoint_id: "ep-20260508120826-lkcjf",
+      });
     });
   });
 
@@ -156,7 +202,7 @@ describe("SystemConfigPage", () => {
       expect(screen.getByText("以下必填設定尚未完成：")).toBeInTheDocument();
     });
     expect(
-      screen.getByRole("button", { name: /Gemini 智能體未設定可用的 Gemini 文字供應商/ }),
+      screen.getByRole("button", { name: /Gemini AI Agent 未設定可用的 Gemini 文字供應商/ }),
     ).toBeInTheDocument();
   });
 

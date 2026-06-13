@@ -1,13 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ImagePlus, RefreshCw, Trash2, Upload } from "lucide-react";
-import type { ProjectData } from "@/types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ImagePlus, Trash2, Upload } from "lucide-react";
+import type { ProjectData, ProviderInfo } from "@/types";
 import { API } from "@/api";
+import { providersApi } from "@/api/providers";
 import { useProjectsStore } from "@/stores/projects-store";
 import { useAppStore } from "@/stores/app-store";
 import { useCostStore } from "@/stores/cost-store";
 import { PreviewableImageFrame } from "@/components/ui/PreviewableImageFrame";
+import { useConfirm } from "@/hooks/useConfirm";
 import { formatCost, totalBreakdown } from "@/utils/cost-format";
+import { buildMediaModelOptions } from "@/utils/provider-models";
+import { sortEpisodesForDisplay } from "@/utils/episodes";
+import { STYLE_OPTIONS } from "@/utils/project-style";
 
+import { OverviewSection } from "./OverviewSection";
 import { WelcomeCanvas } from "./WelcomeCanvas";
 
 interface OverviewCanvasProps {
@@ -16,6 +22,7 @@ interface OverviewCanvasProps {
 }
 
 export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps) {
+  const confirm = useConfirm();
   const styleImageFp = useProjectsStore(
     (s) => projectData?.style_image ? s.getAssetFingerprint(projectData.style_image) : null,
   );
@@ -30,10 +37,10 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
     debouncedFetch(projectName);
   }, [projectName, projectData?.episodes, debouncedFetch]);
 
-  const [regenerating, setRegenerating] = useState(false);
   const [uploadingStyleImage, setUploadingStyleImage] = useState(false);
   const [deletingStyleImage, setDeletingStyleImage] = useState(false);
   const [savingStyleDescription, setSavingStyleDescription] = useState(false);
+  const [providers, setProviders] = useState<ProviderInfo[] | null>(null);
   const [styleDescriptionDraft, setStyleDescriptionDraft] = useState(
     projectData?.style_description ?? "",
   );
@@ -56,10 +63,31 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
     setStyleDescriptionDraft(projectData?.style_description ?? "");
   }, [projectData?.style_description]);
 
+  useEffect(() => {
+    let disposed = false;
+    providersApi
+      .getProviders()
+      .then((res) => {
+        if (!disposed) setProviders(res.providers);
+      })
+      .catch(() => {
+        if (!disposed) setProviders([]);
+      });
+    return () => {
+      disposed = true;
+    };
+  }, []);
+
+  const modelOptions = useMemo(() => buildMediaModelOptions(providers), [providers]);
+
   const handleUpload = useCallback(
     async (file: File) => {
-      await API.uploadFile(projectName, "source", file);
-      useAppStore.getState().pushToast(`來源檔案「${file.name}」上傳成功`, "success");
+      try {
+        await API.uploadFile(projectName, "source", file);
+        useAppStore.getState().pushToast(`來源檔案「${file.name}」上傳成功`, "success");
+      } catch (err) {
+        useAppStore.getState().pushToast(`上傳失敗: ${(err as Error).message}`, "error");
+      }
     },
     [projectName],
   );
@@ -67,21 +95,6 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
   const handleAnalyze = useCallback(async () => {
     await API.generateOverview(projectName);
     await refreshProject();
-  }, [projectName, refreshProject]);
-
-  const handleRegenerate = useCallback(async () => {
-    setRegenerating(true);
-    try {
-      await API.generateOverview(projectName);
-      await refreshProject();
-      useAppStore.getState().pushToast("專案概述已重新生成", "success");
-    } catch (err) {
-      useAppStore
-        .getState()
-        .pushToast(`重新生成失敗: ${(err as Error).message}`, "error");
-    } finally {
-      setRegenerating(false);
-    }
   }, [projectName, refreshProject]);
 
   const handleStyleImageChange = useCallback(
@@ -108,7 +121,11 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
 
   const handleDeleteStyleImage = useCallback(async () => {
     if (deletingStyleImage || !projectData?.style_image) return;
-    if (!confirm("確定要刪除目前的風格參考圖嗎？")) return;
+    const ok = await confirm({
+      message: "確定要刪除目前的風格參考圖嗎？",
+      danger: true,
+    });
+    if (!ok) return;
 
     setDeletingStyleImage(true);
     try {
@@ -122,7 +139,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
     } finally {
       setDeletingStyleImage(false);
     }
-  }, [deletingStyleImage, projectData?.style_image, projectName, refreshProject]);
+  }, [deletingStyleImage, projectData?.style_image, projectName, refreshProject, confirm]);
 
   const handleSaveStyleDescription = useCallback(async () => {
     if (savingStyleDescription) return;
@@ -166,8 +183,32 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
             參考圖會參與後續畫面生成；風格描述用於補充視覺規則，校準整體調性、材質與鏡頭氣質。
           </p>
         </div>
-        <div className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800 px-3 py-1 text-xs text-gray-300">
-          {projectData.style || "未設定風格標籤"}
+        <div className="flex items-center gap-2">
+          <label htmlFor="project-style-select" className="text-xs text-gray-500">風格標籤：</label>
+          <div className="relative">
+            <select
+              id="project-style-select"
+              value={projectData.style || ""}
+              onChange={async (e) => {
+                const value = e.target.value;
+                try {
+                  await API.updateStyle(projectName, value);
+                  await refreshProject();
+                  useAppStore.getState().pushToast("專案風格已更新", "success");
+                } catch (err) {
+                  useAppStore.getState().pushToast(`更新失敗: ${(err as Error).message}`, "error");
+                }
+              }}
+              className="appearance-none rounded-lg border border-gray-700 bg-gray-800 py-1.5 pl-3 pr-8 text-xs text-gray-300 outline-none transition-colors hover:border-gray-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            >
+              {STYLE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-500" />
+          </div>
         </div>
       </div>
 
@@ -201,7 +242,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
             <p className="mt-1 text-sm leading-6 text-gray-300">
               {styleImageUrl
                 ? "目前參考圖會作為統一視覺基線，用於角色圖、分鏡圖與影片生成。"
-                : "目前還沒有綁定專案級參考圖，可以先上傳一張目標風格樣片作為統一基線。"}
+                : "目前還沒有繫結專案級參考圖，可以先上傳一張目標風格樣片作為統一基線。"}
             </p>
 
             <div className="mt-3 flex flex-wrap gap-2">
@@ -288,7 +329,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
           <p className="mt-1 text-sm text-gray-400">
             {projectData.content_mode === "narration"
               ? "說書＋畫面模式"
-              : "劇集動畫模式"}{" "}
+              : "劇本動畫模式"}{" "}
             · {projectData.style || "未設定風格"}
           </p>
         </div>
@@ -302,34 +343,17 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
           />
         ) : (
           <>
-            {overview && (
-              <div className="space-y-3 rounded-xl border border-gray-800 bg-gray-900 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-300">專案概述</h3>
-                  <button
-                    type="button"
-                    onClick={() => void handleRegenerate()}
-                    disabled={regenerating}
-                    className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`}
-                    title="重新生成概述"
-                  >
-                    <RefreshCw
-                      className={`h-3 w-3 ${regenerating ? "animate-spin" : ""}`}
-                    />
-                    <span>{regenerating ? "生成中..." : "重新生成"}</span>
-                  </button>
-                </div>
-                <p className="text-sm text-gray-400">{overview.synopsis}</p>
-                <div className="flex gap-4 text-xs text-gray-500">
-                  <span>題材：{overview.genre}</span>
-                  <span>主題：{overview.theme}</span>
-                </div>
-              </div>
-            )}
+            <OverviewSection
+              projectName={projectName}
+              overview={overview}
+              onRefresh={refreshProject}
+              textModelOptions={modelOptions.text}
+              providerNames={modelOptions.providerNames}
+            />
 
             {status && (
-              <div className="grid grid-cols-2 gap-3">
-                {(["characters", "clues"] as const).map(
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {(["characters", "clues", "scenes"] as const).map(
                   (key) => {
                     const cat = status[key] as
                       | { total: number; completed: number }
@@ -341,7 +365,8 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
                         : 0;
                     const labels: Record<string, string> = {
                       characters: "角色",
-                      clues: "線索",
+                      clues: "道具",
+                      scenes: "場景",
                     };
                     return (
                       <div
@@ -391,7 +416,7 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
                   <div className="min-w-0">
                     <dt className="mb-1 text-[11px] text-gray-600">預估</dt>
                     <dd className="text-sm text-gray-400">
-                      <span className="text-gray-500">分镜 </span>
+                      <span className="text-gray-500">分鏡 </span>
                       <span className="text-gray-200">{formatCost(projectTotals.estimate.image)}</span>
                       <span className="ml-3 text-gray-500">影片 </span>
                       <span className="text-gray-200">{formatCost(projectTotals.estimate.video)}</span>
@@ -403,13 +428,13 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
                   <div className="min-w-0">
                     <dt className="mb-1 text-[11px] text-gray-600">實際</dt>
                     <dd className="text-sm text-gray-400">
-                      <span className="text-gray-500">分镜 </span>
+                      <span className="text-gray-500">分鏡 </span>
                       <span className="text-gray-200">{formatCost(projectTotals.actual.image)}</span>
                       <span className="ml-3 text-gray-500">影片 </span>
                       <span className="text-gray-200">{formatCost(projectTotals.actual.video)}</span>
                       {projectTotals.actual.character_and_clue && (
                         <>
-                          <span className="ml-3 text-gray-500">角色／線索 </span>
+                          <span className="ml-3 text-gray-500">角色／道具 </span>
                           <span className="text-gray-200">{formatCost(projectTotals.actual.character_and_clue)}</span>
                         </>
                       )}
@@ -422,23 +447,20 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
             )}
 
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-300">劇集</h3>
+              <h3 className="text-sm font-semibold text-gray-300">劇本</h3>
               {(projectData.episodes?.length ?? 0) === 0 ? (
                 <p className="text-sm text-gray-500">
-                  暫無劇集。可使用 AI 助理生成劇本。
+                  暫無劇本。可使用 AI 助理生成劇本。
                 </p>
               ) : (
-                (projectData.episodes ?? []).map((ep) => {
+                sortEpisodesForDisplay(projectData.episodes ?? []).map((ep) => {
                   const epCost = getEpisodeCost(ep.episode);
                   return (
                     <div
                       key={ep.episode}
                       className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-800 bg-gray-900 px-4 py-2.5 tabular-nums"
                     >
-                      <span className="font-mono text-xs text-gray-400">
-                        E{ep.episode}
-                      </span>
-                      <span className="text-sm text-gray-200">{ep.title}</span>
+                      <span className="text-sm text-gray-200">{ep.title || "（未命名劇集）"}</span>
                       <span className="text-xs text-gray-500">
                         {ep.scenes_count ?? "?"} 片段 · {ep.status ?? "draft"}
                       </span>
@@ -446,14 +468,14 @@ export function OverviewCanvas({ projectName, projectData }: OverviewCanvasProps
                         <span className="ml-auto flex min-w-0 flex-shrink flex-wrap gap-4 text-xs text-gray-400">
                           <span>
                             <span className="text-gray-500">預估 </span>
-                            <span className="text-gray-500">分镜 </span><span className="text-gray-300">{formatCost(epCost.totals.estimate.image)}</span>
+                            <span className="text-gray-500">分鏡 </span><span className="text-gray-300">{formatCost(epCost.totals.estimate.image)}</span>
                             <span className="ml-2 text-gray-500">影片 </span><span className="text-gray-300">{formatCost(epCost.totals.estimate.video)}</span>
                             <span className="ml-2 text-gray-500">總計 </span><span className="font-medium text-amber-400">{formatCost(totalBreakdown(epCost.totals.estimate))}</span>
                           </span>
                           <span className="text-gray-700">|</span>
                           <span>
                             <span className="text-gray-500">實際 </span>
-                            <span className="text-gray-500">分镜 </span><span className="text-gray-300">{formatCost(epCost.totals.actual.image)}</span>
+                            <span className="text-gray-500">分鏡 </span><span className="text-gray-300">{formatCost(epCost.totals.actual.image)}</span>
                             <span className="ml-2 text-gray-500">影片 </span><span className="text-gray-300">{formatCost(epCost.totals.actual.video)}</span>
                             <span className="ml-2 text-gray-500">總計 </span><span className="font-medium text-emerald-400">{formatCost(totalBreakdown(epCost.totals.actual))}</span>
                           </span>

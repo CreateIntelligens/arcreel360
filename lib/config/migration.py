@@ -17,8 +17,8 @@ _PROVIDER_KEY_MAP: list[tuple[str, str, str, bool]] = [
     ("gemini_api_key", "gemini-aistudio", "api_key", True),
     ("gemini_base_url", "gemini-aistudio", "base_url", False),
     ("vertex_gcs_bucket", "gemini-vertex", "gcs_bucket", False),
-    ("ark_api_key", "ark", "api_key", True),
-    ("file_service_base_url", "ark", "file_service_base_url", False),
+    ("ark_api_key", "byteplus", "api_key", True),
+    ("file_service_base_url", "byteplus", "file_service_base_url", False),
     ("xai_api_key", "grok", "api_key", True),
 ]
 
@@ -97,7 +97,7 @@ async def migrate_json_to_db(session: AsyncSession, json_path: Path) -> None:
 
     video_backend = overrides.get("video_backend", "aistudio")
     video_model = overrides.get("video_model", "veo-3.1-generate-001")
-    # AI Studio 使用 preview 后缀，Vertex 使用 001 后缀
+    # AI Studio 使用 preview 字尾，Vertex 使用 001 字尾
     if video_backend == "aistudio":
         _model_fix = {
             "veo-3.1-generate-001": "veo-3.1-generate-preview",
@@ -133,7 +133,7 @@ async def migrate_json_to_db(session: AsyncSession, json_path: Path) -> None:
     # 6. Catch-all: remaining override keys → system_setting
     for key, value in overrides.items():
         if key not in _HANDLED_KEYS:
-            logger.warning("迁移未知配置项: %s=%s", key, value)
+            logger.warning("遷移未知配置項: %s=%s", key, value)
             await setting_repo.set(key, str(value))
 
     await session.commit()

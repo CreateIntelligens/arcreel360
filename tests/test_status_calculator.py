@@ -38,7 +38,7 @@ class TestStatusCalculator:
     def test_calculate_episode_stats_statuses(self, tmp_path):
         calc = StatusCalculator(_FakePM(tmp_path, {}, {}))
 
-        # draft：无任何资源
+        # draft：無任何資源
         draft = calc.calculate_episode_stats(
             "demo",
             {"content_mode": "narration", "segments": [{"duration_seconds": 4}]},
@@ -49,7 +49,7 @@ class TestStatusCalculator:
         assert draft["scenes_count"] == 1
         assert draft["duration_seconds"] == 4
 
-        # in_production：有分镜图
+        # in_production：有分鏡圖
         in_prod = calc.calculate_episode_stats(
             "demo",
             {
@@ -64,7 +64,7 @@ class TestStatusCalculator:
         assert in_prod["storyboards"] == {"total": 2, "completed": 1}
         assert in_prod["videos"] == {"total": 2, "completed": 0}
 
-        # completed：所有场景有视频
+        # completed：所有場景有影片
         completed = calc.calculate_episode_stats(
             "demo",
             {
@@ -82,7 +82,7 @@ class TestStatusCalculator:
         project_root = tmp_path / "projects"
         project_path = project_root / "demo"
 
-        # Case 1: 脚本 JSON 存在 → ("generated", script)
+        # Case 1: 指令碼 JSON 存在 → ("generated", script)
         script_data = {"content_mode": "narration", "segments": []}
         scripts = {"episode_1.json": script_data}
         calc = StatusCalculator(_FakePM(project_root, {}, scripts))
@@ -90,7 +90,7 @@ class TestStatusCalculator:
         assert status == "generated"
         assert script == script_data
 
-        # Case 2: 脚本不存在，draft 文件存在 → ("segmented", None)
+        # Case 2: 指令碼不存在，draft 檔案存在 → ("segmented", None)
         draft_dir = project_path / "drafts" / "episode_2"
         draft_dir.mkdir(parents=True)
         (draft_dir / "step1_segments.md").write_text("ok")
@@ -99,7 +99,7 @@ class TestStatusCalculator:
         assert status2 == "segmented"
         assert script2 is None
 
-        # Case 3: 两者都不存在 → ("none", None)
+        # Case 3: 兩者都不存在 → ("none", None)
         calc3 = StatusCalculator(_FakePM(project_root, {}, {}))
         status3, script3 = calc3._load_episode_script("demo", 3, "scripts/episode_3.json")
         assert status3 == "none"
@@ -114,7 +114,7 @@ class TestStatusCalculator:
         assert status4 == "segmented"
         assert script4 is None
 
-        # Case 5: drama 模式 — 无 step1_normalized_script.md → ("none", None)
+        # Case 5: drama 模式 — 無 step1_normalized_script.md → ("none", None)
         calc5 = StatusCalculator(_FakePM(project_root, {}, {}))
         status5, script5 = calc5._load_episode_script("demo", 5, "scripts/episode_5.json", content_mode="drama")
         assert status5 == "none"
@@ -125,45 +125,85 @@ class TestStatusCalculator:
         project_no_overview = {}
         assert calc.calculate_current_phase(project_no_overview, []) == "setup"
 
-    def test_calculate_current_phase_worldbuilding(self, tmp_path):
+        project_text_overview = {"overview": "這不是結構化概述"}
+        assert calc.calculate_current_phase(project_text_overview, []) == "setup"
+
+    def test_calculate_current_phase_lorebook(self, tmp_path):
         calc = StatusCalculator(_FakePM(tmp_path, {}, {}))
         project = {"overview": {"synopsis": "test"}}
-        # 无任何 generated 脚本 → worldbuilding
+        # 1. overview 完成但 lorebook 未完成 -> lorebook
+        assert calc.calculate_current_phase(project, [], lorebook_completed=False) == "lorebook"
+        # 2. overview 完成、lorebook 完成，但無任何 generated 劇本 -> lorebook
         episodes_stats = [{"script_status": "none"}, {"script_status": "segmented"}]
-        assert calc.calculate_current_phase(project, episodes_stats) == "worldbuilding"
-        # 无集 → worldbuilding
-        assert calc.calculate_current_phase(project, []) == "worldbuilding"
+        assert calc.calculate_current_phase(project, episodes_stats, lorebook_completed=True) == "lorebook"
+        # 無集 -> lorebook
+        assert calc.calculate_current_phase(project, [], lorebook_completed=True) == "lorebook"
 
     def test_calculate_current_phase_scripting(self, tmp_path):
         calc = StatusCalculator(_FakePM(tmp_path, {}, {}))
         project = {"overview": {"synopsis": "test"}}
-        # 有至少一集 generated，但未全部 → scripting
+        # 有至少一集 generated，但未全部 -> scripting
         episodes_stats = [
             {"script_status": "generated", "status": "draft"},
             {"script_status": "none"},
         ]
         assert calc.calculate_current_phase(project, episodes_stats) == "scripting"
 
-    def test_calculate_current_phase_production_and_completed(self, tmp_path):
+    def test_calculate_current_phase_storyboard_video_and_completed(self, tmp_path):
         calc = StatusCalculator(_FakePM(tmp_path, {}, {}))
         project = {"overview": {"synopsis": "test"}}
-        # 全部 generated，有未完成视频 → production
-        episodes_stats = [
-            {"script_status": "generated", "status": "in_production"},
-            {"script_status": "generated", "status": "draft"},
+
+        # 全部劇本已生成，分鏡未全完成 -> storyboard
+        episodes_stats_storyboard = [
+            {
+                "script_status": "generated",
+                "status": "in_production",
+                "storyboards": {"total": 2, "completed": 1},
+                "videos": {"total": 2, "completed": 0},
+            },
+            {
+                "script_status": "generated",
+                "status": "draft",
+                "storyboards": {"total": 2, "completed": 0},
+                "videos": {"total": 2, "completed": 0},
+            },
         ]
-        assert calc.calculate_current_phase(project, episodes_stats) == "production"
-        # 全部 completed → completed
+        assert calc.calculate_current_phase(project, episodes_stats_storyboard) == "storyboard"
+
+        # 分鏡全完成，影片未全完成 -> video
+        episodes_stats_video = [
+            {
+                "script_status": "generated",
+                "status": "in_production",
+                "storyboards": {"total": 2, "completed": 2},
+                "videos": {"total": 2, "completed": 1},
+            },
+            {
+                "script_status": "generated",
+                "status": "in_production",
+                "storyboards": {"total": 2, "completed": 2},
+                "videos": {"total": 2, "completed": 0},
+            },
+        ]
+        assert calc.calculate_current_phase(project, episodes_stats_video) == "video"
+
+        # 全部完成 -> completed
         episodes_stats_done = [
-            {"script_status": "generated", "status": "completed"},
+            {
+                "script_status": "generated",
+                "status": "completed",
+                "storyboards": {"total": 2, "completed": 2},
+                "videos": {"total": 2, "completed": 2},
+            },
         ]
         assert calc.calculate_current_phase(project, episodes_stats_done) == "completed"
 
-    def test_calculate_project_status(self, tmp_path):
+    def test_calculate_project_status_lorebook_phase(self, tmp_path):
         project_root = tmp_path / "projects"
         project_path = project_root / "demo"
         (project_path / "characters").mkdir(parents=True)
         (project_path / "clues").mkdir(parents=True)
+        (project_path / "scenes").mkdir(parents=True)
         (project_path / "characters" / "A.png").write_bytes(b"ok")
         (project_path / "clues" / "C.png").write_bytes(b"ok")
 
@@ -173,6 +213,45 @@ class TestStatusCalculator:
             "clues": {
                 "C": {"importance": "major", "clue_sheet": "clues/C.png"},
                 "D": {"importance": "minor", "clue_sheet": ""},
+            },
+            "scenes": {
+                "S1": {"scene_sheet": ""},
+            },
+            "episodes": [
+                {"episode": 1, "script_file": "scripts/episode_1.json"},
+            ],
+        }
+        scripts = {}
+        calc = StatusCalculator(_FakePM(project_root, project, scripts))
+        status = calc.calculate_project_status("demo", project)
+
+        assert status["current_phase"] == "lorebook"
+        # done assets = 1 (char) + 1 (clue) + 0 (scene) = 2
+        # total assets = 2 (chars) + 2 (clues) + 1 (scene) = 5
+        # progress = 2 / 5 = 0.4
+        assert status["phase_progress"] == 0.4
+        assert status["characters"] == {"total": 2, "completed": 1}
+        assert status["clues"] == {"total": 2, "completed": 1}
+        assert status["scenes"] == {"total": 1, "completed": 0}
+
+    def test_calculate_project_status_completed(self, tmp_path):
+        project_root = tmp_path / "projects"
+        project_path = project_root / "demo"
+        (project_path / "characters").mkdir(parents=True)
+        (project_path / "clues").mkdir(parents=True)
+        (project_path / "scenes").mkdir(parents=True)
+        (project_path / "characters" / "A.png").write_bytes(b"ok")
+        (project_path / "clues" / "C.png").write_bytes(b"ok")
+        (project_path / "scenes" / "S1.png").write_bytes(b"ok")
+
+        project = {
+            "overview": {"synopsis": "test"},
+            "characters": {"A": {"character_sheet": "characters/A.png"}},
+            "clues": {
+                "C": {"importance": "major", "clue_sheet": "clues/C.png"},
+            },
+            "scenes": {
+                "S1": {"scene_sheet": "scenes/S1.png"},
             },
             "episodes": [
                 {"episode": 1, "script_file": "scripts/episode_1.json"},
@@ -191,8 +270,9 @@ class TestStatusCalculator:
 
         assert status["current_phase"] == "completed"
         assert status["phase_progress"] == 1.0
-        assert status["characters"] == {"total": 2, "completed": 1}
-        assert status["clues"] == {"total": 2, "completed": 1}
+        assert status["characters"] == {"total": 1, "completed": 1}
+        assert status["clues"] == {"total": 1, "completed": 1}
+        assert status["scenes"] == {"total": 1, "completed": 1}
         assert status["episodes_summary"] == {"total": 1, "scripted": 1, "in_production": 0, "completed": 1}
 
     def test_enrich_project(self, tmp_path):
@@ -263,8 +343,31 @@ class TestStatusCalculator:
         assert enriched_script["characters_in_episode"] == ["A", "B"]
         assert enriched_script["clues_in_episode"] == ["C"]
 
+    def test_enrich_script_infers_drama_content_mode_from_scenes(self, tmp_path):
+        script = {
+            "episode": 1,
+            "title": "第一集",
+            "scenes": [
+                {
+                    "scene_id": "scene_1",
+                    "duration_seconds": 8,
+                    "characters_in_scene": ["A"],
+                    "clues_in_scene": ["C"],
+                    "generated_assets": {"storyboard_image": "storyboards/scene_scene_1.png"},
+                }
+            ],
+        }
+        calc = StatusCalculator(_FakePM(tmp_path, {}, {}))
+
+        enriched_script = calc.enrich_script(script)
+
+        assert enriched_script["content_mode"] == "drama"
+        assert enriched_script["metadata"]["total_scenes"] == 1
+        assert enriched_script["characters_in_episode"] == ["A"]
+        assert enriched_script["clues_in_episode"] == ["C"]
+
     def test_load_episode_script_corrupted_json(self, tmp_path):
-        """JSON 损坏时应降级返回 ('generated', None)，而不是上抛异常。"""
+        """JSON 損壞時應降級返回 ('generated', None)，而不是上拋異常。"""
         import json
 
         class _CorruptPM(_FakePM):

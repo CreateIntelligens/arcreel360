@@ -20,7 +20,7 @@
 - Modify: `server/agent_runtime/session_manager.py:59-73` (ManagedSession dataclass)
 - Modify: `tests/fakes.py:10-42` (FakeSDKClient)
 
-- [ ] **Step 1: 在 ManagedSession 中新增 3 个字段**
+- [ ] **Step 1: 在 ManagedSession 中新增 3 個字段**
 
 ```python
 # server/agent_runtime/session_manager.py — ManagedSession dataclass, 在 interrupt_requested 之后添加
@@ -48,7 +48,7 @@
         self.disconnected = False
 ```
 
-- [ ] **Step 3: 运行现有测试确认无回归**
+- [ ] **Step 3: 运行現有测试确认无回归**
 
 Run: `uv run python -m pytest tests/test_session_manager_more.py tests/test_session_manager_sdk_session_id.py tests/test_session_manager_user_input.py -v`
 Expected: 全部 PASS
@@ -168,7 +168,7 @@ class TestDisconnectSession:
         await mgr._disconnect_session("nonexistent")  # should not raise
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_session_lifecycle.py::TestDisconnectSession -v`
 Expected: FAIL — `_disconnect_session` 不存在
@@ -179,7 +179,7 @@ Expected: FAIL — `_disconnect_session` 不存在
 
 ```python
     async def _disconnect_session(self, session_id: str) -> None:
-        """安全断开并移除一个会话，处理 consumer_task 和 connect_lock。"""
+        """安全断开并移除一個会话，处理 consumer_task 和 connect_lock。"""
         managed = self.sessions.get(session_id)
         if managed is None:
             return
@@ -247,7 +247,7 @@ class TestConfigReading:
         assert result == 5
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_session_lifecycle.py::TestConfigReading -v`
 Expected: FAIL
@@ -268,7 +268,7 @@ Expected: FAIL
                 val = await svc.get_setting("agent_session_idle_ttl_minutes", "10")
             return max(int(val), 1) * 60
         except Exception:
-            logger.warning("读取 idle TTL 配置失败，使用默认值", exc_info=True)
+            logger.warning("读取 idle TTL 配置失敗，使用默认值", exc_info=True)
             return 600
 
     async def _get_max_concurrent(self) -> int:
@@ -282,7 +282,7 @@ Expected: FAIL
                 val = await svc.get_setting("agent_max_concurrent_sessions", "5")
             return max(int(val), 1)
         except Exception:
-            logger.warning("读取 max_concurrent 配置失败，使用默认值", exc_info=True)
+            logger.warning("读取 max_concurrent 配置失敗，使用默认值", exc_info=True)
             return 5
 ```
 
@@ -379,7 +379,7 @@ class TestIdleCleanup:
         assert managed.idle_since is not None
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_session_lifecycle.py::TestIdleCleanup -v`
 Expected: FAIL
@@ -506,11 +506,11 @@ class TestEnsureCapacity:
             mgr.sessions[f"s{i}"] = _make_managed(f"s{i}", status="running")
 
         with patch.object(mgr, "_get_max_concurrent", return_value=3):
-            with pytest.raises(SessionCapacityError, match="3个"):
+            with pytest.raises(SessionCapacityError, match="3個"):
                 await mgr._ensure_capacity()
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_session_lifecycle.py::TestEnsureCapacity -v`
 Expected: FAIL
@@ -546,7 +546,7 @@ Expected: FAIL
 
         # 所有会话都在 running → 拒绝
         raise SessionCapacityError(
-            f"当前有{len(active)}个正在进行的会话，已达到最大上限，请稍后重试"
+            f"当前有{len(active)}個正在进行的会话，已达到最大上限，请稍后重试"
         )
 ```
 
@@ -629,7 +629,7 @@ class TestPatrolLoop:
                 mock_disc.assert_not_called()
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_session_lifecycle.py::TestPatrolLoop -v`
 Expected: FAIL
@@ -775,7 +775,7 @@ from server.agent_runtime.session_manager import SessionCapacityError
         raise HTTPException(status_code=503, detail=str(exc))
 ```
 
-- [ ] **Step 3: 运行现有路由测试（如果有）确认无回归**
+- [ ] **Step 3: 运行現有路由测试（如果有）确认无回归**
 
 Run: `uv run python -m pytest tests/ -k "agent_chat or assistant" -v --no-header 2>&1 | head -30`
 
@@ -799,7 +799,7 @@ git commit -m "feat: 路由层捕获 SessionCapacityError 返回 503"
 
 - [ ] **Step 1: 扩展 Pydantic 模型**
 
-在 `SystemConfigPatchRequest` 中添加两个字段（`claude_code_subagent_model` 之后）：
+在 `SystemConfigPatchRequest` 中添加两個字段（`claude_code_subagent_model` 之后）：
 
 ```python
     agent_session_idle_ttl_minutes: Optional[int] = None
@@ -839,7 +839,7 @@ git commit -m "feat: 路由层捕获 SessionCapacityError 返回 503"
 - [ ] **Step 4: 运行全部测试确认无回归**
 
 Run: `uv run python -m pytest tests/ -v --no-header 2>&1 | tail -10`
-Expected: 无新失败
+Expected: 无新失敗
 
 - [ ] **Step 5: Commit**
 

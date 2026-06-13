@@ -5,6 +5,9 @@ export interface ModelInfoResponse {
   default: boolean;
   supported_durations: number[];
   duration_resolution_constraints: Record<string, number[]>;
+  supported_resolutions: string[];
+  reference_image_force_duration: number | null;
+  supported_image_sizes: string[];
 }
 
 export interface ProviderInfo {
@@ -50,6 +53,7 @@ export interface ProviderCredential {
   provider: string;
   name: string;
   api_key_masked: string | null;
+  username: string | null;
   credentials_filename: string | null;
   base_url: string | null;
   is_active: boolean;

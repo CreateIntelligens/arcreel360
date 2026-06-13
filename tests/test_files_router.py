@@ -1,11 +1,13 @@
 import json
 from io import BytesIO
+from urllib.parse import quote
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from PIL import Image
 
 from lib.project_manager import ProjectManager
+from lib.version_manager import VersionManager
 from server.auth import CurrentUserInfo, get_current_user
 from server.routers import files
 
@@ -45,7 +47,7 @@ def _client(monkeypatch, tmp_path):
     pm.create_project("demo")
     pm.create_project_metadata("demo", "Demo", "Anime", "narration")
     pm.add_character("demo", "Alice", "desc")
-    pm.add_clue("demo", "玉佩", "prop", "desc", "major")
+    pm.add_clue("demo", "玉佩", "desc", "major")
 
     monkeypatch.setattr(files, "get_project_manager", lambda: pm)
     monkeypatch.setattr("lib.text_generator.create_text_backend_for_task", _fake_create_backend)
@@ -54,6 +56,50 @@ def _client(monkeypatch, tmp_path):
     app.dependency_overrides[get_current_user] = lambda: CurrentUserInfo(id="default", sub="testuser", role="admin")
     app.include_router(files.router, prefix="/api/v1")
     return TestClient(app), pm
+
+
+def _add_storyboard_script(pm: ProjectManager) -> None:
+    project = pm.load_project("demo")
+    project["episodes"] = [
+        {
+            "episode": 1,
+            "title": "Episode 1",
+            "script_file": "scripts/episode_1.json",
+            "status": "ready",
+        }
+    ]
+    pm.save_project("demo", project)
+
+    pm.save_script(
+        "demo",
+        {
+            "episode": 1,
+            "title": "Episode 1",
+            "content_mode": "narration",
+            "segments": [
+                {
+                    "segment_id": "E1S01",
+                    "novel_text": "段落文字",
+                    "image_prompt": "提示詞",
+                    "video_prompt": "影片提示詞",
+                    "duration_seconds": 3,
+                    "generated_assets": {},
+                }
+            ],
+        },
+        "episode_1.json",
+    )
+
+
+def _upload_reference(client: TestClient, upload_type: str, name: str):
+    return client.post(
+        f"/api/v1/projects/demo/upload/{upload_type}?name={name}",
+        files={"file": ("c.jpg", _img_bytes("JPEG"), "image/jpeg")},
+    )
+
+
+def _delete_reference(client: TestClient, resource_type: str, name: str):
+    return client.delete(f"/api/v1/projects/demo/reference-image/{resource_type}/{name}")
 
 
 class TestFilesRouter:
@@ -93,6 +139,45 @@ class TestFilesRouter:
 
             missing = client.get("/api/v1/projects/demo/source/missing.txt")
             assert missing.status_code == 404
+
+    def test_docx_source_endpoint(self, tmp_path, monkeypatch):
+        from tests.test_docx_utils import create_fake_docx_bytes
+
+        client, _ = _client(monkeypatch, tmp_path)
+
+        docx_content = create_fake_docx_bytes(["Docx line 1", "Docx line 2"])
+
+        with client:
+            # 1. 上傳 docx 檔案
+            upload = client.post(
+                "/api/v1/projects/demo/upload/source",
+                files={
+                    "file": (
+                        "novel.docx",
+                        docx_content,
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                },
+            )
+            assert upload.status_code == 200
+
+            # 2. 獲取內容 (應成功解析並回傳純文字)
+            get_source = client.get("/api/v1/projects/demo/source/novel.docx")
+            assert get_source.status_code == 200
+            assert get_source.text == "Docx line 1\nDocx line 2"
+
+    def test_cp950_source_endpoint(self, tmp_path, monkeypatch):
+        client, pm = _client(monkeypatch, tmp_path)
+        source_dir = pm.get_project_path("demo") / "source"
+        source_dir.mkdir(parents=True, exist_ok=True)
+        filename = "時間是 1980 年代的台灣夏天.txt"
+        content = "時間是 1980 年代的台灣夏天。\r\n街角的柑仔店裡。"
+        (source_dir / filename).write_bytes(content.encode("cp950"))
+
+        with client:
+            get_source = client.get(f"/api/v1/projects/demo/source/{quote(filename)}")
+            assert get_source.status_code == 200
+            assert get_source.text == content
 
     def test_upload_assets_and_drafts(self, tmp_path, monkeypatch):
         client, pm = _client(monkeypatch, tmp_path)
@@ -138,7 +223,7 @@ class TestFilesRouter:
             )
             assert bad_type.status_code == 400
 
-            # 无效图片格式仍应被拒绝（即使小于 2MB）
+            # 無效圖片格式仍應被拒絕（即使小於 2MB）
             bad_image = client.post(
                 "/api/v1/projects/demo/upload/character?name=Alice",
                 files={"file": ("bad.png", b"not-image", "image/png")},
@@ -168,11 +253,13 @@ class TestFilesRouter:
             assert delete_draft.status_code == 200
 
             missing_draft = client.get("/api/v1/projects/demo/drafts/1/step1")
-            assert missing_draft.status_code == 404
+            assert missing_draft.status_code == 200
+            assert missing_draft.text == ""
 
             # confirm metadata updated for character/clue
             project = pm.load_project("demo")
-            assert project["characters"]["Alice"]["character_sheet"] == "characters/Alice.jpg"
+            # 上傳 character_ref 後寫入 v0，sheet 改指向 v0 基底（取代先前的 characters/Alice.jpg）
+            assert project["characters"]["Alice"]["character_sheet"].startswith("versions/characters/")
             assert project["characters"]["Alice"]["reference_image"] == "characters/refs/Alice.webp"
             assert project["clues"]["玉佩"]["clue_sheet"] == "clues/玉佩.jpg"
 
@@ -193,6 +280,31 @@ class TestFilesRouter:
             )
             assert patch_style.status_code == 200
             assert patch_style.json()["style_description"] == "manual style"
+
+            # 測試更新專案風格標籤
+            patch_style_tag = client.patch(
+                "/api/v1/projects/demo/style",
+                json={"style": "Anime"},
+            )
+            assert patch_style_tag.status_code == 200
+            assert patch_style_tag.json()["style"] == "Anime"
+
+            project_updated = pm.load_project("demo")
+            assert project_updated["style"] == "Anime"
+
+            # 測試不支援的專案風格白名單
+            bad_style_tag = client.patch(
+                "/api/v1/projects/demo/style",
+                json={"style": "Graffiti"},
+            )
+            assert bad_style_tag.status_code == 400
+
+            # 測試不存在的專案
+            missing_project_style = client.patch(
+                "/api/v1/projects/missing-project/style",
+                json={"style": "Anime"},
+            )
+            assert missing_project_style.status_code == 404
 
             delete_style = client.delete("/api/v1/projects/demo/style-image")
             assert delete_style.status_code == 200
@@ -241,11 +353,11 @@ class TestFilesRouter:
             assert ref_no_name.json()["path"] == "characters/refs/no_name.jpg"
 
             clue_missing_entity = client.post(
-                "/api/v1/projects/demo/upload/clue?name=不存在线索",
+                "/api/v1/projects/demo/upload/clue?name=不存線上索",
                 files={"file": ("x.jpg", _img_bytes("JPEG"), "image/jpeg")},
             )
             assert clue_missing_entity.status_code == 200
-            assert clue_missing_entity.json()["path"] == "clues/不存在线索.jpg"
+            assert clue_missing_entity.json()["path"] == "clues/不存線上索.jpg"
 
             character_missing_entity = client.post(
                 "/api/v1/projects/demo/upload/character?name=不存在角色",
@@ -304,7 +416,7 @@ class TestFilesRouter:
             assert unknown_draft.status_code == 404
 
     def test_cache_control_immutable_with_version_param(self, tmp_path, monkeypatch):
-        """带 ?v= 参数时应返回 immutable 缓存头"""
+        """帶 ?v= 引數時應返回 immutable 快取頭"""
         client, pm = _client(monkeypatch, tmp_path)
         project_path = pm.get_project_path("demo")
         (project_path / "storyboards").mkdir(exist_ok=True)
@@ -317,7 +429,7 @@ class TestFilesRouter:
             assert "max-age=31536000" in resp.headers.get("cache-control", "")
 
     def test_cache_control_immutable_for_version_files(self, tmp_path, monkeypatch):
-        """versions/ 路径下的文件应返回 immutable 缓存头"""
+        """versions/ 路徑下的檔案應返回 immutable 快取頭"""
         client, pm = _client(monkeypatch, tmp_path)
         project_path = pm.get_project_path("demo")
         (project_path / "versions" / "storyboards").mkdir(parents=True)
@@ -329,7 +441,7 @@ class TestFilesRouter:
             assert "immutable" in resp.headers.get("cache-control", "")
 
     def test_no_cache_control_without_version(self, tmp_path, monkeypatch):
-        """无 ?v= 参数且非 versions 路径时不应有 immutable 头"""
+        """無 ?v= 引數且非 versions 路徑時不應有 immutable 頭"""
         client, pm = _client(monkeypatch, tmp_path)
         project_path = pm.get_project_path("demo")
         (project_path / "storyboards").mkdir(exist_ok=True)
@@ -346,7 +458,7 @@ class TestFilesRouter:
         assert files._get_step_files("narration") == {1: "step1_segments.md"}
         assert files._get_step_files("drama") == {1: "step1_normalized_script.md"}
         assert files._get_step_title("step1_segments.md") == "片段拆分"
-        assert files._get_step_title("step1_normalized_script.md") == "规范化剧本"
+        assert files._get_step_title("step1_normalized_script.md") == "規範化劇本"
         assert files._get_step_title("unknown.md") == "unknown.md"
 
         assert files._get_content_mode(tmp_path) == "drama"
@@ -355,13 +467,13 @@ class TestFilesRouter:
         assert files._get_content_mode(tmp_path) == "narration"
 
     def test_draft_event_emission(self, tmp_path, monkeypatch):
-        """PUT drafts 端点应发射 draft:created/updated 事件"""
+        """PUT drafts 端點應發射 draft:created/updated 事件"""
         from unittest.mock import patch
 
         client, _ = _client(monkeypatch, tmp_path)
 
         with client, patch("server.routers.files.emit_project_change_batch") as mock_emit:
-            # 首次创建 → action="created", important=True
+            # 首次建立 → action="created", important=True
             resp = client.put(
                 "/api/v1/projects/demo/drafts/1/step1",
                 content="new draft",
@@ -390,3 +502,143 @@ class TestFilesRouter:
             change2 = mock_emit.call_args[0][1][0]
             assert change2["action"] == "updated"
             assert change2["important"] is False
+
+
+class TestUploadReferenceWritesBaseVersion:
+    """上傳參考圖即寫入 v0 可替換基底，並讓 sheet 指向 v0（取代舊 use_uploaded_as_final）。"""
+
+    def test_scene_ref_writes_v0_and_sheet(self, tmp_path, monkeypatch):
+        client, pm = _client(monkeypatch, tmp_path)
+        pm.add_project_scene("demo", "古城", "城牆")
+
+        with client:
+            up = client.post(
+                "/api/v1/projects/demo/upload/scene_ref?name=古城",
+                files={"file": ("c.jpg", _img_bytes("JPEG"), "image/jpeg")},
+            )
+            assert up.status_code == 200
+
+        scene = pm.get_project_scene("demo", "古城")
+        assert scene["scene_ref"].startswith("scenes/refs/")
+        # 上傳即寫 v0，sheet 指向 v0 檔
+        assert scene["scene_sheet"].startswith("versions/scenes/")
+        assert (pm.get_project_path("demo") / scene["scene_sheet"]).exists()
+
+        vm = VersionManager(pm.get_project_path("demo"))
+        info = vm.get_versions("scenes", "古城")
+        assert info["current_version"] == 0
+        assert [v for v in info["versions"] if v["version"] == 0]
+
+    def test_scene_ref_reupload_overwrites_v0(self, tmp_path, monkeypatch):
+        client, pm = _client(monkeypatch, tmp_path)
+        pm.add_project_scene("demo", "古城", "城牆")
+
+        with client:
+            for _ in range(2):
+                up = client.post(
+                    "/api/v1/projects/demo/upload/scene_ref?name=古城",
+                    files={"file": ("c.jpg", _img_bytes("JPEG"), "image/jpeg")},
+                )
+                assert up.status_code == 200
+
+        vm = VersionManager(pm.get_project_path("demo"))
+        info = vm.get_versions("scenes", "古城")
+        # 覆蓋，不累積
+        assert len([v for v in info["versions"] if v["version"] == 0]) == 1
+
+    def test_clue_ref_writes_v0_and_sheet(self, tmp_path, monkeypatch):
+        client, pm = _client(monkeypatch, tmp_path)
+
+        with client:
+            up = client.post(
+                "/api/v1/projects/demo/upload/clue_ref?name=玉佩",
+                files={"file": ("c.jpg", _img_bytes("JPEG"), "image/jpeg")},
+            )
+            assert up.status_code == 200
+
+        clue = pm.get_clue("demo", "玉佩")
+        assert clue["reference_image"].startswith("clues/refs/")
+        assert clue["clue_sheet"].startswith("versions/clues/")
+
+    def test_character_ref_writes_v0_and_sheet(self, tmp_path, monkeypatch):
+        client, pm = _client(monkeypatch, tmp_path)
+
+        with client:
+            up = client.post(
+                "/api/v1/projects/demo/upload/character_ref?name=Alice",
+                files={"file": ("c.jpg", _img_bytes("JPEG"), "image/jpeg")},
+            )
+            assert up.status_code == 200
+
+        char = pm.get_project_character("demo", "Alice")
+        assert char["reference_image"].startswith("characters/refs/")
+        assert char["character_sheet"].startswith("versions/characters/")
+
+    def test_storyboard_ref_writes_v0_and_sheet(self, tmp_path, monkeypatch):
+        client, pm = _client(monkeypatch, tmp_path)
+        _add_storyboard_script(pm)
+
+        with client:
+            up = _upload_reference(client, "storyboard_ref", "E1S01")
+            assert up.status_code == 200
+
+        updated_script = pm.load_script("demo", "episode_1.json")
+        segment = updated_script["segments"][0]
+        assert segment["reference_image"].startswith("storyboards/refs/")
+        assert segment["storyboard_sheet"].startswith("versions/storyboards/")
+
+        vm = VersionManager(pm.get_project_path("demo"))
+        info = vm.get_versions("storyboards", "E1S01")
+        assert info["current_version"] == 0
+        assert len([v for v in info["versions"] if v["version"] == 0]) == 1
+
+    def test_delete_reference_image(self, tmp_path, monkeypatch):
+        client, pm = _client(monkeypatch, tmp_path)
+        pm.add_project_scene("demo", "古城", "城牆")
+
+        with client:
+            up = _upload_reference(client, "scene_ref", "古城")
+            assert up.status_code == 200
+
+            rm = _delete_reference(client, "scenes", "古城")
+            assert rm.status_code == 200
+
+        scene = pm.get_project_scene("demo", "古城")
+        assert scene["scene_ref"] == ""
+        assert scene["scene_sheet"] == ""
+
+        with client:
+            up = _upload_reference(client, "character_ref", "Alice")
+            assert up.status_code == 200
+
+            rm = _delete_reference(client, "characters", "Alice")
+            assert rm.status_code == 200
+
+        char = pm.get_project_character("demo", "Alice")
+        assert char["reference_image"] == ""
+        assert char["character_sheet"] == ""
+
+        with client:
+            up = _upload_reference(client, "clue_ref", "玉佩")
+            assert up.status_code == 200
+
+            rm = _delete_reference(client, "clues", "玉佩")
+            assert rm.status_code == 200
+
+        clue = pm.get_clue("demo", "玉佩")
+        assert clue["reference_image"] == ""
+        assert clue["clue_sheet"] == ""
+
+        _add_storyboard_script(pm)
+
+        with client:
+            up = _upload_reference(client, "storyboard_ref", "E1S01")
+            assert up.status_code == 200
+
+            rm = _delete_reference(client, "storyboards", "E1S01")
+            assert rm.status_code == 200
+
+        updated_script = pm.load_script("demo", "episode_1.json")
+        segment = updated_script["segments"][0]
+        assert segment.get("reference_image") is None or segment["reference_image"] == ""
+        assert segment.get("storyboard_sheet") is None or segment["storyboard_sheet"] == ""

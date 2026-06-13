@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为每个供应商支持配置多个 API Key / Vertex 凭证，手动切换活跃 Key，连接测试可针对任意 Key 进行。
+**Goal:** 为每個供应商支持配置多個 API Key / Vertex 凭证，手动切换活跃 Key，连接测试可针对任意 Key 进行。
 
-**Architecture:** 新建 `provider_credential` 表存储凭证（名称、密钥、base_url、活跃状态），与现有 `provider_config` 表（RPM/workers 共享配置）分离。`ConfigResolver.provider_config()` 在返回时合并活跃凭证信息，使下游消费方无感知。前端 `ProviderDetail` 拆分为凭证管理区 + 共享配置区。
+**Architecture:** 新建 `provider_credential` 表存储凭证（名称、密钥、base_url、活跃状态），与現有 `provider_config` 表（RPM/workers 共享配置）分离。`ConfigResolver.provider_config()` 在返回时合并活跃凭证信息，使下游消费方无感知。前端 `ProviderDetail` 拆分为凭证管理区 + 共享配置区。
 
 **Tech Stack:** Python 3.12, SQLAlchemy async ORM, Alembic, FastAPI, React 19, TypeScript, Tailwind CSS 4
 
@@ -30,7 +30,7 @@
 - `lib/config/service.py` — 状态判定逻辑改用凭证表
 - `lib/config/resolver.py` — provider_config() 合并活跃凭证
 - `server/routers/providers.py` — 新增凭证 CRUD 端点，改造连接测试和 Vertex 上传
-- `server/dependencies.py` — 可选：新增凭证相关依赖
+- `server/dependencies.py` — 可選：新增凭证相关依赖
 - `lib/image_backends/gemini.py` — base_url 防御性归一化
 - `lib/video_backends/gemini.py` — base_url 防御性归一化
 - `lib/gemini_client.py` — base_url 防御性归一化
@@ -84,7 +84,7 @@ class TestNormalizeBaseUrl:
         assert normalize_base_url("https://example.com") == "https://example.com/"
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [ ] **Step 2: 运行测试验证失敗**
 
 运行: `uv run python -m pytest tests/test_normalize_base_url.py -v`
 预期: FAIL — `ModuleNotFoundError: No module named 'lib.config.url_utils'`
@@ -103,7 +103,7 @@ def normalize_base_url(url: str | None) -> str | None:
     """确保 base_url 以 / 结尾。
 
     Google genai SDK 的 http_options.base_url 要求尾部带 /，
-    否则请求路径拼接会失败。
+    否则请求路径拼接会失敗。
     """
     if not url:
         return None
@@ -171,7 +171,7 @@ def normalize_base_url(url: str | None) -> str | None:
 
 ```bash
 git add lib/config/url_utils.py tests/test_normalize_base_url.py lib/image_backends/gemini.py lib/video_backends/gemini.py lib/gemini_client.py server/routers/providers.py
-git commit -m "fix: base_url 尾部斜杠归一化，修复代理 URL 不带 / 导致请求失败"
+git commit -m "fix: base_url 尾部斜杠归一化，修复代理 URL 不带 / 导致请求失敗"
 ```
 
 ---
@@ -198,7 +198,7 @@ from lib.db.base import Base, TimestampMixin
 
 
 class ProviderCredential(TimestampMixin, Base):
-    """供应商凭证。每个供应商可有多条凭证，其中最多一条 is_active=True。"""
+    """供应商凭证。每個供应商可有多条凭证，其中最多一条 is_active=True。"""
 
     __tablename__ = "provider_credential"
     __table_args__ = (
@@ -218,7 +218,7 @@ class ProviderCredential(TimestampMixin, Base):
 
 修改 `lib/db/models/__init__.py`，添加导入和导出：
 
-在现有导入后添加：
+在現有导入后添加：
 ```python
 from lib.db.models.credential import ProviderCredential
 ```
@@ -258,7 +258,7 @@ git commit -m "feat: 新增 ProviderCredential ORM 模型"
     # 数据迁移：将 provider_config 中的凭证行迁入 provider_credential
     conn = op.get_bind()
 
-    # 读出所有现有的凭证相关配置
+    # 读出所有現有的凭证相关配置
     rows = conn.execute(
         sa.text(
             "SELECT provider, key, value FROM provider_config "
@@ -272,7 +272,7 @@ git commit -m "feat: 新增 ProviderCredential ORM 模型"
     for provider, key, value in rows:
         provider_data[provider][key] = value
 
-    # 为每个 provider 创建凭证记录
+    # 为每個 provider 创建凭证记录
     now = sa.func.now()
     cred_table = sa.table(
         "provider_credential",
@@ -412,21 +412,21 @@ class TestCredentialRepository:
 
     async def test_first_credential_is_active(self, session: AsyncSession):
         repo = CredentialRepository(session)
-        cred = await repo.create(provider="gemini-aistudio", name="第一个", api_key="AIza-1")
+        cred = await repo.create(provider="gemini-aistudio", name="第一個", api_key="AIza-1")
         await session.flush()
         assert cred.is_active is True
 
     async def test_second_credential_is_not_active(self, session: AsyncSession):
         repo = CredentialRepository(session)
-        await repo.create(provider="gemini-aistudio", name="第一个", api_key="AIza-1")
-        cred2 = await repo.create(provider="gemini-aistudio", name="第二个", api_key="AIza-2")
+        await repo.create(provider="gemini-aistudio", name="第一個", api_key="AIza-1")
+        cred2 = await repo.create(provider="gemini-aistudio", name="第二個", api_key="AIza-2")
         await session.flush()
         assert cred2.is_active is False
 
     async def test_activate(self, session: AsyncSession):
         repo = CredentialRepository(session)
-        c1 = await repo.create(provider="gemini-aistudio", name="第一个", api_key="AIza-1")
-        c2 = await repo.create(provider="gemini-aistudio", name="第二个", api_key="AIza-2")
+        c1 = await repo.create(provider="gemini-aistudio", name="第一個", api_key="AIza-1")
+        c2 = await repo.create(provider="gemini-aistudio", name="第二個", api_key="AIza-2")
         await session.flush()
 
         await repo.activate(c2.id, "gemini-aistudio")
@@ -515,7 +515,7 @@ class TestCredentialRepository:
         assert c.base_url == "https://proxy.example.com/v1/"
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [ ] **Step 2: 运行测试验证失敗**
 
 运行: `uv run python -m pytest tests/test_credential_repository.py -v`
 预期: FAIL — `ModuleNotFoundError: No module named 'lib.db.repositories.credential_repository'`
@@ -643,7 +643,7 @@ class CredentialRepository:
         await self.session.flush()
 
         if was_active:
-            # 选 created_at 最早的一条设为活跃
+            # 選 created_at 最早的一条设为活跃
             stmt = (
                 select(ProviderCredential)
                 .where(ProviderCredential.provider == provider)
@@ -941,7 +941,7 @@ class TestDeleteCredential:
         assert resp.status_code == 204
 ```
 
-- [ ] **Step 2: 运行测试验证失败**
+- [ ] **Step 2: 运行测试验证失敗**
 
 运行: `uv run python -m pytest tests/test_credential_api.py -v`
 预期: FAIL — 端点不存在
@@ -1140,7 +1140,7 @@ git commit -m "feat: 供应商凭证 CRUD API 端点"
 
 - [ ] **Step 1: 改造连接测试端点**
 
-修改 `server/routers/providers.py` 中的 `test_provider_connection` 端点，添加 `credential_id` 可选参数：
+修改 `server/routers/providers.py` 中的 `test_provider_connection` 端点，添加 `credential_id` 可選参数：
 
 ```python
 @router.post("/{provider_id}/test", response_model=ConnectionTestResponse)
@@ -1202,11 +1202,11 @@ async def test_provider_connection(
         err_msg = str(exc)
         if len(err_msg) > 200:
             err_msg = err_msg[:200] + "..."
-        logger.warning("连接测试失败 [%s]: %s", provider_id, err_msg)
+        logger.warning("连接测试失敗 [%s]: %s", provider_id, err_msg)
         return ConnectionTestResponse(
             success=False,
             available_models=[],
-            message=f"连接失败: {err_msg}",
+            message=f"连接失敗: {err_msg}",
         )
 
     return result
@@ -1228,7 +1228,7 @@ async def upload_vertex_credential(
     try:
         contents = await file.read(MAX_VERTEX_CREDENTIALS_BYTES + 1)
     except Exception:
-        raise HTTPException(status_code=400, detail="读取上传文件失败")
+        raise HTTPException(status_code=400, detail="读取上传文件失敗")
 
     if len(contents) > MAX_VERTEX_CREDENTIALS_BYTES:
         raise HTTPException(status_code=413, detail="凭证文件过大")
@@ -1425,12 +1425,12 @@ export interface ProviderCredential {
       }),
     );
 
-    await throwIfNotOk(response, "上传凭证失败");
+    await throwIfNotOk(response, "上传凭证失敗");
     return response.json();
   }
 ```
 
-注意：`testProviderConnection` 的签名变更（添加了可选的 `credentialId` 参数），需要同时更新原有方法。移除旧的 `uploadVertexCredentialsForProvider` 方法。
+注意：`testProviderConnection` 的签名变更（添加了可選的 `credentialId` 参数），需要同时更新原有方法。移除旧的 `uploadVertexCredentialsForProvider` 方法。
 
 - [ ] **Step 3: 添加 ProviderCredential 到 imports**
 
@@ -1658,7 +1658,7 @@ function CredentialRow({ cred, providerId, isVertex, onChanged }: RowProps) {
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500">API Key（留空保留现有值）</label>
+            <label className="text-xs text-gray-500">API Key（留空保留現有值）</label>
             <input
               type="password"
               value={draft.api_key}
@@ -1669,7 +1669,7 @@ function CredentialRow({ cred, providerId, isVertex, onChanged }: RowProps) {
           </div>
           {providerId === "gemini-aistudio" && (
             <div>
-              <label className="text-xs text-gray-500">Base URL（可选）</label>
+              <label className="text-xs text-gray-500">Base URL（可選）</label>
               <input
                 type="url"
                 value={draft.base_url}
@@ -1748,7 +1748,7 @@ function AddCredentialForm({ providerId, isVertex, onCreated, onCancel }: AddFor
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="例如：个人账号"
+          placeholder="例如：個人账号"
           className="mt-0.5 w-full rounded border border-gray-700 bg-gray-900 px-2 py-1 text-sm text-gray-100 placeholder-gray-600"
         />
       </div>
@@ -1761,7 +1761,7 @@ function AddCredentialForm({ providerId, isVertex, onCreated, onCancel }: AddFor
               onClick={() => fileRef.current?.click()}
               className="inline-flex items-center gap-1 rounded border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800"
             >
-              <Upload className="h-3 w-3" /> 选择 JSON 文件
+              <Upload className="h-3 w-3" /> 選择 JSON 文件
             </button>
             <input ref={fileRef} type="file" accept=".json" className="hidden" />
           </div>
@@ -1779,7 +1779,7 @@ function AddCredentialForm({ providerId, isVertex, onCreated, onCancel }: AddFor
           </div>
           {providerId === "gemini-aistudio" && (
             <div>
-              <label className="text-xs text-gray-500">Base URL（可选）</label>
+              <label className="text-xs text-gray-500">Base URL（可選）</label>
               <input
                 type="url"
                 value={baseUrl}
@@ -1924,7 +1924,7 @@ git commit -m "feat: CredentialList 凭证管理前端组件"
 import { CredentialList } from "@/components/pages/CredentialList";
 ```
 
-2. 移除 `CredentialsUploadField` 组件（整个函数和接口定义）
+2. 移除 `CredentialsUploadField` 组件（整個函数和接口定义）
 
 3. 在主组件的 JSX 中，将 `basicFields` 区域替换为 `CredentialList`：
 
@@ -1950,7 +1950,7 @@ import { CredentialList } from "@/components/pages/CredentialList";
 
 4. `basicFields` 过滤逻辑不再需要（因为 config 端点已不返回凭证字段，fields 里只剩高级配置）。简化为：所有 fields 都放在高级配置区。
 
-5. 移除顶部的「测试连接」按钮（测试功能已移到每个凭证行内）。保留 handleSave 逻辑用于高级配置保存。
+5. 移除顶部的「测试连接」按钮（测试功能已移到每個凭证行内）。保留 handleSave 逻辑用于高级配置保存。
 
 最终组件结构：
 

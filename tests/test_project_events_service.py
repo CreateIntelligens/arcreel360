@@ -48,7 +48,7 @@ class TestProjectEventService:
         project = pm.load_project("demo")
         project["characters"]["Hero"] = {
             "description": "主角",
-            "voice_style": "冷静",
+            "voice_style": "冷靜",
             "character_sheet": "",
             "reference_image": "",
         }
@@ -175,6 +175,17 @@ class TestProjectEventService:
             change["entity_type"] == "episode" and change["action"] == "created" and change["episode"] == 2
             for change in payload["changes"]
         )
+        episode_change = next(
+            change
+            for change in payload["changes"]
+            if change["entity_type"] == "episode" and change["action"] == "created"
+        )
+        assert episode_change["focus"] == {
+            "pane": "episode",
+            "episode": 2,
+            "anchor_type": "episode",
+            "anchor_id": "2",
+        }
         assert any(episode["episode"] == 2 for episode in pm.load_project("demo")["episodes"])
 
         await service.unsubscribe("demo", queue)
@@ -199,7 +210,7 @@ class TestProjectEventService:
                     "entity_type": "segment",
                     "action": "storyboard_ready",
                     "entity_id": "E1S01",
-                    "label": "分镜「E1S01」",
+                    "label": "分鏡「E1S01」",
                     "focus": None,
                     "important": True,
                 }

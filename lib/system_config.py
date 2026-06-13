@@ -86,8 +86,8 @@ def init_and_apply_system_config(project_root: Path) -> SystemConfigManager:
     return existing
 
 
-def _iso_now_millis() -> str:
-    return datetime.now(UTC).astimezone().isoformat(timespec="milliseconds")
+def _utc_now_iso_millis() -> str:
+    return datetime.now(UTC).isoformat(timespec="milliseconds")
 
 
 def _safe_str(value: Any) -> str | None:
@@ -240,8 +240,8 @@ class SystemConfigManager:
             raw = self.paths.config_path.read_text(encoding="utf-8")
             data = json.loads(raw)
         except (OSError, json.JSONDecodeError) as exc:
-            # TODO(multi-user): JSONDecodeError 可能在消息中包含 config 文件片段（含 API key），
-            # 多用户场景需 sanitize 日志内容。
+            # TODO(multi-user): JSONDecodeError 可能在訊息中包含 config 檔案片段（含 API key），
+            # 多使用者場景需 sanitize 日誌內容。
             logger.warning("Failed to read system config, using empty overrides: %s", exc)
             return {"version": 1, "updated_at": None, "overrides": {}}, False
 
@@ -271,7 +271,7 @@ class SystemConfigManager:
             overrides.pop("storyboard_max_workers", None)
             migrated = True
 
-        # Migration: AI Studio 旧 001 后缀 -> preview（001 仅 Vertex 使用）
+        # Migration: AI Studio 舊 001 字尾 -> preview（001 僅 Vertex 使用）
         _model_migration = {
             "veo-3.1-generate-001": "veo-3.1-generate-preview",
             "veo-3.1-fast-generate-001": "veo-3.1-fast-generate-preview",
@@ -291,7 +291,7 @@ class SystemConfigManager:
 
         payload = {
             "version": int(data.get("version") or 1),
-            "updated_at": _iso_now_millis(),
+            "updated_at": _utc_now_iso_millis(),
             "overrides": data.get("overrides") or {},
         }
 

@@ -4,7 +4,7 @@
 
 **Goal:** 防止 Agent 的 Edit/Write 操作损坏 JSON 文件并级联崩溃项目大厅。
 
-**Architecture:** 两层防御：Layer 1 在 Agent 完成写文件后用 `PostToolUse` hook 验证 JSON 合法性，失败时通过 `systemMessage` 通知 Agent 自我修复；Layer 2 在 `StatusCalculator._load_episode_script` 补充捕获 `json.JSONDecodeError`，防止单集文件损坏级联到项目级 API。
+**Architecture:** 两层防御：Layer 1 在 Agent 完成写文件后用 `PostToolUse` hook 验证 JSON 合法性，失敗时通过 `systemMessage` 通知 Agent 自我修复；Layer 2 在 `StatusCalculator._load_episode_script` 补充捕获 `json.JSONDecodeError`，防止单集文件损坏级联到项目级 API。
 
 **Tech Stack:** Python `json` 标准库、Claude Agent SDK `PostToolUse` hook、pytest + `_FakePM` 测试模式（同 `tests/test_status_calculator.py`）
 
@@ -16,7 +16,7 @@
 - Modify: `lib/status_calculator.py:93-107`
 - Test: `tests/test_status_calculator.py`
 
-### Step 1：在现有测试文件末尾写失败测试
+### Step 1：在現有测试文件末尾写失敗测试
 
 在 `tests/test_status_calculator.py` 的 `TestStatusCalculator` 类末尾添加：
 
@@ -35,7 +35,7 @@ def test_load_episode_script_corrupted_json(self, tmp_path):
     assert script is None
 ```
 
-### Step 2：运行确认测试失败
+### Step 2：运行确认测试失敗
 
 ```bash
 uv run pytest tests/test_status_calculator.py::TestStatusCalculator::test_load_episode_script_corrupted_json -v
@@ -96,7 +96,7 @@ git commit -m "fix(status): catch JSONDecodeError in _load_episode_script to pre
 - Modify: `server/agent_runtime/session_manager.py`
 - Test: `tests/test_session_manager_more.py`（追加）
 
-### Step 1：写失败测试
+### Step 1：写失敗测试
 
 在 `tests/test_session_manager_more.py` 末尾追加（注意该文件已有 `import asyncio`）：
 
@@ -166,7 +166,7 @@ class TestJsonValidationHook:
         assert result == {}
 ```
 
-### Step 2：运行确认测试失败
+### Step 2：运行确认测试失敗
 
 ```bash
 uv run pytest tests/test_session_manager_more.py::TestJsonValidationHook -v
@@ -252,7 +252,7 @@ def _build_json_validation_hook(self) -> Callable[..., Any]:
 uv run pytest tests/test_session_manager_more.py::TestJsonValidationHook -v
 ```
 
-预期：5 个测试全部 PASS。
+预期：5 個测试全部 PASS。
 
 ### Step 6：运行全量测试确认无回归
 
@@ -260,7 +260,7 @@ uv run pytest tests/test_session_manager_more.py::TestJsonValidationHook -v
 uv run pytest --tb=short -q
 ```
 
-预期：全部 PASS（498 个 + 新增 6 个）。
+预期：全部 PASS（498 個 + 新增 6 個）。
 
 ### Step 7：提交
 
@@ -273,10 +273,10 @@ git commit -m "feat(agent): add PostToolUse JSON validation hook to self-correct
 
 ## Task 3：端到端验证
 
-### Step 1：手动验证级联失败已修复
+### Step 1：手动验证级联失敗已修复
 
 ```bash
-# 模拟损坏文件场景：在测试中确认 calculate_project_status 不再上抛
+# 模拟损坏文件場景：在测试中确认 calculate_project_status 不再上抛
 uv run python -c "
 import json, tempfile, pathlib
 from lib.status_calculator import StatusCalculator
@@ -305,9 +305,9 @@ with tempfile.TemporaryDirectory() as d:
 
 预期：打印 `OK, phase = scripting`（或 `production`），无异常。
 
-### Step 2：确认日志中不再出现误导性"元数据失败"
+### Step 2：确认日志中不再出现误导性"元数据失敗"
 
-检查 `calculate_project_status` 调用链（`routers/projects.py:220`）：在 Task 1 修复后，`json.JSONDecodeError` 在 `_load_episode_script` 内部被捕获，不会再上抛到 `list_projects` 的宽泛 `except`，从而消除 "加载项目元数据失败" 的误导日志。
+检查 `calculate_project_status` 调用链（`routers/projects.py:220`）：在 Task 1 修复后，`json.JSONDecodeError` 在 `_load_episode_script` 内部被捕获，不会再上抛到 `list_projects` 的宽泛 `except`，从而消除 "加载项目元数据失敗" 的误导日志。
 
 ### Step 3：最终提交确认
 
@@ -315,7 +315,7 @@ with tempfile.TemporaryDirectory() as d:
 git log --oneline -5
 ```
 
-预期看到两个 fix commit：
+预期看到两個 fix commit：
 ```
 feat(agent): add PostToolUse JSON validation hook to self-correct invalid edits
 fix(status): catch JSONDecodeError in _load_episode_script to prevent cascade failure

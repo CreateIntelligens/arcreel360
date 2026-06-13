@@ -14,7 +14,7 @@ interface TasksState {
 }
 
 const defaultStats: TaskStats = {
-  queued: 0, running: 0, succeeded: 0, failed: 0, total: 0,
+  queued: 0, running: 0, succeeded: 0, failed: 0, cancelled: 0, total: 0,
 };
 
 export const useTasksStore = create<TasksState>((set) => ({
@@ -33,6 +33,6 @@ export const useTasksStore = create<TasksState>((set) => ({
       }
       return { tasks: [task, ...s.tasks] };
     }),
-  setStats: (stats) => set({ stats }),
+  setStats: (stats) => set({ stats: { ...defaultStats, ...stats } }),
   setConnected: (connected) => set({ connected }),
 }));

@@ -1,14 +1,14 @@
 """
-MediaGenerator 中间层
+MediaGenerator 中間層
 
-封装 GeminiClient + VersionManager，提供"调用方无感"的版本管理。
-调用方只需传入 project_path 和 resource_id，版本管理自动完成。
+封裝 GeminiClient + VersionManager，提供"呼叫方無感"的版本管理。
+呼叫方只需傳入 project_path 和 resource_id，版本管理自動完成。
 
-覆盖的 4 种资源类型：
-- storyboards: 分镜图 (scene_E1S01.png)
-- videos: 视频 (scene_E1S01.mp4)
-- characters: 角色设计图 (姜月茴.png)
-- clues: 线索设计图 (玉佩.png)
+覆蓋的 4 種資源型別：
+- storyboards: 分鏡圖 (scene_E1S01.png)
+- videos: 影片 (scene_E1S01.mp4)
+- characters: 角色設計圖 (姜月茴.png)
+- clues: 線索設計圖 (玉佩.png)
 """
 
 import asyncio
@@ -29,20 +29,61 @@ from lib.version_manager import VersionManager
 
 logger = logging.getLogger(__name__)
 
+# 所有圖片生成都會在 prompt 後自動附加此指示，避免生成的畫面出現文字/字幕/浮水印。
+# 不顯示於前端、不寫入呼叫方傳入的 prompt，由後端統一強制注入。
+IMAGE_NO_TEXT_DIRECTIVE = (
+    "Important: do not render any text, letters, words, captions, subtitles, "
+    "watermarks, logos, signage, or written characters anywhere in the image."
+)
+
+STRICT_REFERENCE_IMAGE_DIRECTIVE = (
+    "Strict reference image rule: use every supplied reference image as authoritative visual guidance. "
+    "Preserve the referenced subject identity, face, body shape, clothing, object design, materials, "
+    "colors, layout, composition, environment style, and camera framing as closely as possible. "
+    "Do not reinterpret, redesign, replace, omit, or ignore referenced elements. "
+    "If the text prompt conflicts with the reference image, the reference image wins; "
+    "only change details explicitly requested by the prompt."
+)
+
+# 影片生成的負面提示詞預設值（在既有的「無背景音樂」基礎上補上「無文字」）。
+DEFAULT_VIDEO_NEGATIVE_PROMPT = (
+    "background music, BGM, soundtrack, musical accompaniment, "
+    "text, letters, words, captions, subtitles, watermark, logo, signage"
+)
+
+
+def _with_no_text_directive(prompt: str) -> str:
+    """為圖片 prompt 附加「不要文字」指示。"""
+    base = (prompt or "").rstrip()
+    if not base:
+        return IMAGE_NO_TEXT_DIRECTIVE
+    return f"{base}\n\n{IMAGE_NO_TEXT_DIRECTIVE}"
+
+
+def _with_strict_reference_directive(prompt: str) -> str:
+    """有參考圖時附加嚴格參考指示。"""
+    base = (prompt or "").rstrip()
+    if STRICT_REFERENCE_IMAGE_DIRECTIVE in base:
+        return base
+    if not base:
+        return STRICT_REFERENCE_IMAGE_DIRECTIVE
+    return f"{base}\n\n{STRICT_REFERENCE_IMAGE_DIRECTIVE}"
+
 
 class MediaGenerator:
     """
-    媒体生成器中间层
+    媒體生成器中間層
 
-    封装 GeminiClient + VersionManager，提供自动版本管理。
+    封裝 GeminiClient + VersionManager，提供自動版本管理。
     """
 
-    # 资源类型到输出路径模式的映射
+    # 資源型別到輸出路徑模式的對映
     OUTPUT_PATTERNS = {
         "storyboards": "storyboards/scene_{resource_id}.png",
         "videos": "videos/scene_{resource_id}.mp4",
         "characters": "characters/{resource_id}.png",
         "clues": "clues/{resource_id}.png",
+        "scenes": "scenes/{resource_id}.png",
     }
 
     def __init__(
@@ -59,12 +100,12 @@ class MediaGenerator:
         初始化 MediaGenerator
 
         Args:
-            project_path: 项目根目录路径
-            rate_limiter: 可选的限流器实例
-            image_backend: 可选的 ImageBackend 实例（用于图片生成）
-            video_backend: 可选的 VideoBackend 实例（用于视频生成）
-            config_resolver: ConfigResolver 实例，用于运行时读取配置
-            user_id: 用户 ID
+            project_path: 專案根目錄路徑
+            rate_limiter: 可選的限流器例項
+            image_backend: 可選的 ImageBackend 例項（用於圖片生成）
+            video_backend: 可選的 VideoBackend 例項（用於影片生成）
+            config_resolver: ConfigResolver 例項，用於執行時讀取配置
+            user_id: 使用者 ID
         """
         self.project_path = Path(project_path)
         self.project_name = self.project_path.name
@@ -75,7 +116,7 @@ class MediaGenerator:
         self._user_id = user_id
         self.versions = VersionManager(project_path)
 
-        # 初始化 UsageTracker（使用全局 async session factory）
+        # 初始化 UsageTracker（使用全域性 async session factory）
         self.usage_tracker = UsageTracker()
 
     @staticmethod
@@ -95,17 +136,17 @@ class MediaGenerator:
 
     def _get_output_path(self, resource_type: str, resource_id: str) -> Path:
         """
-        根据资源类型和 ID 推断输出路径
+        根據資源型別和 ID 推斷輸出路徑
 
         Args:
-            resource_type: 资源类型 (storyboards, videos, characters, clues)
-            resource_id: 资源 ID (E1S01, 姜月茴, 玉佩)
+            resource_type: 資源型別 (storyboards, videos, characters, clues)
+            resource_id: 資源 ID (E1S01, 姜月茴, 玉佩)
 
         Returns:
-            输出文件的绝对路径
+            輸出檔案的絕對路徑
         """
         if resource_type not in self.OUTPUT_PATTERNS:
-            raise ValueError(f"不支持的资源类型: {resource_type}")
+            raise ValueError(f"不支援的資源型別: {resource_type}")
 
         pattern = self.OUTPUT_PATTERNS[resource_type]
         relative_path = pattern.format(resource_id=resource_id)
@@ -113,11 +154,11 @@ class MediaGenerator:
         try:
             output_path.relative_to(self.project_path.resolve())
         except ValueError:
-            raise ValueError(f"非法资源 ID: '{resource_id}'")
+            raise ValueError(f"非法資源 ID: '{resource_id}'")
         return output_path
 
     def _ensure_parent_dir(self, output_path: Path) -> None:
-        """确保输出目录存在"""
+        """確保輸出目錄存在"""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
     def generate_image(
@@ -131,19 +172,19 @@ class MediaGenerator:
         **version_metadata,
     ) -> tuple[Path, int]:
         """
-        生成图片（带自动版本管理，同步包装）
+        生成圖片（帶自動版本管理，同步包裝）
 
         Args:
-            prompt: 图片生成提示词
-            resource_type: 资源类型 (storyboards, characters, clues)
-            resource_id: 资源 ID (E1S01, 姜月茴, 玉佩)
-            reference_images: 参考图片列表
-            aspect_ratio: 宽高比，默认 9:16（竖屏）
-            image_size: 图片尺寸，默认 1K
-            **version_metadata: 额外元数据
+            prompt: 圖片生成提示詞
+            resource_type: 資源型別 (storyboards, characters, clues)
+            resource_id: 資源 ID (E1S01, 姜月茴, 玉佩)
+            reference_images: 參考圖片列表
+            aspect_ratio: 寬高比，預設 9:16（豎屏）
+            image_size: 圖片尺寸，預設 1K
+            **version_metadata: 額外後設資料
 
         Returns:
-            (output_path, version_number) 元组
+            (output_path, version_number) 元組
         """
         return self._sync(
             self.generate_image_async(
@@ -168,32 +209,53 @@ class MediaGenerator:
         **version_metadata,
     ) -> tuple[Path, int]:
         """
-        异步生成图片（带自动版本管理）
+        非同步生成圖片（帶自動版本管理）
 
         Args:
-            prompt: 图片生成提示词
-            resource_type: 资源类型 (storyboards, characters, clues)
-            resource_id: 资源 ID (E1S01, 姜月茴, 玉佩)
-            reference_images: 参考图片列表
-            aspect_ratio: 宽高比，默认 9:16（竖屏）
-            image_size: 图片尺寸，默认 1K
-            **version_metadata: 额外元数据
+            prompt: 圖片生成提示詞
+            resource_type: 資源型別 (storyboards, characters, clues)
+            resource_id: 資源 ID (E1S01, 姜月茴, 玉佩)
+            reference_images: 參考圖片列表
+            aspect_ratio: 寬高比，預設 9:16（豎屏）
+            image_size: 圖片尺寸，預設 1K
+            **version_metadata: 額外後設資料
 
         Returns:
-            (output_path, version_number) 元组
+            (output_path, version_number) 元組
         """
         from lib.image_backends.base import ImageGenerationRequest, ReferenceImage
+
+        # 先轉換參考圖，讓後續 prompt、usage、version 都能以實際送出的 refs 為準。
+        ref_images: list[ReferenceImage] = []
+        if reference_images:
+            for ref in reference_images:
+                if isinstance(ref, dict):
+                    img_val = ref.get("image", "")
+                    ref_images.append(
+                        ReferenceImage(
+                            path=str(img_val),
+                            label=str(ref.get("label", "")),
+                        )
+                    )
+                elif hasattr(ref, "__fspath__") or isinstance(ref, (str, Path)):
+                    ref_images.append(ReferenceImage(path=str(ref)))
+                # PIL Image 等不支援的型別忽略
+
+        # 後端統一注入「不要文字」指示；有參考圖時再強制要求嚴格參考。
+        effective_prompt = _with_no_text_directive(prompt)
+        if ref_images:
+            effective_prompt = _with_strict_reference_directive(effective_prompt)
 
         output_path = self._get_output_path(resource_type, resource_id)
         self._ensure_parent_dir(output_path)
 
-        # 1. 若已存在，确保旧文件被记录
+        # 1. 若已存在，確保舊檔案被記錄
         if output_path.exists():
             self.versions.ensure_current_tracked(
                 resource_type=resource_type,
                 resource_id=resource_id,
                 current_file=output_path,
-                prompt=prompt,
+                prompt=effective_prompt,
                 aspect_ratio=aspect_ratio,
                 **version_metadata,
             )
@@ -201,12 +263,12 @@ class MediaGenerator:
         if self._image_backend is None:
             raise RuntimeError("image_backend not configured")
 
-        # 2. 记录 API 调用开始
+        # 2. 記錄 API 呼叫開始
         call_id = await self.usage_tracker.start_call(
             project_name=self.project_name,
             call_type="image",
             model=self._image_backend.model,
-            prompt=prompt,
+            prompt=effective_prompt,
             resolution=image_size,
             aspect_ratio=aspect_ratio,
             provider=self._image_backend.name,
@@ -215,24 +277,9 @@ class MediaGenerator:
         )
 
         try:
-            # 3. 转换参考图格式并调用 ImageBackend
-            ref_images: list[ReferenceImage] = []
-            if reference_images:
-                for ref in reference_images:
-                    if isinstance(ref, dict):
-                        img_val = ref.get("image", "")
-                        ref_images.append(
-                            ReferenceImage(
-                                path=str(img_val),
-                                label=str(ref.get("label", "")),
-                            )
-                        )
-                    elif hasattr(ref, "__fspath__") or isinstance(ref, (str, Path)):
-                        ref_images.append(ReferenceImage(path=str(ref)))
-                    # PIL Image 等不支持的类型忽略
-
+            # 3. 呼叫 ImageBackend
             request = ImageGenerationRequest(
-                prompt=prompt,
+                prompt=effective_prompt,
                 output_path=output_path,
                 reference_images=ref_images,
                 aspect_ratio=aspect_ratio,
@@ -241,16 +288,17 @@ class MediaGenerator:
             )
             result = await self._image_backend.generate(request)
 
-            # 4. 记录调用成功
+            # 4. 記錄呼叫成功
             await self.usage_tracker.finish_call(
                 call_id=call_id,
                 status="success",
                 output_path=str(output_path),
                 quality=getattr(result, "quality", None),
+                size=getattr(result, "size", None),
             )
         except Exception as e:
-            # 记录调用失败
-            logger.exception("生成失败 (%s)", "image")
+            # 記錄呼叫失敗
+            logger.exception("生成失敗 (%s)", "image")
             await self.usage_tracker.finish_call(
                 call_id=call_id,
                 status="failed",
@@ -258,13 +306,18 @@ class MediaGenerator:
             )
             raise
 
-        # 5. 记录新版本
+        # 5. 記錄新版本
+        reference_images_metadata = [{"name": Path(ref.path).name, "label": ref.label} for ref in ref_images] or None
         new_version = self.versions.add_version(
             resource_type=resource_type,
             resource_id=resource_id,
-            prompt=prompt,
+            prompt=effective_prompt,
             source_file=output_path,
             aspect_ratio=aspect_ratio,
+            image_size=image_size,
+            reference_images=reference_images_metadata,
+            model=self._image_backend.model,
+            provider=self._image_backend.name,
             **version_metadata,
         )
 
@@ -279,25 +332,25 @@ class MediaGenerator:
         aspect_ratio: str = "9:16",
         duration_seconds: str = "8",
         resolution: str = "1080p",
-        negative_prompt: str = "background music, BGM, soundtrack, musical accompaniment",
+        negative_prompt: str = DEFAULT_VIDEO_NEGATIVE_PROMPT,
         **version_metadata,
     ) -> tuple[Path, int, any, str | None]:
         """
-        生成视频（带自动版本管理，同步包装）
+        生成影片（帶自動版本管理，同步包裝）
 
         Args:
-            prompt: 视频生成提示词
-            resource_type: 资源类型 (videos)
-            resource_id: 资源 ID (E1S01)
-            start_image: 起始帧图片（image-to-video 模式）
-            aspect_ratio: 宽高比，默认 9:16（竖屏）
-            duration_seconds: 视频时长，可选 "4", "6", "8"
-            resolution: 分辨率，默认 "1080p"
-            negative_prompt: 负面提示词
-            **version_metadata: 额外元数据
+            prompt: 影片生成提示詞
+            resource_type: 資源型別 (videos)
+            resource_id: 資源 ID (E1S01)
+            start_image: 起始幀圖片（image-to-video 模式）
+            aspect_ratio: 寬高比，預設 9:16（豎屏）
+            duration_seconds: 影片時長，可選 "4", "6", "8"
+            resolution: 解析度，預設 "1080p"
+            negative_prompt: 負面提示詞
+            **version_metadata: 額外後設資料
 
         Returns:
-            (output_path, version_number, video_ref, video_uri) 四元组
+            (output_path, version_number, video_ref, video_uri) 四元組
         """
         return self._sync(
             self.generate_video_async(
@@ -322,41 +375,43 @@ class MediaGenerator:
         aspect_ratio: str = "9:16",
         duration_seconds: str = "8",
         resolution: str = "1080p",
-        negative_prompt: str = "background music, BGM, soundtrack, musical accompaniment",
+        negative_prompt: str = DEFAULT_VIDEO_NEGATIVE_PROMPT,
         **version_metadata,
     ) -> tuple[Path, int, any, str | None]:
         """
-        异步生成视频（带自动版本管理）
+        非同步生成影片（帶自動版本管理）
 
         Args:
-            prompt: 视频生成提示词
-            resource_type: 资源类型 (videos)
-            resource_id: 资源 ID (E1S01)
-            start_image: 起始帧图片（image-to-video 模式）
-            aspect_ratio: 宽高比，默认 9:16（竖屏）
-            duration_seconds: 视频时长，可选 "4", "6", "8"
-            resolution: 分辨率，默认 "1080p"
-            negative_prompt: 负面提示词
-            **version_metadata: 额外元数据
+            prompt: 影片生成提示詞
+            resource_type: 資源型別 (videos)
+            resource_id: 資源 ID (E1S01)
+            start_image: 起始幀圖片（image-to-video 模式）
+            aspect_ratio: 寬高比，預設 9:16（豎屏）
+            duration_seconds: 影片時長，可選 "4", "6", "8"
+            resolution: 解析度，預設 "1080p"
+            negative_prompt: 負面提示詞
+            **version_metadata: 額外後設資料
 
         Returns:
-            (output_path, version_number, video_ref, video_uri) 四元组
+            (output_path, version_number, video_ref, video_uri) 四元組
         """
         output_path = self._get_output_path(resource_type, resource_id)
         self._ensure_parent_dir(output_path)
+        start_image_path = Path(start_image) if isinstance(start_image, (str, Path)) else None
+        effective_prompt = _with_strict_reference_directive(prompt) if start_image_path else (prompt or "")
 
-        # 1. 若已存在，确保旧文件被记录
+        # 1. 若已存在，確保舊檔案被記錄
         if output_path.exists():
             self.versions.ensure_current_tracked(
                 resource_type=resource_type,
                 resource_id=resource_id,
                 current_file=output_path,
-                prompt=prompt,
+                prompt=effective_prompt,
                 duration_seconds=duration_seconds,
                 **version_metadata,
             )
 
-        # 2. 记录 API 调用开始
+        # 2. 記錄 API 呼叫開始
         try:
             duration_int = int(duration_seconds) if duration_seconds else 8
         except (ValueError, TypeError):
@@ -376,7 +431,7 @@ class MediaGenerator:
             project_name=self.project_name,
             call_type="video",
             model=model_name,
-            prompt=prompt,
+            prompt=effective_prompt,
             resolution=resolution,
             duration_seconds=duration_int,
             aspect_ratio=aspect_ratio,
@@ -390,22 +445,23 @@ class MediaGenerator:
             from lib.video_backends.base import VideoGenerationRequest
 
             request = VideoGenerationRequest(
-                prompt=prompt,
+                prompt=effective_prompt,
                 output_path=output_path,
                 aspect_ratio=aspect_ratio,
                 duration_seconds=duration_int,
                 resolution=resolution,
-                start_image=Path(start_image) if isinstance(start_image, (str, Path)) else None,
+                start_image=start_image_path,
                 generate_audio=effective_generate_audio,
                 negative_prompt=negative_prompt,
                 project_name=self.project_name,
-                service_tier=version_metadata.get("service_tier", "default"),
                 seed=version_metadata.get("seed"),
             )
 
             result = await self._video_backend.generate(request)
             video_ref = None
             video_uri = result.video_uri
+            actual_duration_seconds = result.duration_seconds
+            adjusted = result.adjusted
 
             # Track usage with provider info
             await self.usage_tracker.finish_call(
@@ -413,12 +469,11 @@ class MediaGenerator:
                 status="success",
                 output_path=str(output_path),
                 usage_tokens=result.usage_tokens,
-                service_tier=version_metadata.get("service_tier", "default"),
                 generate_audio=result.generate_audio,
             )
         except Exception as e:
-            # 记录调用失败
-            logger.exception("生成失败 (%s)", "video")
+            # 記錄呼叫失敗
+            logger.exception("生成失敗 (%s)", "video")
             await self.usage_tracker.finish_call(
                 call_id=call_id,
                 status="failed",
@@ -426,13 +481,21 @@ class MediaGenerator:
             )
             raise
 
-        # 5. 记录新版本
+        # 5. 記錄新版本
+        if adjusted:
+            version_metadata["adjusted"] = adjusted
+
         new_version = self.versions.add_version(
             resource_type=resource_type,
             resource_id=resource_id,
-            prompt=prompt,
+            prompt=effective_prompt,
             source_file=output_path,
-            duration_seconds=duration_seconds,
+            duration_seconds=actual_duration_seconds,
+            aspect_ratio=aspect_ratio,
+            resolution=resolution,
+            negative_prompt=negative_prompt,
+            model=model_name,
+            provider=provider_name,
             **version_metadata,
         )
 

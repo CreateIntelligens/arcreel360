@@ -90,7 +90,7 @@ async def send_message(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
-        logger.exception("请求处理失败")
+        logger.exception("請求處理失敗")
         raise HTTPException(status_code=500, detail=str(exc))
 
 
@@ -110,7 +110,7 @@ async def list_sessions(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.exception("请求处理失败")
+        logger.exception("請求處理失敗")
         raise HTTPException(status_code=500, detail=str(exc))
 
 
@@ -123,7 +123,7 @@ async def get_session(project_name: str, session_id: str, _user: CurrentUser):
     except HTTPException:
         raise
     except Exception as exc:
-        logger.exception("请求处理失败")
+        logger.exception("請求處理失敗")
         raise HTTPException(status_code=500, detail=str(exc))
 
 
@@ -139,7 +139,7 @@ async def delete_session(project_name: str, session_id: str, _user: CurrentUser)
     except HTTPException:
         raise
     except Exception as exc:
-        logger.exception("请求处理失败")
+        logger.exception("請求處理失敗")
         raise HTTPException(status_code=500, detail=str(exc))
 
 
@@ -163,7 +163,7 @@ async def get_snapshot(project_name: str, session_id: str, _user: CurrentUser):
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"會話「{session_id}」不存在")
     except Exception as exc:
-        logger.exception("请求处理失败")
+        logger.exception("請求處理失敗")
         raise HTTPException(status_code=500, detail=str(exc))
 
 
@@ -183,7 +183,7 @@ async def interrupt_session(project_name: str, session_id: str, _user: CurrentUs
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
-        logger.exception("请求处理失败")
+        logger.exception("請求處理失敗")
         raise HTTPException(status_code=500, detail=str(exc))
 
 
@@ -212,7 +212,7 @@ async def answer_question(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
-        logger.exception("请求处理失败")
+        logger.exception("請求處理失敗")
         raise HTTPException(status_code=500, detail=str(exc))
 
 
@@ -232,7 +232,7 @@ async def stream_events(
     except UnsupportedCapabilityError as exc:
         raise HTTPException(status_code=409, detail=exc.as_detail())
     except Exception as exc:
-        logger.exception("请求处理失败")
+        logger.exception("請求處理失敗")
         raise HTTPException(status_code=500, detail=str(exc))
 
 
@@ -246,5 +246,5 @@ async def list_skills(project_name: str, _user: CurrentUser):
     except HTTPException:
         raise
     except Exception as exc:
-        logger.exception("请求处理失败")
+        logger.exception("請求處理失敗")
         raise HTTPException(status_code=500, detail=str(exc))

@@ -8,7 +8,7 @@
 - **THEN** 系统返回包含完整 `key`、`name`、`key_prefix`、`created_at`、`expires_at` 的响应，状态码 201
 
 #### Scenario: 创建时名称重复
-- **WHEN** 已认证用户创建与现有 key 同名的 API Key
+- **WHEN** 已认证用户创建与現有 key 同名的 API Key
 - **THEN** 系统返回 409 错误
 
 ### Requirement: API Key 列表查询

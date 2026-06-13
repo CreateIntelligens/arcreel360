@@ -1,15 +1,15 @@
 """
-Gemini 共享工具模块
+Gemini 共享工具模組
 
-从 gemini_client.py 提取的非 GeminiClient 工具，供 image_backends / video_backends /
-providers / media_generator 等模块复用，避免循环依赖。
+從 gemini_client.py 提取的非 GeminiClient 工具，供 image_backends / video_backends /
+providers / media_generator 等模組複用，避免迴圈依賴。
 
 包含：
 - VERTEX_SCOPES — Vertex AI OAuth scopes
-- RETRYABLE_ERRORS — Gemini 专用可重试错误类型（扩展自 BASE_RETRYABLE_ERRORS）
-- RateLimiter — 多模型滑动窗口限流器
+- RETRYABLE_ERRORS — Gemini 專用可重試錯誤型別（擴充套件自 BASE_RETRYABLE_ERRORS）
+- RateLimiter — 多模型滑動視窗限流器
 - _rate_limiter_limits_from_env / get_shared_rate_limiter / refresh_shared_rate_limiter
-- with_retry_async — 从 lib.retry re-export 的通用重试装饰器
+- with_retry_async — 從 lib.retry re-export 的通用重試裝飾器
 """
 
 import asyncio
@@ -34,16 +34,16 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-# Vertex AI 服务账号所需 OAuth scopes（共享常量，供 gemini_client / video_backends / providers 复用）
+# Vertex AI 服務賬號所需 OAuth scopes（共享常量，供 gemini_client / video_backends / providers 複用）
 VERTEX_SCOPES = [
     "https://www.googleapis.com/auth/cloud-platform",
     "https://www.googleapis.com/auth/generative-language",
 ]
 
-# Gemini 专用可重试错误类型（扩展基础集合）
+# Gemini 專用可重試錯誤型別（擴充套件基礎集合）
 RETRYABLE_ERRORS: tuple[type[Exception], ...] = BASE_RETRYABLE_ERRORS
 
-# 尝试导入 Google API 错误类型
+# 嘗試匯入 Google API 錯誤型別
 try:
     from google import genai  # Import genai to access its errors
     from google.api_core import exceptions as google_exceptions
@@ -51,7 +51,7 @@ try:
     RETRYABLE_ERRORS = RETRYABLE_ERRORS + (
         google_exceptions.ResourceExhausted,  # 429 Too Many Requests
         google_exceptions.ServiceUnavailable,  # 503
-        google_exceptions.DeadlineExceeded,  # 超时
+        google_exceptions.DeadlineExceeded,  # 超時
         google_exceptions.InternalServerError,  # 500
         genai.errors.ClientError,  # 4xx errors from new SDK
         genai.errors.ServerError,  # 5xx errors from new SDK
@@ -62,27 +62,27 @@ except ImportError:
 
 class RateLimiter:
     """
-    多模型滑动窗口限流器
+    多模型滑動視窗限流器
     """
 
     def __init__(self, limits_dict: dict[str, int] = None, *, request_gap: float = 3.1):
         """
         Args:
             limits_dict: {model_name: rpm} 字典。例如 {"gemini-3-pro-image-preview": 20}
-            request_gap: 最小请求间隔（秒），默认 3.1
+            request_gap: 最小請求間隔（秒），預設 3.1
         """
         self.limits = limits_dict or {}
         self.request_gap = request_gap
-        # 存储请求时间戳：{model_name: deque([timestamp1, timestamp2, ...])}
+        # 儲存請求時間戳：{model_name: deque([timestamp1, timestamp2, ...])}
         self.request_logs: dict[str, deque] = {}
         self.lock = threading.Lock()
 
     def acquire(self, model_name: str):
         """
-        阻塞直到获得令牌
+        阻塞直到獲得令牌
         """
         if model_name not in self.limits:
-            return  # 该模型无限流配置
+            return  # 該模型無限流配置
 
         limit = self.limits[model_name]
         if limit <= 0:
@@ -97,39 +97,39 @@ class RateLimiter:
             while True:
                 now = time.time()
 
-                # 清理超过 60 秒的旧记录
+                # 清理超過 60 秒的舊記錄
                 while log and now - log[0] > 60:
                     log.popleft()
 
-                # 强制增加请求间隔（用户要求 > 3s）
-                # 即使获得了令牌，也要确保距离上一次请求至少 3s
-                # 获取最新的请求时间（可能是其他线程刚刚写入的）
+                # 強制增加請求間隔（使用者要求 > 3s）
+                # 即使獲得了令牌，也要確保距離上一次請求至少 3s
+                # 獲取最新的請求時間（可能是其他執行緒剛剛寫入的）
                 min_gap = self.request_gap
                 if log:
                     last_request = log[-1]
                     gap = time.time() - last_request
                     if gap < min_gap:
                         time.sleep(min_gap - gap)
-                        # 更新时间，重新检查
+                        # 更新時間，重新檢查
                         continue
 
                 if len(log) < limit:
-                    # 获取令牌成功
+                    # 獲取令牌成功
                     log.append(time.time())
                     return
 
-                # 达到限制，计算等待时间
-                # 等待直到最早的记录过期
-                wait_time = 60 - (now - log[0]) + 0.1  # 多加 0.1s 缓冲
+                # 達到限制，計算等待時間
+                # 等待直到最早的記錄過期
+                wait_time = 60 - (now - log[0]) + 0.1  # 多加 0.1s 緩衝
                 if wait_time > 0:
                     time.sleep(wait_time)
 
     async def acquire_async(self, model_name: str):
         """
-        异步阻塞直到获得令牌
+        非同步阻塞直到獲得令牌
         """
         if model_name not in self.limits:
-            return  # 该模型无限流配置
+            return  # 該模型無限流配置
 
         limit = self.limits[model_name]
         if limit <= 0:
@@ -144,7 +144,7 @@ class RateLimiter:
 
                 log = self.request_logs[model_name]
 
-                # 清理超过 60 秒的旧记录
+                # 清理超過 60 秒的舊記錄
                 while log and now - log[0] > 60:
                     log.popleft()
 
@@ -154,23 +154,23 @@ class RateLimiter:
                     last_request = log[-1]
                     gap = now - last_request
                     if gap < min_gap:
-                        # 释放锁后异步等待
+                        # 釋放鎖後非同步等待
                         wait_needed = min_gap - gap
 
                 if len(log) >= limit:
-                    # 达到限制，计算等待时间
+                    # 達到限制，計算等待時間
                     wait_needed = max(wait_needed, 60 - (now - log[0]) + 0.1)
 
                 if wait_needed == 0 and len(log) < limit:
-                    # 获取令牌成功
+                    # 獲取令牌成功
                     log.append(now)
                     return
 
-            # 在锁外异步等待
+            # 在鎖外非同步等待
             if wait_needed > 0:
                 await asyncio.sleep(wait_needed)
             else:
-                await asyncio.sleep(0.1)  # 短暂让出控制权
+                await asyncio.sleep(0.1)  # 短暫讓出控制權
 
 
 _SHARED_IMAGE_MODEL_NAME = cost_calculator.DEFAULT_IMAGE_MODEL
@@ -213,12 +213,12 @@ def get_shared_rate_limiter(
     request_gap: float | None = None,
 ) -> "RateLimiter":
     """
-    获取进程内共享的 RateLimiter
+    獲取程序內共享的 RateLimiter
 
-    首次调用时根据参数或环境变量创建实例，后续调用返回同一实例。
+    首次呼叫時根據引數或環境變數建立例項，後續呼叫返回同一例項。
 
-    - image_rpm / video_rpm：每分钟请求数限制（None 时从环境变量读取）
-    - request_gap：最小请求间隔（None 时从环境变量 GEMINI_REQUEST_GAP 读取，默认 3.1）
+    - image_rpm / video_rpm：每分鐘請求數限制（None 時從環境變數讀取）
+    - request_gap：最小請求間隔（None 時從環境變數 GEMINI_REQUEST_GAP 讀取，預設 3.1）
     """
     global _shared_rate_limiter
     if _shared_rate_limiter is not None:

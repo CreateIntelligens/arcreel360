@@ -24,50 +24,40 @@ export interface AssistantProviderCapabilities {
 }
 
 export const ASSISTANT_PROVIDER_LABELS: Record<string, string> = {
-  claude: "Claude Full",
-  "gemini-lite": "Gemini Lite",
-  "openai-lite": "OpenAI Lite",
+  claude: "Claude · 工作流模式",
+  "gemini-lite": "Gemini · 對話模式",
+  "gemini-full": "Gemini · 工作流模式",
+  "openai-lite": "OpenAI · 對話模式",
+  "openai-full": "OpenAI · 工作流模式",
 };
 
-export const ASSISTANT_PROVIDER_CAPABILITIES: Record<string, AssistantProviderCapabilities> = {
-  claude: {
-    provider: "claude",
-    tier: "full",
+// Capabilities 由後端權威下發（包含在 session list / get / SSE event 的 capabilities 欄位中）。
+// fallback 用於後端 capabilities 還沒到達(首屏 / 切 provider 後新建會話的瞬間)。
+// 根據 provider id 推 tier:`*-full` 與 `claude` 是工作流 full,其餘 lite。
+// 一旦後端 SSE event 攜帶 capabilities,本 fallback 會被覆蓋。
+const FULL_TIER_PROVIDERS = new Set(["claude", "gemini-full", "openai-full"]);
+
+function fallbackCapabilitiesForProvider(provider: string): AssistantProviderCapabilities {
+  const isFull = FULL_TIER_PROVIDERS.has(provider);
+  return {
+    provider,
+    tier: isFull ? "full" : "lite",
     supports_streaming: true,
     supports_images: true,
-    supports_tool_calls: true,
+    supports_tool_calls: isFull,
     supports_interrupt: true,
     supports_resume: true,
-    supports_subagents: true,
-    supports_permission_hooks: true,
-  },
-  "gemini-lite": {
-    provider: "gemini-lite",
-    tier: "lite",
-    supports_streaming: true,
-    supports_images: true,
-    supports_tool_calls: false,
-    supports_interrupt: true,
-    supports_resume: false,
-    supports_subagents: false,
-    supports_permission_hooks: false,
-  },
-  "openai-lite": {
-    provider: "openai-lite",
-    tier: "lite",
-    supports_streaming: true,
-    supports_images: true,
-    supports_tool_calls: false,
-    supports_interrupt: true,
-    supports_resume: false,
-    supports_subagents: false,
-    supports_permission_hooks: false,
-  },
-};
+    supports_subagents: isFull,
+    supports_permission_hooks: isFull,
+  };
+}
 
 export function inferAssistantProvider(sessionId?: string | null): string {
-  if (!sessionId) return "claude";
+  if (!sessionId) return "gemini-lite";
+  // gemini-full 前綴必須先匹配，否則會被 "gemini:" 吃掉
+  if (sessionId.startsWith("gemini-full:")) return "gemini-full";
   if (sessionId.startsWith("gemini:")) return "gemini-lite";
+  if (sessionId.startsWith("openai-full:")) return "openai-full";
   if (sessionId.startsWith("openai:")) return "openai-lite";
   return "claude";
 }
@@ -78,11 +68,11 @@ export function resolveAssistantCapabilities(
 ): AssistantProviderCapabilities {
   if (sessionLike?.capabilities) return sessionLike.capabilities;
   const provider = sessionLike?.provider || fallbackProvider || inferAssistantProvider(sessionLike?.id);
-  return ASSISTANT_PROVIDER_CAPABILITIES[provider] ?? ASSISTANT_PROVIDER_CAPABILITIES.claude;
+  return fallbackCapabilitiesForProvider(provider);
 }
 
 export interface SessionMeta {
-  id: string;              // 现在就是 sdk_session_id
+  id: string;              // 現在就是 sdk_session_id
   provider?: string;
   capabilities?: AssistantProviderCapabilities;
   project_name: string;
@@ -130,6 +120,7 @@ export interface PendingQuestion {
     question: string;
     options: Array<{ label: string; description: string }>;
     multiSelect: boolean;
+    allowOther?: boolean;
   }>;
 }
 

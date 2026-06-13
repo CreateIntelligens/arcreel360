@@ -1,0 +1,85 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    user: "1000:1000"
+    environment:
+      TZ: Asia/Taipei
+      POSTGRES_USER: arcreel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?請在 .env 中設定 POSTGRES_PASSWORD}
+      POSTGRES_DB: arcreel
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arcreel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  arcreel:
+    # image: ghcr.io/arcreel/arcreel:latest
+    build: ./
+    user: "1000:1000"
+    expose:
+      - "${PORT:-1241}"
+    env_file: .env
+    environment:
+      TZ: Asia/Taipei
+      DATABASE_URL: postgresql+asyncpg://arcreel:${POSTGRES_PASSWORD:?請在 .env 中設定 POSTGRES_PASSWORD}@postgres:5432/arcreel
+      HOME: /app/.home
+      PORT: ${PORT:-1241}
+    volumes:
+      - ./.env:/app/.env
+      - ./projects:/app/projects
+      - ./vertex_keys:/app/vertex_keys
+      - ./claude_data:/app/.home/.claude
+      # 應用程式碼掛載（不再 COPY 進映象）
+      - ./lib:/app/lib
+      - ./server:/app/server
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./scripts:/app/scripts
+      - ./agent_runtime_profile:/app/agent_runtime_profile
+      - ./public:/app/public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${PORT:-1241}/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: arcreel360-frontend
+    environment:
+      ARCREEL_UPSTREAM_HOST: ${ARCREEL_UPSTREAM_HOST:-arcreel}
+      ARCREEL_UPSTREAM_PORT: ${PORT:-1241}
+      ARCREEL_UPSTREAM_SCHEME: ${ARCREEL_UPSTREAM_SCHEME:-http}
+      NGINX_ASSET_CACHE_CONTROL: ${NGINX_ASSET_CACHE_CONTROL:-public, max-age=31536000, immutable}
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-2g}
+      NGINX_PROXY_READ_TIMEOUT: ${NGINX_PROXY_READ_TIMEOUT:-3600s}
+      NGINX_PROXY_SEND_TIMEOUT: ${NGINX_PROXY_SEND_TIMEOUT:-3600s}
+      NGINX_ROOT: ${NGINX_ROOT:-/build/dist}
+      NGINX_SERVER_NAME: ${NGINX_SERVER_NAME:-_}
+      PORT: ${PORT:-1241}
+    ports:
+      - "${PORT:-1241}:${PORT:-1241}"
+    volumes:
+      - ./frontend:/build
+      - ./tests:/tests:ro
+      - ./nginx/templates/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      arcreel:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${PORT:-1241}/health >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

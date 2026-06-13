@@ -251,7 +251,7 @@ async def send_new_session(
     try:
         await managed.client.query(prompt)
     except Exception:
-        logger.exception("新会话消息发送失败")
+        logger.exception("新会话消息发送失敗")
         del self.sessions[temp_id]
         try:
             await client.disconnect()
@@ -420,7 +420,7 @@ async def send_or_create(
         return {"status": "accepted", "session_id": sdk_session_id}
 ```
 
-提取 `_prepare_prompt` 私有方法，复用现有 `send_message` 中构建 multimodal prompt 的逻辑。
+提取 `_prepare_prompt` 私有方法，复用現有 `send_message` 中构建 multimodal prompt 的逻辑。
 
 - [ ] **Step 3: 重构 `list_sessions` — 合并 SDK summary**
 
@@ -457,7 +457,7 @@ async def list_sessions(
 
 - [ ] **Step 4: 简化 `_resolve_sdk_session_id` → 移除**
 
-`_resolve_sdk_session_id` (lines 691-720) — 整个方法移除。所有调用点改为直接使用 `session_id`（已经就是 sdk_session_id）。
+`_resolve_sdk_session_id` (lines 691-720) — 整個方法移除。所有调用点改为直接使用 `session_id`（已经就是 sdk_session_id）。
 
 `_build_status_event_payload` (lines 631-666) — 移除双 ID 区分逻辑，简化为直接使用 `session_id`。
 
@@ -537,7 +537,7 @@ async def send_message(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
-        logger.exception("请求处理失败")
+        logger.exception("请求处理失敗")
         raise HTTPException(status_code=500, detail=str(exc))
 ```
 
@@ -726,8 +726,8 @@ const imagePayload = images?.map((img) => ({
 }));
 
 // 乐观更新 UI
-const optimisticContent = [/* ... 同现有逻辑 ... */];
-const optimisticTurn = { /* ... 同现有逻辑 ... */ };
+const optimisticContent = [/* ... 同現有逻辑 ... */];
+const optimisticTurn = { /* ... 同現有逻辑 ... */ };
 store.getState().setTurns([...store.getState().turns, optimisticTurn]);
 statusRef.current = "running";
 store.getState().setSessionStatus("running");
@@ -766,11 +766,11 @@ connectStream(returnedSessionId);
 ```typescript
 catch (err) {
   if (pendingSendVersionRef.current !== sendVersion) return;
-  store.getState().setError((err as Error).message ?? "发送失败");
+  store.getState().setError((err as Error).message ?? "发送失敗");
   if (sessionId && optimisticUuid) {
     restoreFailedSend(sessionId, optimisticUuid, previousStatus);
   } else {
-    // 新会话创建失败：回滚到 draft 模式
+    // 新会话创建失敗：回滚到 draft 模式
     store.getState().setTurns(store.getState().turns.filter(t => t.uuid !== optimisticUuid));
     store.getState().setIsDraftSession(true);
     store.getState().setCurrentSessionId(null);

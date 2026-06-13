@@ -1,4 +1,4 @@
-"""GeminiImageBackend 单元测试。"""
+"""GeminiImageBackend 單元測試。"""
 
 from __future__ import annotations
 
@@ -172,7 +172,7 @@ class TestGenerate:
         backend_aistudio._client.aio.models.generate_content = AsyncMock(return_value=mock_response)
 
         request = ImageGenerationRequest(prompt="test", output_path=output_file)
-        with pytest.raises(RuntimeError, match="未返回图片"):
+        with pytest.raises(RuntimeError, match="未返回圖片"):
             await backend_aistudio.generate(request)
 
 

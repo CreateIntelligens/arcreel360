@@ -5,7 +5,7 @@
 项目从 claude-agent-sdk 0.1.48 升级到 0.1.50，利用新增的会话管理 API 简化架构：
 
 - `list_sessions(directory)` — 按 cwd 列出会话，返回 `SDKSessionInfo`（含 `summary` 自动标题）
-- `get_session_info(session_id)` — 查询单个会话元数据
+- `get_session_info(session_id)` — 查询单個会话元数据
 - `tag_session(session_id, tag)` — 为会话打标签
 - `rename_session(session_id, title)` — 重命名会话
 
@@ -13,7 +13,7 @@
 
 1. **双 ID 业务耦合**：应用层 `id`（UUID hex）与 SDK 层 `sdk_session_id` 分离，前端/API 路由/内存缓存全部使用 app_id，需要反复查映射
 2. **标题管理简陋**：创建时截取用户消息前 30 字符作 title，无自动摘要
-3. **空会话 bug**：`create_session` 先创建 DB 记录，若 SDK 连接失败，遗留 `sdk_session_id=null` 的幽灵记录
+3. **空会话 bug**：`create_session` 先创建 DB 记录，若 SDK 连接失敗，遗留 `sdk_session_id=null` 的幽灵记录
 
 ## 设计目标
 
@@ -107,7 +107,7 @@ POST /sessions/send(project_name, message, session_id=xxx)
 
 #### 新增/修改
 
-- **`send_message` 端点**：统一为 `POST /sessions/send`，接受 `project_name` + `content` + `images` + 可选 `session_id`（body 参数）。无 `session_id` 时为新会话：SDK 连接 + 等待 sdk_session_id + 创建 DB + 发送消息；有 `session_id` 时为已有会话发送。返回 `{session_id, status}`
+- **`send_message` 端点**：统一为 `POST /sessions/send`，接受 `project_name` + `content` + `images` + 可選 `session_id`（body 参数）。无 `session_id` 时为新会话：SDK 连接 + 等待 sdk_session_id + 创建 DB + 发送消息；有 `session_id` 时为已有会话发送。返回 `{session_id, status}`
 - **`SessionManager.send_new_session()`**：新会话专用方法。流程：connect → query → 启动 consumer task → await `asyncio.Event`（**10s 超时**）等待 sdk_session_id → 创建 DB 记录 → 返回 sdk_session_id。新会话期间 ManagedSession 先以临时 UUID 为 key 存入 `self.sessions`，拿到 sdk_session_id 后替换 key。超时或错误时清理：cancel consumer task → disconnect client → 从 `self.sessions` 移除临时 key → **返回 HTTP 错误**（前端据此回滚乐观更新）。时序保证：consumer task 在方法返回前已启动，SDK 流事件缓冲在 `message_buffer`（max 100）中，SSE 连接建立后通过 replay_buffer 补发
 - **`SessionManager._maybe_update_sdk_session_id()`** → 重命名为 `_register_new_session()`：
   - 首次拿到 sdk_session_id 时创建 DB 记录（`id=auto_uuid, sdk_session_id=xxx`）
@@ -157,14 +157,14 @@ Alembic 迁移：
 ### 错误处理
 
 **后端**：
-- SDK 连接失败：`send_message` 直接抛异常返回 HTTP 500，无 DB 残留（空会话问题自然消除）
+- SDK 连接失敗：`send_message` 直接抛异常返回 HTTP 500，无 DB 残留（空会话问题自然消除）
 - sdk_session_id 等待超时：设 **10 秒**超时，超时后取消 consumer task、断开 SDK 连接、确保无资源泄漏，返回 HTTP 504
-- 已有会话发送失败：返回 HTTP 错误码，前端据此回滚
-- `list_sessions` SDK 调用失败：降级为仅返回 DB 数据，title 为空（前端 fallback 到时间戳）
+- 已有会话发送失敗：返回 HTTP 错误码，前端据此回滚
+- `list_sessions` SDK 调用失敗：降级为仅返回 DB 数据，title 为空（前端 fallback 到时间戳）
 
 **前端**：
-- `sendMessage` 的 `catch` 分支需正确处理新会话创建失败：移除乐观插入的用户消息 turn、恢复 draft 模式、显示错误提示
-- 修复现有 bug：当前 SDK 未存储消息但前端乐观显示的情况，通过 send-first 模式 + 错误回滚从根本上解决
+- `sendMessage` 的 `catch` 分支需正确处理新会话创建失敗：移除乐观插入的用户消息 turn、恢复 draft 模式、显示错误提示
+- 修复現有 bug：当前 SDK 未存储消息但前端乐观显示的情况，通过 send-first 模式 + 错误回滚从根本上解决
 
 ## 向后兼容
 

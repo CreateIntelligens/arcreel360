@@ -1,12 +1,12 @@
 """
-Prompt 工具函数
+Prompt 工具函式
 
-提供结构化 Prompt 到 YAML 格式的转换功能。
+提供結構化 Prompt 到 YAML 格式的轉換功能。
 """
 
 import yaml
 
-# 预设选项定义
+# 預設選項定義
 STYLES = ["Photographic", "Anime", "3D Animation"]
 
 SHOT_TYPES = [
@@ -35,22 +35,22 @@ CAMERA_MOTIONS = [
 
 def image_prompt_to_yaml(image_prompt: dict, project_style: str) -> str:
     """
-    将 imagePrompt 结构转换为 YAML 格式字符串
+    將 imagePrompt 結構轉換為 YAML 格式字串
 
     Args:
-        image_prompt: segment 中的 image_prompt 对象，结构为：
+        image_prompt: segment 中的 image_prompt 物件，結構為：
             {
-                "scene": "场景描述",
+                "scene": "場景描述",
                 "composition": {
-                    "shot_type": "镜头类型",
-                    "lighting": "光线描述",
-                    "ambiance": "氛围描述"
+                    "shot_type": "鏡頭型別",
+                    "lighting": "光線描述",
+                    "ambiance": "氛圍描述"
                 }
             }
-        project_style: 项目级风格设置（从 project.json 读取）
+        project_style: 專案級風格設定（從 project.json 讀取）
 
     Returns:
-        YAML 格式字符串，用于 Gemini API 调用
+        YAML 格式字串，用於 Gemini API 呼叫
     """
     ordered = {
         "Style": project_style,
@@ -66,19 +66,19 @@ def image_prompt_to_yaml(image_prompt: dict, project_style: str) -> str:
 
 def video_prompt_to_yaml(video_prompt: dict) -> str:
     """
-    将 videoPrompt 结构转换为 YAML 格式字符串
+    將 videoPrompt 結構轉換為 YAML 格式字串
 
     Args:
-        video_prompt: segment 中的 video_prompt 对象，结构为：
+        video_prompt: segment 中的 video_prompt 物件，結構為：
             {
-                "action": "动作描述",
-                "camera_motion": "摄像机运动",
-                "ambiance_audio": "环境音效描述",
-                "dialogue": [{"speaker": "角色名", "line": "台词"}]
+                "action": "動作描述",
+                "camera_motion": "攝像機運動",
+                "ambiance_audio": "環境音效描述",
+                "dialogue": [{"speaker": "角色名", "line": "臺詞"}]
             }
 
     Returns:
-        YAML 格式字符串，用于 Veo API 调用
+        YAML 格式字串，用於 Veo API 呼叫
     """
     dialogue = [{"Speaker": d["speaker"], "Line": d["line"]} for d in video_prompt.get("dialogue", [])]
 
@@ -88,7 +88,7 @@ def video_prompt_to_yaml(video_prompt: dict) -> str:
         "Ambiance_Audio": video_prompt.get("ambiance_audio", ""),
     }
 
-    # 仅在有对话时添加 Dialogue 字段
+    # 僅在有對話時新增 Dialogue 欄位
     if dialogue:
         ordered["Dialogue"] = dialogue
 
@@ -97,40 +97,40 @@ def video_prompt_to_yaml(video_prompt: dict) -> str:
 
 def is_structured_image_prompt(image_prompt) -> bool:
     """
-    检查 image_prompt 是否为结构化格式
+    檢查 image_prompt 是否為結構化格式
 
     Args:
-        image_prompt: image_prompt 字段值
+        image_prompt: image_prompt 欄位值
 
     Returns:
-        True 如果是结构化格式（dict），False 如果是旧的字符串格式
+        True 如果是結構化格式（dict），False 如果是舊的字串格式
     """
     return isinstance(image_prompt, dict) and "scene" in image_prompt
 
 
 def is_structured_video_prompt(video_prompt) -> bool:
     """
-    检查 video_prompt 是否为结构化格式
+    檢查 video_prompt 是否為結構化格式
 
     Args:
-        video_prompt: video_prompt 字段值
+        video_prompt: video_prompt 欄位值
 
     Returns:
-        True 如果是结构化格式（dict），False 如果是旧的字符串格式
+        True 如果是結構化格式（dict），False 如果是舊的字串格式
     """
     return isinstance(video_prompt, dict) and "action" in video_prompt
 
 
 def validate_style(style: str) -> bool:
-    """验证风格是否为预设选项"""
+    """驗證風格是否為預設選項"""
     return style in STYLES
 
 
 def validate_shot_type(shot_type: str) -> bool:
-    """验证镜头类型是否为预设选项"""
+    """驗證鏡頭型別是否為預設選項"""
     return shot_type in SHOT_TYPES
 
 
 def validate_camera_motion(camera_motion: str) -> bool:
-    """验证摄像机运动是否为预设选项"""
+    """驗證攝像機運動是否為預設選項"""
     return camera_motion in CAMERA_MOTIONS

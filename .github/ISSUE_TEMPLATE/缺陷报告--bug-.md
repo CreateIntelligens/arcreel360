@@ -1,6 +1,6 @@
 ---
 name: 缺陷报告 (Bug)
-about: 报告一个系统错误或异常现象
+about: 报告一個系统错误或异常现象
 title: "[Bug] "
 labels: bug
 assignees: ''

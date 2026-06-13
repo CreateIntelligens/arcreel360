@@ -1,15 +1,16 @@
 // router.tsx — Route definitions for the studio layout
 
 import { useEffect } from "react";
-import { Route, Switch, Redirect, useParams } from "wouter";
+import { Route, Switch, Redirect, useLocation, useParams } from "wouter";
 import { StudioLayout } from "@/components/layout";
 import { StudioCanvasRouter } from "@/components/canvas/StudioCanvasRouter";
 import { ProjectsPage } from "@/components/pages/ProjectsPage";
 import { SystemConfigPage } from "@/components/pages/SystemConfigPage";
 import { ProjectSettingsPage } from "@/components/pages/ProjectSettingsPage";
-import { LoginPage } from "@/pages/LoginPage";
-import { NotFoundPage } from "@/pages/NotFoundPage";
+import { LoginPage } from "@/components/pages/LoginPage";
+import { NotFoundPage } from "@/components/pages/NotFoundPage";
 import { ToastOverlay } from "@/components/layout/ToastOverlay";
+import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { API } from "@/api";
 import { useProjectsStore } from "@/stores/projects-store";
 import { useAssistantStore } from "@/stores/assistant-store";
@@ -44,13 +45,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function StudioWorkspace() {
   const params = useParams<{ projectName: string }>();
   const projectName = params.projectName ?? null;
+  const [, navigate] = useLocation();
   const { setCurrentProject, setProjectDetailLoading } = useProjectsStore();
 
   useEffect(() => {
     if (!projectName) return;
     let cancelled = false;
 
-    // 清空上一个项目的 assistant 状态，确保会话隔离
+    // 清空上一個專案的 assistant 狀態，確保會話隔離
     const assistantState = useAssistantStore.getState();
     assistantState.setSessions([]);
     assistantState.setCurrentSessionId(null);
@@ -66,11 +68,17 @@ function StudioWorkspace() {
           setCurrentProject(projectName, res.project, res.scripts ?? {}, res.asset_fingerprints);
         }
       })
-      .catch(() => {
-        // Still set the project name so the UI shows something
-        if (!cancelled) {
-          setCurrentProject(projectName, null);
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        if ((err as { status?: number }).status === 404) {
+          setCurrentProject(null, null);
+          setProjectDetailLoading(false);
+          navigate("~/app/projects", { replace: true });
+          return;
         }
+
+        // Still set the project name so the UI shows something for transient failures.
+        setCurrentProject(projectName, null);
       })
       .finally(() => {
         if (!cancelled) setProjectDetailLoading(false);
@@ -80,7 +88,7 @@ function StudioWorkspace() {
       cancelled = true;
       setCurrentProject(null, null);
     };
-  }, [projectName, setCurrentProject, setProjectDetailLoading]);
+  }, [navigate, projectName, setCurrentProject, setProjectDetailLoading]);
 
   return (
     <StudioLayout>
@@ -95,7 +103,7 @@ function StudioWorkspace() {
 
 export function AppRoutes() {
   return (
-    <>
+    <ConfirmProvider>
       <Switch>
         {/* Login page */}
         <Route path="/login" component={LoginPage} />
@@ -144,6 +152,6 @@ export function AppRoutes() {
         </Route>
       </Switch>
       <ToastOverlay />
-    </>
+    </ConfirmProvider>
   );
 }

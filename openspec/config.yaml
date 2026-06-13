@@ -9,8 +9,10 @@ schema: spec-driven
 #     We use conventional commits
 #     Domain: e-commerce platform
 context: |
-  语言: 中文（简体）
-  所有产出物必须用简体中文撰写。
+  語言：中文（繁體）
+  所有產出物必須使用繁體中文撰寫。
+  專案實際上的對外與內部文案皆為繁體中文（見 CLAUDE.md「語言規範」），
+  既有變更目錄中若仍有簡體文件屬歷史遺留，新建變更一律走繁體。
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.

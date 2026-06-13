@@ -2,7 +2,7 @@
 
 ## 背景
 
-Grok 供应商在实际使用中暴露出四个问题，影响图片/视频生成质量和体验：
+Grok 供应商在实际使用中暴露出四個问题，影响图片/视频生成质量和体验：
 
 1. 用户上传的角色参考图/角色图过大，base64 编码后超过 gRPC 4MB 限制，导致生图/生视频直接报错
 2. Grok 图片生成并发实际只有 1（默认应为 5），需排查根因
@@ -56,11 +56,11 @@ Grok 供应商在实际使用中暴露出四个问题，影响图片/视频生�
 
 1. **DB 配置残留**：检查 `provider_configs` 表中 Grok 的 `image_max_workers` 是否被设为 1
 2. **Pool 加载逻辑**：`_load_pools_from_db()` 在解析 config 时是否有类型转换或默认值问题
-3. **Fallback pool**：如果 DB 加载失败，`_build_default_pools()` 是否被使用且行为正确
+3. **Fallback pool**：如果 DB 加载失敗，`_build_default_pools()` 是否被使用且行为正确
 
 ### 方案
 
-- 在 worker 启动和 `reload_limits()` 时，增加 INFO 级别日志，打印每个 provider 的实际 pool 配置（image_max, video_max）
+- 在 worker 启动和 `reload_limits()` 时，增加 INFO 级别日志，打印每個 provider 的实际 pool 配置（image_max, video_max）
 - 如果确认是 DB 残留值（如 `"1"` 或空字符串），修复 `_load_pools_from_db()` 的默认值回退逻辑
 
 ### 改动文件

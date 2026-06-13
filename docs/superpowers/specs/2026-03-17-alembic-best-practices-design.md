@@ -6,24 +6,24 @@
 
 ## 背景
 
-审查发现 6 个问题：
+审查发现 6 個问题：
 
-1. **`render_as_batch=True` 缺失（高优先级）** — 未来 SQLite 上 ALTER TABLE 迁移会失败
-2. **时间戳类型混用（中优先级）** — 5 张表用 String，1 张表（ApiKey）用 DateTime，三个 repo 的格式还不一致
+1. **`render_as_batch=True` 缺失（高优先级）** — 未来 SQLite 上 ALTER TABLE 迁移会失敗
+2. **时间戳类型混用（中优先级）** — 5 张表用 String，1 张表（ApiKey）用 DateTime，三個 repo 的格式还不一致
 3. **TaskEvent 无外键（中优先级）** — 数据完整性无数据库级保护
 4. **post_write_hooks 未启用（低优先级）** — 迁移文件格式不统一
 5. **PostgreSQL 连接池未配置（低优先级）** — 仅影响生产性能
 6. **`server_default` 跨库兼容性（低优先级）** — Boolean 默认值写法不规范
 
-## 方案选择
+## 方案選择
 
-**选定方案一：单次大迁移**。理由：项目早期（仅 2 个迁移版本）、表数据量小、改动逻辑单一（String→DateTime），拆分反而引入中间不一致状态。
+**選定方案一：单次大迁移**。理由：项目早期（仅 2 個迁移版本）、表数据量小、改动逻辑单一（String→DateTime），拆分反而引入中间不一致状态。
 
 数据迁移策略：**直接转换**（非新旧列并存），理由同上。
 
 ## 改动范围
 
-### 1. Alembic 基础设施（3 个文件）
+### 1. Alembic 基础设施（3 個文件）
 
 #### `alembic/env.py`
 
@@ -63,7 +63,7 @@ if not _is_sqlite:
     kwargs.update(pool_size=10, max_overflow=20, pool_recycle=3600)
 ```
 
-### 2. 数据库迁移脚本（1 个新迁移文件）
+### 2. 数据库迁移脚本（1 個新迁移文件）
 
 新迁移 `xxxx_unify_timestamps_and_add_fk.py`。
 
@@ -117,7 +117,7 @@ DELETE FROM task_events WHERE task_id NOT IN (SELECT task_id FROM tasks)
 - 删除 task_events 外键
 - `server_default` 改回 `"1"`
 
-### 3. ORM 模型改动（4 个文件）
+### 3. ORM 模型改动（4 個文件）
 
 - `lib/db/models/task.py` — Task（4 列）、TaskEvent（1 列 + 外键）、WorkerLease（1 列）
 - `lib/db/models/api_call.py` — ApiCall（3 列 + server_default）
@@ -140,9 +140,9 @@ task_id: Mapped[str] = mapped_column(
 )
 ```
 
-### 4. Repository 层改动（3 个文件）
+### 4. Repository 层改动（3 個文件）
 
-三个 repo 各自的 `_utc_now_iso()` helper 统一改为 `_utc_now()`，返回 `datetime.now(timezone.utc)`。
+三個 repo 各自的 `_utc_now_iso()` helper 统一改为 `_utc_now()`，返回 `datetime.now(timezone.utc)`。
 
 #### `lib/db/repositories/task_repo.py`（~12 处）
 

@@ -104,6 +104,156 @@ class TestTaskRepository:
         assert dep_task["status"] == "failed"
         assert "blocked by failed dependency" in dep_task["error_message"]
 
+    async def test_cancel_single_queued_task(self, db_session):
+        repo = TaskRepository(db_session)
+
+        task = await repo.enqueue(
+            project_name="demo",
+            task_type="storyboard",
+            media_type="image",
+            resource_id="E1S01",
+            payload={},
+            script_file="ep1.json",
+        )
+
+        result = await repo.cancel_task(task["task_id"])
+
+        assert len(result["cancelled"]) == 1
+        assert result["cancelled"][0]["task_id"] == task["task_id"]
+        assert result["cancelled"][0]["cancelled_by"] == "user"
+        assert result["skipped_running"] == []
+
+        cancelled = await repo.get(task["task_id"])
+        assert cancelled["status"] == "cancelled"
+        assert cancelled["cancelled_by"] == "user"
+
+    async def test_cancel_task_cascades_to_dependents(self, db_session):
+        repo = TaskRepository(db_session)
+
+        first = await repo.enqueue(
+            project_name="demo",
+            task_type="storyboard",
+            media_type="image",
+            resource_id="E1S01",
+            payload={},
+            script_file="ep1.json",
+        )
+        second = await repo.enqueue(
+            project_name="demo",
+            task_type="video",
+            media_type="video",
+            resource_id="E1S01",
+            payload={},
+            script_file="ep1.json",
+            dependency_task_id=first["task_id"],
+        )
+
+        result = await repo.cancel_task(first["task_id"])
+
+        assert [item["task_id"] for item in result["cancelled"]] == [first["task_id"], second["task_id"]]
+        assert result["cancelled"][0]["cancelled_by"] == "user"
+        assert result["cancelled"][1]["cancelled_by"] == "cascade"
+
+        dep_task = await repo.get(second["task_id"])
+        assert dep_task["status"] == "cancelled"
+        assert dep_task["cancelled_by"] == "cascade"
+
+    async def test_cancel_running_task_rejected(self, db_session):
+        repo = TaskRepository(db_session)
+
+        task = await repo.enqueue(
+            project_name="demo",
+            task_type="storyboard",
+            media_type="image",
+            resource_id="E1S01",
+            payload={},
+            script_file="ep1.json",
+        )
+        await repo.claim_next("image")
+
+        with pytest.raises(ValueError, match="只有排隊中的任務可以取消"):
+            await repo.cancel_task(task["task_id"])
+
+    async def test_cancel_preview(self, db_session):
+        repo = TaskRepository(db_session)
+
+        first = await repo.enqueue(
+            project_name="demo",
+            task_type="storyboard",
+            media_type="image",
+            resource_id="E1S01",
+            payload={},
+            script_file="ep1.json",
+        )
+        second = await repo.enqueue(
+            project_name="demo",
+            task_type="video",
+            media_type="video",
+            resource_id="E1S01",
+            payload={},
+            script_file="ep1.json",
+            dependency_task_id=first["task_id"],
+        )
+
+        preview = await repo.get_cancel_preview(first["task_id"])
+
+        assert preview["task"]["task_id"] == first["task_id"]
+        assert preview["cascaded"] == [
+            {
+                "task_id": second["task_id"],
+                "task_type": "video",
+                "resource_id": "E1S01",
+            }
+        ]
+
+    async def test_cancel_all_queued(self, db_session):
+        repo = TaskRepository(db_session)
+
+        await repo.enqueue(
+            project_name="demo",
+            task_type="storyboard",
+            media_type="image",
+            resource_id="E1S01",
+            payload={},
+            script_file="ep1.json",
+        )
+        t2 = await repo.enqueue(
+            project_name="demo",
+            task_type="video",
+            media_type="video",
+            resource_id="E1S02",
+            payload={},
+            script_file="ep1.json",
+        )
+        await repo.claim_next("image")
+
+        result = await repo.cancel_all_queued("demo")
+
+        assert result["cancelled_count"] == 1
+        assert result["skipped_running_count"] == 1
+
+        task = await repo.get(t2["task_id"])
+        assert task["status"] == "cancelled"
+        assert task["cancelled_by"] == "user"
+
+    async def test_get_stats_includes_cancelled(self, db_session):
+        repo = TaskRepository(db_session)
+
+        task = await repo.enqueue(
+            project_name="demo",
+            task_type="storyboard",
+            media_type="image",
+            resource_id="E1S01",
+            payload={},
+            script_file="ep1.json",
+        )
+        await repo.cancel_task(task["task_id"])
+
+        stats = await repo.get_stats()
+        assert stats["cancelled"] == 1
+        assert stats["queued"] == 0
+        assert stats["total"] == 1
+
     async def test_requeue_running_tasks(self, db_session):
         repo = TaskRepository(db_session)
 

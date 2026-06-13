@@ -2,19 +2,19 @@
 
 ### Requirement: 分镜时长可交互切换
 
-SegmentCard 头部的时长展示元素 SHALL 支持用户点击后弹出选择器，在 4s、6s、8s 三个选项之间切换，选中后通过 `onUpdatePrompt` 回调将新值写入后端，并在保存完成后刷新剧集总时长。
+SegmentCard 头部的时长展示元素 SHALL 支持用户点击后弹出選择器，在 4s、6s、8s 三個選項之间切换，選中后通过 `onUpdatePrompt` 回调将新值写入后端，并在保存完成后刷新剧集总时长。
 
-#### Scenario: 点击时长徽章弹出选择器
+#### Scenario: 点击时长徽章弹出選择器
 
 - **WHEN** 用户点击 SegmentCard 头部的时长徽章（如"4s"）
-- **THEN** 弹出 Popover，列出"4s"、"6s"、"8s"三个按钮，当前值高亮显示
+- **THEN** 弹出 Popover，列出"4s"、"6s"、"8s"三個按钮，当前值高亮显示
 
-#### Scenario: 选择新时长并保存
+#### Scenario: 選择新时长并保存
 
-- **WHEN** 用户在弹出的选择器中点击某个时长选项（如"6s"）
+- **WHEN** 用户在弹出的選择器中点击某個时长選項（如"6s"）
 - **THEN** Popover 关闭，时长徽章立即显示新值"6s"，并通过 `onUpdatePrompt(segmentId, "duration_seconds", 6)` 触发后端保存
 
-#### Scenario: 取消选择
+#### Scenario: 取消選择
 
 - **WHEN** 用户点击 Popover 以外区域
 - **THEN** Popover 关闭，时长徽章保持原值不变

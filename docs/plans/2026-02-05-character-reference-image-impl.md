@@ -79,7 +79,7 @@ git commit -m "feat(files): add character_ref upload type"
 
 **Step 1: 添加 update_character_reference_image 方法**
 
-在 `ProjectManager` 类中添加方法（参考现有的 `update_project_character_sheet`）：
+在 `ProjectManager` 类中添加方法（参考現有的 `update_project_character_sheet`）：
 
 ```python
 def update_character_reference_image(self, project_name: str, char_name: str, ref_path: str) -> dict:
@@ -174,7 +174,7 @@ async def generate_character(
     req: GenerateCharacterRequest
 ):
     """
-    生成角色设计图（首次生成或重新生成）
+    生成角色设计图（首次生成或生成）
 
     使用 MediaGenerator 自动处理版本管理。
     若角色有 reference_image，自动作为参考图传入。
@@ -368,7 +368,7 @@ git commit -m "feat(cli): auto-read reference_image from project.json, remove --
 
 ```html
 <div>
-    <label class="block text-sm font-medium text-gray-300 mb-1">参考图（可选）</label>
+    <label class="block text-sm font-medium text-gray-300 mb-1">参考图（可選）</label>
     <div id="char-ref-drop" class="drop-zone rounded-lg p-4 text-center cursor-pointer relative">
         <div id="char-ref-preview" class="hidden mb-2">
             <img src="" alt="参考图预览" class="max-h-32 mx-auto rounded">
@@ -413,12 +413,12 @@ document.getElementById("char-ref-preview").classList.add("hidden");
 document.getElementById("char-ref-placeholder").classList.remove("hidden");
 document.getElementById("char-ref-input").value = "";
 
-// ... 现有代码 ...
+// ... 現有代码 ...
 
 // 在编辑模式下显示已有参考图
 if (charName && state.currentProject.characters[charName]) {
     const char = state.currentProject.characters[charName];
-    // ... 现有代码 ...
+    // ... 現有代码 ...
     
     // 显示参考图（如果有）
     if (char.reference_image) {
@@ -447,7 +447,7 @@ export function initCharacterRefUpload() {
     // 点击上传
     dropZone.addEventListener("click", () => input.click());
 
-    // 文件选择
+    // 文件選择
     input.addEventListener("change", (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -552,7 +552,7 @@ export async function saveCharacter() {
         closeAllModals();
         await loadProject();
     } catch (error) {
-        alert("保存失败: " + error.message);
+        alert("保存失敗: " + error.message);
     }
 }
 ```
@@ -610,7 +610,7 @@ Run: `cd /Users/pollochen/Documents/ai-anime/.worktrees/character-reference-imag
 **Step 2: 手动测试流程**
 
 1. 打开浏览器访问 http://localhost:8000
-2. 选择或创建一个测试项目
+2. 選择或创建一個测试项目
 3. 添加新角色，上传参考图
 4. 保存角色
 5. 点击"生成设计图"

@@ -5,7 +5,7 @@
 
 ## 背景
 
-升级 `claude-agent-sdk` 至 v0.1.46，利用两个新 PR 的功能重构 agent_runtime 模块：
+升级 `claude-agent-sdk` 至 v0.1.46，利用两個新 PR 的功能重构 agent_runtime 模块：
 
 - **PR #621**: Typed Task Messages — `TaskStartedMessage`/`TaskProgressMessage`/`TaskNotificationMessage` 作为 `SystemMessage` 子类
 - **PR #622**: `get_session_messages()` / `list_sessions()` — 基于 `parentUuid` 链路重建的会话读取
@@ -141,7 +141,7 @@ if classification == "result":
 
 ### 3. 去重策略简化
 
-**现有复杂度**: ~100 行（`_build_seen_sets` + `_content_key` + `_is_duplicate` + `_should_skip_local_echo` + round-scoping）
+**現有复杂度**: ~100 行（`_build_seen_sets` + `_content_key` + `_is_duplicate` + `_should_skip_local_echo` + round-scoping）
 
 **简化为**: ~50 行
 
@@ -153,7 +153,7 @@ def _build_projector(self, meta, session_id, replayed_messages=None):
     # Step 2: UUID 集合
     transcript_uuids = {m["uuid"] for m in transcript_msgs if m.get("uuid")}
 
-    # Step 3: 当前轮次内容指纹（最后一个 real_user 之后的消息）
+    # Step 3: 当前轮次内容指纹（最后一個 real_user 之后的消息）
     tail_fps = self._fingerprint_tail(transcript_msgs)
 
     # Step 4: 初始化投影器
@@ -195,9 +195,9 @@ def _build_projector(self, meta, session_id, replayed_messages=None):
 
 | 被删除 | 原因 |
 |--------|------|
-| `_build_seen_sets` (last_user_idx 追踪) | SDK 返回的 user 都是真实用户，`_fingerprint_tail` 直接找最后一个 user |
+| `_build_seen_sets` (last_user_idx 追踪) | SDK 返回的 user 都是真实用户，`_fingerprint_tail` 直接找最后一個 user |
 | `_content_key` (MD5 哈希 thinking blocks) | 替换为 `_fingerprint`：truncate 到 200 字符即可 |
-| Round-scoping (`seen_content_keys.clear()`) | 自然限定到 tail（最后一个 user 之后的消息） |
+| Round-scoping (`seen_content_keys.clear()`) | 自然限定到 tail（最后一個 user 之后的消息） |
 | `_is_system_injected_user_message` 在去重中的调用 | 不需要 — SDK 的 user 都是真实用户，无需判断 |
 
 **保留的逻辑**:
@@ -266,7 +266,7 @@ task_progress_block = {
 }
 ```
 
-附加到当前 assistant turn 的 content 中。如果没有当前 assistant turn，创建一个 type="system" turn。
+附加到当前 assistant turn 的 content 中。如果没有当前 assistant turn，创建一個 type="system" turn。
 
 #### 前端渲染
 
@@ -279,7 +279,7 @@ TaskProgressBlock 渲染:
   task_started  → "🔄 子任务开始: {description}"
   task_progress → "⏳ {description} (tokens: {usage.total_tokens})"
   task_notification(completed) → "✅ 子任务完成: {summary}"
-  task_notification(failed)    → "❌ 子任务失败: {summary}"
+  task_notification(failed)    → "❌ 子任务失敗: {summary}"
 ```
 
 ### 5. 前端类型变更
@@ -331,4 +331,4 @@ export interface ContentBlock {
 | SDK `get_session_messages()` 过滤了主分支上有意义的 skill content | 实测仅 2/6 被过滤且都是分支冗余内容；即使偶尔过滤，turn grouping 不受影响（skill content 仅作装饰性附加） |
 | content-based dedup 的 truncate 策略可能误匹配 | 限定到当前轮次 tail，collision 概率极低；仅用于 UUID 缺失的 buffer 消息 |
 | 消除 result turn 可能影响前端逻辑 | 实测 result turn 无渲染内容；前端只需移除 type 判断，无功能退化 |
-| `get_session_messages()` 同步阻塞事件循环 | 现有 TranscriptReader 也是同步调用，不引入新问题；后续可包装 run_in_executor |
+| `get_session_messages()` 同步阻塞事件循环 | 現有 TranscriptReader 也是同步调用，不引入新问题；后续可包装 run_in_executor |

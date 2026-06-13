@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-Video Generator - 使用 Veo 3.1 API 生成视频分镜
+Video Generator - 使用 Veo 3.1 API 生成影片分鏡
 
 Usage:
-    # 按 episode 生成（推荐）
+    # 按 episode 生成（推薦）
     python generate_video.py episode_N.json --episode N
 
-    # 断点续传
+    # 斷點續傳
     python generate_video.py episode_N.json --episode N --resume
 
-    # 单场景模式
+    # 單場景模式
     python generate_video.py episode_N.json --scene SCENE_ID
 
-    # 批量模式（独立生成每个场景）
+    # 批次模式（獨立生成每個場景）
     python generate_video.py episode_N.json --all
 
-每个场景独立生成视频，使用分镜图作为起始帧，然后使用 ffmpeg 拼接。
+每個場景獨立生成影片，使用分鏡圖作為起始幀，然後使用 ffmpeg 拼接。
 """
 
 import argparse
@@ -39,53 +39,53 @@ from lib.project_manager import ProjectManager
 from lib.prompt_utils import is_structured_video_prompt, video_prompt_to_yaml
 
 # ============================================================================
-# Prompt 构建
+# Prompt 構建
 # ============================================================================
 
 
 def get_video_prompt(item: dict) -> str:
     """
-    获取视频生成 Prompt
+    獲取影片生成 Prompt
 
-    支持结构化 prompt 格式：如果 video_prompt 是 dict，则转换为 YAML 格式。
+    支援結構化 prompt 格式：如果 video_prompt 是 dict，則轉換為 YAML 格式。
 
     Args:
-        item: 片段/场景字典
+        item: 片段/場景字典
 
     Returns:
-        video_prompt 字符串（可能是 YAML 格式或普通字符串）
+        video_prompt 字串（可能是 YAML 格式或普通字串）
     """
     prompt = item.get("video_prompt")
     if not prompt:
         item_id = item.get("segment_id") or item.get("scene_id")
-        raise ValueError(f"片段/场景缺少 video_prompt 字段: {item_id}")
+        raise ValueError(f"片段/場景缺少 video_prompt 欄位: {item_id}")
 
-    # 检测是否为结构化格式
+    # 檢測是否為結構化格式
     if is_structured_video_prompt(prompt):
-        # 转换为 YAML 格式
+        # 轉換為 YAML 格式
         return video_prompt_to_yaml(prompt)
 
-    # 避免将 dict 直接下传导致类型错误
+    # 避免將 dict 直接下傳導致型別錯誤
     if isinstance(prompt, dict):
         item_id = item.get("segment_id") or item.get("scene_id")
-        raise ValueError(f"片段/场景 video_prompt 为对象但格式不符合结构化规范: {item_id}")
+        raise ValueError(f"片段/場景 video_prompt 為物件但格式不符合結構化規範: {item_id}")
 
     if not isinstance(prompt, str):
         item_id = item.get("segment_id") or item.get("scene_id")
-        raise TypeError(f"片段/场景 video_prompt 类型无效（期望 str 或 dict）: {item_id}")
+        raise TypeError(f"片段/場景 video_prompt 型別無效（期望 str 或 dict）: {item_id}")
 
     return prompt
 
 
 def get_items_from_script(script: dict) -> tuple:
     """
-    根据内容模式获取场景/片段列表和相关字段名
+    根據內容模式獲取場景/片段列表和相關欄位名
 
     Args:
-        script: 剧本数据
+        script: 劇本資料
 
     Returns:
-        (items_list, id_field, char_field, clue_field) 元组
+        (items_list, id_field, char_field, clue_field) 元組
     """
     content_mode = script.get("content_mode", "narration")
     if content_mode == "narration" and "segments" in script:
@@ -94,7 +94,7 @@ def get_items_from_script(script: dict) -> tuple:
 
 
 def parse_scene_ids(scenes_arg: str) -> list:
-    """解析逗号分隔的场景 ID 列表"""
+    """解析逗號分隔的場景 ID 列表"""
     return [s.strip() for s in scenes_arg.split(",") if s.strip()]
 
 
@@ -102,7 +102,7 @@ DEFAULT_DURATIONS_FALLBACK = [4, 8]
 
 
 def get_supported_durations(project: dict) -> list[int]:
-    """从项目配置或 registry 获取当前视频模型支持的时长列表。"""
+    """從專案配置或 registry 獲取當前影片模型支援的時長列表。"""
     durations = project.get("_supported_durations")
     if durations and isinstance(durations, list):
         return durations
@@ -119,20 +119,20 @@ def get_supported_durations(project: dict) -> list[int]:
                 if model_info and model_info.supported_durations:
                     return list(model_info.supported_durations)
         except ImportError:
-            pass  # registry 不可用时（如独立运行），回退到 DEFAULT_DURATIONS_FALLBACK
+            pass  # registry 不可用時（如獨立執行），回退到 DEFAULT_DURATIONS_FALLBACK
     return DEFAULT_DURATIONS_FALLBACK
 
 
 def validate_duration(duration: int, supported_durations: list[int] | None = None) -> str:
     """
-    验证并返回有效的时长参数。
+    驗證並返回有效的時長引數。
 
     Args:
-        duration: 输入的时长（秒）
-        supported_durations: 当前视频模型支持的时长列表
+        duration: 輸入的時長（秒）
+        supported_durations: 當前影片模型支援的時長列表
 
     Returns:
-        有效的时长字符串
+        有效的時長字串
     """
     valid = supported_durations or DEFAULT_DURATIONS_FALLBACK
     if duration in valid:
@@ -150,13 +150,13 @@ def validate_duration(duration: int, supported_durations: list[int] | None = Non
 
 
 def get_checkpoint_path(project_dir: Path, episode: int) -> Path:
-    """获取 checkpoint 文件路径"""
+    """獲取 checkpoint 檔案路徑"""
     return project_dir / "videos" / f".checkpoint_ep{episode}.json"
 
 
 def load_checkpoint(project_dir: Path, episode: int) -> dict | None:
     """
-    加载 checkpoint
+    載入 checkpoint
 
     Returns:
         checkpoint 字典或 None
@@ -169,7 +169,7 @@ def load_checkpoint(project_dir: Path, episode: int) -> dict | None:
 
 
 def save_checkpoint(project_dir: Path, episode: int, completed_scenes: list, started_at: str):
-    """保存 checkpoint"""
+    """儲存 checkpoint"""
     checkpoint_path = get_checkpoint_path(project_dir, episode)
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -198,24 +198,24 @@ def clear_checkpoint(project_dir: Path, episode: int):
 
 def concatenate_videos(video_paths: list, output_path: Path) -> Path:
     """
-    使用 ffmpeg 拼接多个视频片段
+    使用 ffmpeg 拼接多個影片片段
 
     Args:
-        video_paths: 视频文件路径列表
-        output_path: 输出路径
+        video_paths: 影片檔案路徑列表
+        output_path: 輸出路徑
 
     Returns:
-        输出视频路径
+        輸出影片路徑
     """
     if len(video_paths) == 1:
-        # 只有一个片段，直接复制
+        # 只有一個片段，直接複製
         import shutil
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(video_paths[0], output_path)
         return output_path
 
-    # 创建临时文件列表
+    # 建立臨時檔案列表
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
         for video_path in video_paths:
             f.write(f"file '{video_path}'\n")
@@ -226,14 +226,14 @@ def concatenate_videos(video_paths: list, output_path: Path) -> Path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", list_file, "-c", "copy", str(output_path)]
         subprocess.run(cmd, check=True, capture_output=True)
-        print(f"✅ 视频已拼接: {output_path}")
+        print(f"✅ 影片已拼接: {output_path}")
         return output_path
     finally:
         Path(list_file).unlink()
 
 
 # ============================================================================
-# 批量任务构建辅助
+# 批次任務構建輔助
 # ============================================================================
 
 
@@ -248,15 +248,15 @@ def _build_video_specs(
     skip_ids: list[str] | None = None,
 ) -> tuple[list[BatchTaskSpec], dict[str, int]]:
     """
-    从场景/片段列表构建 BatchTaskSpec 和 resource_id -> order_index 映射。
+    從場景/片段列表構建 BatchTaskSpec 和 resource_id -> order_index 對映。
 
-    跳过缺少分镜图或 prompt 无效的项，并打印警告。
+    跳過缺少分鏡圖或 prompt 無效的項，並列印警告。
 
     Returns:
         (specs, order_map)  order_map: resource_id -> 原始 items 中的索引
     """
     _project = project or {}
-    item_type = "片段" if content_mode == "narration" else "场景"
+    item_type = "片段" if content_mode == "narration" else "場景"
     default_duration = _project.get("default_duration") or (4 if content_mode == "narration" else 8)
     supported = get_supported_durations(_project)
     skip_set = set(skip_ids or [])
@@ -272,17 +272,17 @@ def _build_video_specs(
 
         storyboard_image = (item.get("generated_assets") or {}).get("storyboard_image")
         if not storyboard_image:
-            print(f"⚠️  {item_type} {item_id} 没有分镜图，跳过")
+            print(f"⚠️  {item_type} {item_id} 沒有分鏡圖，跳過")
             continue
         storyboard_path = project_dir / storyboard_image
         if not storyboard_path.exists():
-            print(f"⚠️  分镜图不存在: {storyboard_path}，跳过")
+            print(f"⚠️  分鏡圖不存在: {storyboard_path}，跳過")
             continue
 
         try:
             prompt = get_video_prompt(item)
         except Exception as e:
-            print(f"⚠️  {item_type} {item_id} 的 video_prompt 无效，跳过: {e}")
+            print(f"⚠️  {item_type} {item_id} 的 video_prompt 無效，跳過: {e}")
             continue
 
         duration = item.get("duration_seconds", default_duration)
@@ -340,7 +340,7 @@ def _submit_and_wait_with_checkpoint(
     item_type: str,
 ) -> list[BatchTaskResult]:
     """Submit specs via batch_enqueue_and_wait_sync with checkpoint on each success."""
-    print(f"\n🚀 批量提交 {len(specs)} 个视频到生成队列...\n")
+    print(f"\n🚀 批次提交 {len(specs)} 個影片到生成佇列...\n")
 
     def on_success(br: BatchTaskResult) -> None:
         result = br.result or {}
@@ -352,7 +352,7 @@ def _submit_and_wait_with_checkpoint(
         print(f"    ✅ 完成: {output_path.name}")
 
     def on_failure(br: BatchTaskResult) -> None:
-        print(f"    ❌ {br.resource_id} 失败: {br.error}")
+        print(f"    ❌ {br.resource_id} 失敗: {br.error}")
 
     _, failures = batch_enqueue_and_wait_sync(
         project_name=project_name,
@@ -362,17 +362,17 @@ def _submit_and_wait_with_checkpoint(
     )
 
     if failures:
-        print(f"\n⚠️  {len(failures)} 个{item_type}生成失败:")
+        print(f"\n⚠️  {len(failures)} 個{item_type}生成失敗:")
         for f in failures:
             print(f"   - {f.resource_id}: {f.error}")
-        print("    💡 使用 --resume 参数可从此处继续")
-        raise RuntimeError(f"{len(failures)} 个{item_type}生成失败")
+        print("    💡 使用 --resume 引數可從此處繼續")
+        raise RuntimeError(f"{len(failures)} 個{item_type}生成失敗")
 
     return failures
 
 
 # ============================================================================
-# Episode 视频生成（每个场景独立生成）
+# Episode 影片生成（每個場景獨立生成）
 # ============================================================================
 
 
@@ -382,9 +382,9 @@ def generate_episode_video(
     resume: bool = False,
 ) -> list[Path]:
     """
-    为指定 episode 生成所有场景的视频片段。
+    為指定 episode 生成所有場景的影片片段。
 
-    每个场景独立生成视频，使用分镜图作为起始帧。
+    每個場景獨立生成影片，使用分鏡圖作為起始幀。
     """
     pm, project_name = ProjectManager.from_cwd()
     project_dir = pm.get_project_path(project_name)
@@ -395,10 +395,10 @@ def generate_episode_video(
 
     episode_items = [s for s in all_items if s.get("episode", 1) == episode]
     if not episode_items:
-        raise ValueError(f"未找到第 {episode} 集的场景/片段")
+        raise ValueError(f"未找到第 {episode} 集的場景/片段")
 
-    item_type = "片段" if content_mode == "narration" else "场景"
-    print(f"📋 第 {episode} 集共 {len(episode_items)} 个{item_type}")
+    item_type = "片段" if content_mode == "narration" else "場景"
+    print(f"📋 第 {episode} 集共 {len(episode_items)} 個{item_type}")
 
     # Checkpoint
     completed_scenes: list[str] = []
@@ -408,9 +408,9 @@ def generate_episode_video(
         if checkpoint:
             completed_scenes = checkpoint.get("completed_scenes", [])
             started_at = checkpoint.get("started_at", started_at)
-            print(f"🔄 从 checkpoint 恢复，已完成 {len(completed_scenes)} 个场景")
+            print(f"🔄 從 checkpoint 恢復，已完成 {len(completed_scenes)} 個場景")
         else:
-            print("⚠️  未找到 checkpoint，从头开始")
+            print("⚠️  未找到 checkpoint，從頭開始")
 
     videos_dir = project_dir / "videos"
     videos_dir.mkdir(parents=True, exist_ok=True)
@@ -433,7 +433,7 @@ def generate_episode_video(
     )
 
     if not specs and not any(ordered_video_paths):
-        raise RuntimeError("没有可生成的视频片段")
+        raise RuntimeError("沒有可生成的影片片段")
 
     if specs:
         _submit_and_wait_with_checkpoint(
@@ -449,39 +449,39 @@ def generate_episode_video(
 
     scene_videos = [p for p in ordered_video_paths if p is not None]
     if not scene_videos:
-        raise RuntimeError("没有生成任何视频片段")
+        raise RuntimeError("沒有生成任何影片片段")
 
     clear_checkpoint(project_dir, episode)
-    print(f"\n🎉 第 {episode} 集视频生成完成，共 {len(scene_videos)} 个片段")
+    print(f"\n🎉 第 {episode} 集影片生成完成，共 {len(scene_videos)} 個片段")
     return scene_videos
 
 
 # ============================================================================
-# 单场景生成
+# 單場景生成
 # ============================================================================
 
 
 def generate_scene_video(script_filename: str, scene_id: str) -> Path:
     """
-    生成单个场景/片段的视频
+    生成單個場景/片段的影片
 
     Args:
-        script_filename: 剧本文件名
-        scene_id: 场景/片段 ID
+        script_filename: 劇本檔名
+        scene_id: 場景/片段 ID
 
     Returns:
-        生成的视频路径
+        生成的影片路徑
     """
     pm, project_name = ProjectManager.from_cwd()
     project_dir = pm.get_project_path(project_name)
     project = pm.load_project(project_name)
 
-    # 加载剧本
+    # 載入劇本
     script = pm.load_script(project_name, script_filename)
     content_mode = script.get("content_mode", "narration")
     all_items, id_field, _, _ = get_items_from_script(script)
 
-    # 找到指定场景/片段
+    # 找到指定場景/片段
     item = None
     for s in all_items:
         if s.get(id_field) == scene_id or s.get("scene_id") == scene_id:
@@ -489,28 +489,28 @@ def generate_scene_video(script_filename: str, scene_id: str) -> Path:
             break
 
     if not item:
-        raise ValueError(f"场景/片段 '{scene_id}' 不存在")
+        raise ValueError(f"場景/片段 '{scene_id}' 不存在")
 
-    # 检查分镜图
+    # 檢查分鏡圖
     storyboard_image = item.get("generated_assets", {}).get("storyboard_image")
     if not storyboard_image:
-        raise ValueError(f"场景/片段 '{scene_id}' 没有分镜图，请先运行 generate-storyboard")
+        raise ValueError(f"場景/片段 '{scene_id}' 沒有分鏡圖，請先執行 generate-storyboard")
 
     storyboard_path = project_dir / storyboard_image
     if not storyboard_path.exists():
-        raise FileNotFoundError(f"分镜图不存在: {storyboard_path}")
+        raise FileNotFoundError(f"分鏡圖不存在: {storyboard_path}")
 
-    # 直接使用 video_prompt 字段
+    # 直接使用 video_prompt 欄位
     prompt = get_video_prompt(item)
 
-    # 获取时长（优先项目配置，说书模式默认 4 秒，剧集动画默认 8 秒）
+    # 獲取時長（優先專案配置，說書模式預設 4 秒，劇集動畫預設 8 秒）
     default_duration = project.get("default_duration") or (4 if content_mode == "narration" else 8)
     duration = item.get("duration_seconds", default_duration)
     supported = get_supported_durations(project)
     duration_str = validate_duration(duration, supported)
 
-    print(f"🎬 正在生成视频: 场景/片段 {scene_id}")
-    print("   预计等待时间: 1-6 分钟")
+    print(f"🎬 正在生成影片: 場景/片段 {scene_id}")
+    print("   預計等待時間: 1-6 分鐘")
 
     queued = enqueue_and_wait(
         project_name=project_name,
@@ -529,22 +529,22 @@ def generate_scene_video(script_filename: str, scene_id: str) -> Path:
     relative_path = result.get("file_path") or f"videos/scene_{scene_id}.mp4"
     output_path = project_dir / relative_path
 
-    print(f"✅ 视频已保存: {output_path}")
+    print(f"✅ 影片已儲存: {output_path}")
     return output_path
 
 
 def generate_all_videos(script_filename: str) -> list:
     """
-    生成所有待处理场景的视频（独立模式）
+    生成所有待處理場景的影片（獨立模式）
 
     Returns:
-        生成的视频路径列表
+        生成的影片路徑列表
     """
     pm, project_name = ProjectManager.from_cwd()
     project_dir = pm.get_project_path(project_name)
     project = pm.load_project(project_name)
 
-    # 加载剧本
+    # 載入劇本
     script = pm.load_script(project_name, script_filename)
     content_mode = script.get("content_mode", "narration")
     all_items, id_field, _, _ = get_items_from_script(script)
@@ -552,13 +552,13 @@ def generate_all_videos(script_filename: str) -> list:
     pending_items = [item for item in all_items if not (item.get("generated_assets") or {}).get("video_clip")]
 
     if not pending_items:
-        print("✨ 所有场景/片段的视频都已生成")
+        print("✨ 所有場景/片段的影片都已生成")
         return []
 
-    item_type = "片段" if content_mode == "narration" else "场景"
-    print(f"📋 共 {len(pending_items)} 个{item_type}待生成视频")
-    print("⚠️  每个视频可能需要 1-6 分钟，请耐心等待")
-    print("💡 推荐使用 --episode N 模式生成并自动拼接")
+    item_type = "片段" if content_mode == "narration" else "場景"
+    print(f"📋 共 {len(pending_items)} 個{item_type}待生成影片")
+    print("⚠️  每個影片可能需要 1-6 分鐘，請耐心等待")
+    print("💡 推薦使用 --episode N 模式生成並自動拼接")
 
     specs, _ = _build_video_specs(
         items=pending_items,
@@ -570,10 +570,10 @@ def generate_all_videos(script_filename: str) -> list:
     )
 
     if not specs:
-        print("⚠️  没有任何可生成的视频任务（可能缺少分镜图或 prompt）")
+        print("⚠️  沒有任何可生成的影片任務（可能缺少分鏡圖或 prompt）")
         return []
 
-    print(f"\n🚀 批量提交 {len(specs)} 个视频到生成队列...\n")
+    print(f"\n🚀 批次提交 {len(specs)} 個影片到生成佇列...\n")
 
     result_paths: list[Path] = []
 
@@ -585,7 +585,7 @@ def generate_all_videos(script_filename: str) -> list:
         print(f"✅ 完成: {output_path.name}")
 
     def on_failure(br: BatchTaskResult) -> None:
-        print(f"❌ {br.resource_id} 失败: {br.error}")
+        print(f"❌ {br.resource_id} 失敗: {br.error}")
 
     _, failures = batch_enqueue_and_wait_sync(
         project_name=project_name,
@@ -595,11 +595,11 @@ def generate_all_videos(script_filename: str) -> list:
     )
 
     if failures:
-        print(f"\n⚠️  {len(failures)} 个{item_type}生成失败:")
+        print(f"\n⚠️  {len(failures)} 個{item_type}生成失敗:")
         for f in failures:
             print(f"   - {f.resource_id}: {f.error}")
 
-    print(f"\n🎉 批量视频生成完成，共 {len(result_paths)} 个")
+    print(f"\n🎉 批次影片生成完成，共 {len(result_paths)} 個")
     return result_paths
 
 
@@ -609,15 +609,15 @@ def generate_selected_videos(
     resume: bool = False,
 ) -> list:
     """
-    生成指定的多个场景视频
+    生成指定的多個場景影片
 
     Args:
-        script_filename: 剧本文件名
-        scene_ids: 场景 ID 列表
-        resume: 是否从断点续传
+        script_filename: 劇本檔名
+        scene_ids: 場景 ID 列表
+        resume: 是否從斷點續傳
 
     Returns:
-        生成的视频路径列表
+        生成的影片路徑列表
     """
     import hashlib
 
@@ -628,7 +628,7 @@ def generate_selected_videos(
     content_mode = script.get("content_mode", "narration")
     all_items, id_field, _, _ = get_items_from_script(script)
 
-    # 筛选指定的场景
+    # 篩選指定的場景
     items_by_id = {}
     for item in all_items:
         items_by_id[item.get(id_field, "")] = item
@@ -640,13 +640,13 @@ def generate_selected_videos(
         if scene_id in items_by_id:
             selected_items.append(items_by_id[scene_id])
         else:
-            print(f"⚠️  场景/片段 '{scene_id}' 不存在，跳过")
+            print(f"⚠️  場景/片段 '{scene_id}' 不存在，跳過")
 
     if not selected_items:
-        raise ValueError("没有找到任何有效的场景/片段")
+        raise ValueError("沒有找到任何有效的場景/片段")
 
-    item_type = "片段" if content_mode == "narration" else "场景"
-    print(f"📋 共选择 {len(selected_items)} 个{item_type}")
+    item_type = "片段" if content_mode == "narration" else "場景"
+    print(f"📋 共選擇 {len(selected_items)} 個{item_type}")
 
     # Checkpoint
     scenes_hash = hashlib.md5(",".join(scene_ids).encode()).hexdigest()[:8]
@@ -659,7 +659,7 @@ def generate_selected_videos(
             checkpoint = json.load(f)
             completed_scenes = checkpoint.get("completed_scenes", [])
             started_at = checkpoint.get("started_at", started_at)
-            print(f"🔄 从 checkpoint 恢复，已完成 {len(completed_scenes)} 个场景")
+            print(f"🔄 從 checkpoint 恢復，已完成 {len(completed_scenes)} 個場景")
 
     videos_dir = project_dir / "videos"
     videos_dir.mkdir(parents=True, exist_ok=True)
@@ -711,11 +711,11 @@ def generate_selected_videos(
 
     final_results = [p for p in ordered_results if p is not None]
 
-    # 全部完成后清除 checkpoint
+    # 全部完成後清除 checkpoint
     if checkpoint_path.exists():
         checkpoint_path.unlink()
 
-    print(f"\n🎉 批量视频生成完成，共 {len(final_results)} 个")
+    print(f"\n🎉 批次影片生成完成，共 {len(final_results)} 個")
     return final_results
 
 
@@ -726,37 +726,37 @@ def generate_selected_videos(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="生成视频分镜",
+        description="生成影片分鏡",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  # 按 episode 生成（推荐）
+  # 按 episode 生成（推薦）
   python generate_video.py episode_1.json --episode 1
 
-  # 断点续传
+  # 斷點續傳
   python generate_video.py episode_1.json --episode 1 --resume
 
-  # 单场景模式
+  # 單場景模式
   python generate_video.py episode_1.json --scene E1S1
 
-  # 批量自选模式
+  # 批次自選模式
   python generate_video.py episode_1.json --scenes E1S01,E1S05,E1S10
 
-  # 批量模式（独立生成）
+  # 批次模式（獨立生成）
   python generate_video.py episode_1.json --all
         """,
     )
-    parser.add_argument("script", help="剧本文件名")
+    parser.add_argument("script", help="劇本檔名")
 
-    # 模式选择
+    # 模式選擇
     mode_group = parser.add_mutually_exclusive_group()
-    mode_group.add_argument("--scene", help="指定场景 ID（单场景模式）")
-    mode_group.add_argument("--scenes", help="指定多个场景 ID（逗号分隔），如: E1S01,E1S05,E1S10")
-    mode_group.add_argument("--all", action="store_true", help="生成所有待处理场景（独立模式）")
-    mode_group.add_argument("--episode", type=int, help="按 episode 生成并拼接（推荐）")
+    mode_group.add_argument("--scene", help="指定場景 ID（單場景模式）")
+    mode_group.add_argument("--scenes", help="指定多個場景 ID（逗號分隔），如: E1S01,E1S05,E1S10")
+    mode_group.add_argument("--all", action="store_true", help="生成所有待處理場景（獨立模式）")
+    mode_group.add_argument("--episode", type=int, help="按 episode 生成並拼接（推薦）")
 
-    # 其他选项
-    parser.add_argument("--resume", action="store_true", help="从上次中断处继续")
+    # 其他選項
+    parser.add_argument("--resume", action="store_true", help="從上次中斷處繼續")
 
     args = parser.parse_args()
 
@@ -779,12 +779,12 @@ def main():
                 resume=args.resume,
             )
         else:
-            print("请指定模式: --scene, --scenes, --all, 或 --episode")
-            print("使用 --help 查看帮助")
+            print("請指定模式: --scene, --scenes, --all, 或 --episode")
+            print("使用 --help 檢視幫助")
             sys.exit(1)
 
     except Exception as e:
-        print(f"❌ 错误: {e}")
+        print(f"❌ 錯誤: {e}")
         sys.exit(1)
 
 

@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { API } from "@/api";
+import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { OverviewCanvas } from "./OverviewCanvas";
 import { useAppStore } from "@/stores/app-store";
 import { useProjectsStore } from "@/stores/projects-store";
@@ -29,6 +31,10 @@ function makeProjectData(overrides: Partial<ProjectData> = {}): ProjectData {
   };
 }
 
+function renderOverviewCanvas(ui: ReactElement) {
+  return render(ui, { wrapper: ConfirmProvider });
+}
+
 describe("OverviewCanvas", () => {
   beforeEach(() => {
     useAppStore.setState(useAppStore.getInitialState(), true);
@@ -55,7 +61,7 @@ describe("OverviewCanvas", () => {
         scripts: {},
       });
 
-    const { container, rerender } = render(
+    const { container, rerender } = renderOverviewCanvas(
       <OverviewCanvas projectName="demo" projectData={makeProjectData()} />,
     );
 
@@ -78,12 +84,49 @@ describe("OverviewCanvas", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "刪除參考圖" }));
+    fireEvent.click(screen.getByRole("button", { name: "確定" }));
 
     await waitFor(() => {
       expect(API.deleteStyleImage).toHaveBeenCalledWith("demo");
       expect(API.getProject).toHaveBeenCalledTimes(2);
     });
   }, 10_000);
+
+  it("shows a generate-overview action when the project has episodes but no overview", async () => {
+    vi.spyOn(API, "generateOverview").mockResolvedValue({
+      success: true,
+      overview: {
+        synopsis: "summary",
+        genre: "fantasy",
+        theme: "growth",
+        world_setting: "palace",
+      },
+    });
+    vi.spyOn(API, "getProject").mockResolvedValue({
+      project: makeProjectData(),
+      scripts: {},
+    });
+
+    // 有劇集但無 overview —— 不應落入 WelcomeCanvas，且概述入口仍須可見
+    renderOverviewCanvas(
+      <OverviewCanvas
+        projectName="demo"
+        projectData={makeProjectData({ overview: undefined })}
+      />,
+    );
+
+    expect(screen.queryByTestId("welcome-canvas")).not.toBeInTheDocument();
+    expect(screen.getByText("專案概述")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "生成概述" }));
+
+    await waitFor(() => {
+      expect(API.generateOverview).toHaveBeenCalledWith("demo", {
+        model: null,
+        instruction: null,
+      });
+    });
+  });
 
   it("shows a save action only when style description is edited", async () => {
     vi.spyOn(API, "updateStyleDescription").mockResolvedValue({ success: true });
@@ -92,7 +135,7 @@ describe("OverviewCanvas", () => {
       scripts: {},
     });
 
-    render(
+    renderOverviewCanvas(
       <OverviewCanvas projectName="demo" projectData={makeProjectData()} />,
     );
 
@@ -116,6 +159,29 @@ describe("OverviewCanvas", () => {
         "demo",
         "new description",
       );
+      expect(API.getProject).toHaveBeenCalled();
+    });
+  });
+
+  it("updates the project style using the style select dropdown", async () => {
+    vi.spyOn(API, "updateStyle").mockResolvedValue({ success: true });
+    vi.spyOn(API, "getProject").mockResolvedValue({
+      project: makeProjectData({ style: "3D Animation" }),
+      scripts: {},
+    });
+
+    renderOverviewCanvas(
+      <OverviewCanvas projectName="demo" projectData={makeProjectData()} />,
+    );
+
+    const select = screen.getByLabelText("風格標籤：");
+    expect(select).toBeInTheDocument();
+    expect(select).toHaveValue("Anime");
+
+    fireEvent.change(select, { target: { value: "3D Animation" } });
+
+    await waitFor(() => {
+      expect(API.updateStyle).toHaveBeenCalledWith("demo", "3D Animation");
       expect(API.getProject).toHaveBeenCalled();
     });
   });

@@ -4,7 +4,7 @@
 
 **Goal:** 将系统配置从 JSON 文件迁移到数据库，新增供应商管理 API 和前端页面，支持按供应商独立并发/限流。
 
-**Architecture:** 数据层（ORM + Repository）→ 业务层（ConfigService + Provider Registry）→ API 层（providers + system_config 重构）→ 前端（侧边栏布局 + 供应商管理 + 模型选择 + 用量统计）。所有 `os.environ.get()` 配置读取迁移到 ConfigService。GenerationWorker 从全局池改为按供应商分池。
+**Architecture:** 数据层（ORM + Repository）→ 业务层（ConfigService + Provider Registry）→ API 层（providers + system_config 重构）→ 前端（侧边栏布局 + 供应商管理 + 模型選择 + 用量統計）。所有 `os.environ.get()` 配置读取迁移到 ConfigService。GenerationWorker 从全局池改为按供应商分池。
 
 **Tech Stack:** SQLAlchemy Async ORM, Alembic, FastAPI, Pydantic v2, React 19, TypeScript, Tailwind CSS 4, zustand, wouter, lucide-react, @lobehub/icons
 
@@ -86,7 +86,7 @@ async def test_system_setting_crud(session: AsyncSession):
     assert found.value == "gemini-vertex/veo-3.1-fast-generate-001"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_config_models.py -v`
 Expected: ImportError — `lib.db.models.config` 不存在
@@ -215,7 +215,7 @@ def test_secret_keys_are_subset_of_required_or_optional():
             assert sk in all_keys, f"{name}: secret key {sk} not in all keys"
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_config_registry.py -v`
 Expected: ImportError
@@ -387,7 +387,7 @@ async def test_setting_get_all(session: AsyncSession):
     assert all_settings == {"key1": "val1", "key2": "val2"}
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_config_repository.py -v`
 Expected: ImportError
@@ -594,7 +594,7 @@ async def test_unknown_provider_raises(config_service: ConfigService):
         await config_service.set_provider_config("unknown-provider", "key", "val")
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_config_service.py -v`
 Expected: ImportError
@@ -835,7 +835,7 @@ async def test_migrate_max_workers_to_all_configured_providers(
     assert "video_max_workers" not in grok
 ```
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_config_migration.py -v`
 Expected: ImportError
@@ -1067,9 +1067,9 @@ async def test_patch_null_clears(client: AsyncClient):
     assert fields["api_key"]["is_set"] is False
 ```
 
-> **注意**: API 测试可能需要适配项目现有的测试基础设施（DB 初始化、认证绕过等）。实现时参考 `tests/conftest.py` 中已有的 fixture 模式。
+> **注意**: API 测试可能需要适配项目現有的测试基础设施（DB 初始化、认证绕过等）。实现时参考 `tests/conftest.py` 中已有的 fixture 模式。
 
-- [ ] **Step 2: 运行测试确认失败**
+- [ ] **Step 2: 运行测试确认失敗**
 
 Run: `uv run python -m pytest tests/test_providers_api.py -v`
 Expected: ImportError 或 404
@@ -1080,8 +1080,8 @@ Expected: ImportError 或 404
 - `GET /api/v1/providers` — 调用 `config_service.get_all_providers_status()`
 - `GET /api/v1/providers/{id}/config` — 返回 provider fields（合并 registry 元数据 + DB 值）
 - `PATCH /api/v1/providers/{id}/config` — 遍历 body fields，null 则 delete，否则 set
-- `POST /api/v1/providers/{id}/test` — 连接测试（复用/重构现有 `connection-test` 逻辑）
-- `POST /api/v1/providers/gemini-vertex/credentials` — 移植现有 Vertex 上传逻辑
+- `POST /api/v1/providers/{id}/test` — 连接测试（复用/重构現有 `connection-test` 逻辑）
+- `POST /api/v1/providers/gemini-vertex/credentials` — 移植現有 Vertex 上传逻辑
 
 路由前缀: `router = APIRouter(prefix="/api/v1/providers", tags=["providers"])`
 
@@ -1152,16 +1152,16 @@ git commit -m "refactor(api): slim system_config router to use ConfigService"
 **Files:**
 - Modify: `server/routers/usage.py`
 - Modify: `lib/db/repositories/usage_repo.py` (若需扩展查询)
-- Test: 在现有 usage 测试中增加筛选用例
+- Test: 在現有 usage 测试中增加筛選用例
 
 - [ ] **Step 1: 扩展 usage stats 查询**
 
 在 `GET /api/v1/usage/stats` 添加查询参数：
-- `provider` — 按供应商筛选
+- `provider` — 按供应商筛選
 - `start` / `end` — 时间范围
 - `group_by` — 分组方式 (provider, call_type)
 
-修改 `UsageRepository.get_stats()` 支持新的筛选参数。
+修改 `UsageRepository.get_stats()` 支持新的筛選参数。
 
 - [ ] **Step 2: 写测试并验证**
 
@@ -1215,7 +1215,7 @@ api_key = config.get("api_key")
 - `server/auth.py` — 认证相关配置
 - `server/agent_runtime/session_manager.py` — Agent SDK 配置
 
-每个模块的模式一致：`os.environ.get("KEY")` → `await config_service.get_setting("key")` 或 `config_service.get_provider_config()`
+每個模块的模式一致：`os.environ.get("KEY")` → `await config_service.get_setting("key")` 或 `config_service.get_provider_config()`
 
 - [ ] **Step 4: 运行全部测试确保无回归**
 
@@ -1249,7 +1249,7 @@ self._video_inflight: dict[str, asyncio.Task] = {}
 
 改为：
 ```python
-# 每个 provider 独立的 inflight 池
+# 每個 provider 独立的 inflight 池
 self._provider_pools: dict[str, ProviderPool] = {}
 
 @dataclass
@@ -1265,15 +1265,15 @@ class ProviderPool:
 
 主循环改为：
 1. 从 ConfigService 获取所有 ready 供应商的并发配置
-2. 为每个供应商维护独立的 pool
-3. claim_next 时需要按 provider 筛选（或在任务入队时记录 provider_id）
-4. 每个 pool 独立检查是否有空闲 worker 位
+2. 为每個供应商维护独立的 pool
+3. claim_next 时需要按 provider 筛選（或在任务入队时记录 provider_id）
+4. 每個 pool 独立检查是否有空闲 worker 位
 
 - [ ] **Step 3: 写测试验证按供应商分池**
 
 验证：
 - Gemini pool 满时不影响 Seedance pool 继续接受任务
-- 单个供应商的 max_workers 限制正确生效
+- 单個供应商的 max_workers 限制正确生效
 - reload 配置后 pool 动态调整
 
 - [ ] **Step 4: 运行测试**
@@ -1423,13 +1423,13 @@ git commit -m "feat(frontend): add provider types and API functions"
 
 - [ ] **Step 1: 重构为侧边栏布局**
 
-将现有的 Tab 导航替换为左侧固定侧边栏 + 右侧内容区。
+将現有的 Tab 导航替换为左侧固定侧边栏 + 右侧内容区。
 
 侧边栏 4 项，使用 `lucide-react` 图标：
 - `Bot` — 智能体
 - `Plug` — 供应商
 - `Film` — 图片/视频
-- `BarChart3` — 用量统计
+- `BarChart3` — 用量統計
 
 使用 query parameter `?section=agent|providers|media|usage` 控制活跃栏位。
 
@@ -1458,7 +1458,7 @@ git commit -m "refactor(frontend): SystemConfigPage tab to sidebar layout"
 - [ ] **Step 1: 写组件测试**
 
 ```typescript
-// 测试：按 provider 分组、选中状态、仅展示传入的 options
+// 测试：按 provider 分组、選中状态、仅展示传入的 options
 import { render, screen } from "@testing-library/react";
 import { ProviderModelSelect } from "../ProviderModelSelect";
 
@@ -1475,14 +1475,14 @@ test("renders grouped options", () => {
       onChange={() => {}}
     />
   );
-  // 验证当前选中值显示
+  // 验证当前選中值显示
   expect(screen.getByText(/veo-3.1-generate-001/)).toBeInTheDocument();
 });
 ```
 
 - [ ] **Step 2: 实现组件**
 
-按 `/` 拆分 options，provider 作为分组标题（使用 `<optgroup>` 或自定义下拉），model 作为选项。
+按 `/` 拆分 options，provider 作为分组标题（使用 `<optgroup>` 或自定义下拉），model 作为選項。
 
 - [ ] **Step 3: 运行测试**
 
@@ -1507,8 +1507,8 @@ git commit -m "feat(frontend): add ProviderModelSelect grouped dropdown"
 - [ ] **Step 1: 实现 ProviderSection**
 
 列表 + 详情布局：
-- 左侧：供应商列表，调用 `API.getProviders()`，每个供应商显示名称 + 状态指示器
-- 右侧：选中供应商的详情，调用 `API.getProviderConfig(id)`
+- 左侧：供应商列表，调用 `API.getProviders()`，每個供应商显示名称 + 状态指示器
+- 右侧：選中供应商的详情，调用 `API.getProviderConfig(id)`
 - 供应商 logo 使用 `@lobehub/icons`
 
 - [ ] **Step 2: 实现 ProviderDetail**
@@ -1589,10 +1589,10 @@ git commit -m "refactor(frontend): adapt AgentSection to new API structure"
 **Files:**
 - Create: `frontend/src/components/pages/settings/UsageStatsSection.tsx`
 
-- [ ] **Step 1: 实现用量统计栏位**
+- [ ] **Step 1: 实现用量統計栏位**
 
 - 调用 `API.getUsageStats()` 获取数据
-- 筛选器：时间范围选择器、供应商下拉、调用类型下拉
+- 筛選器：时间范围選择器、供应商下拉、调用类型下拉
 - 按供应商分组展示：调用次数、成功率、费用、时长
 - 使用表格或卡片布局
 
@@ -1618,7 +1618,7 @@ git commit -m "feat(frontend): add UsageStatsSection with filters"
 - [ ] **Step 1: 改用 providers API**
 
 当前 `getConfigIssues()` 硬编码检查 Gemini 凭证。
-改为调用 `API.getProviders()` 获取所有供应商状态，对 status != "ready" 但被选为默认后端的供应商生成 issue。
+改为调用 `API.getProviders()` 获取所有供应商状态，对 status != "ready" 但被選为默认后端的供应商生成 issue。
 
 - [ ] **Step 2: 运行前端类型检查和测试**
 
@@ -1647,7 +1647,7 @@ git commit -m "refactor(frontend): config-status-store uses providers API"
 - 左上角返回按钮（`ArrowLeft` from lucide），点击回到 `/projects/:name`
 - 标题：项目名称 + "设置"
 - 内容：
-  - 视频模型：`ProviderModelSelect` + 顶部「跟随全局默认」选项
+  - 视频模型：`ProviderModelSelect` + 顶部「跟随全局默认」選項
   - 图片模型：同上
   - 生成音频：三态（跟随全局 / 开启 / 关闭）
 - 保存：写入 `project.json` 的 `video_backend` / `image_backend` 字段
@@ -1723,15 +1723,15 @@ Run: `cd frontend && pnpm dev`
 - [ ] **Step 3: 手动验证供应商配置流程**
 
 1. 打开设置页 → 供应商栏位
-2. 选择 Gemini AI Studio → 输入 API Key → 保存
+2. 選择 Gemini AI Studio → 输入 API Key → 保存
 3. 连接测试 → 确认成功
 4. 切到图片/视频栏位 → 下拉中出现 Gemini AI Studio 的模型
-5. 选择默认视频模型 → 保存
+5. 選择默认视频模型 → 保存
 
 - [ ] **Step 4: 手动验证项目级覆盖**
 
 1. 进入项目 → 设置
-2. 选择不同于全局默认的视频模型
+2. 選择不同于全局默认的视频模型
 3. 保存 → 确认 project.json 已更新
 4. 返回项目工作台
 

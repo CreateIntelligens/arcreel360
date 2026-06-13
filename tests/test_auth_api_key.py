@@ -1,7 +1,7 @@
 """
-API Key 认证分流单元测试
+API Key 認證分流單元測試
 
-测试 auth 模块中的 API Key 路径：哈希计算、缓存逻辑、认证分流。
+測試 auth 模組中的 API Key 路徑：雜湊計算、快取邏輯、認證分流。
 """
 
 import hashlib
@@ -16,7 +16,7 @@ import server.auth as auth_module
 
 @pytest.fixture(autouse=True)
 def clear_cache():
-    """每次测试前清空 API Key 缓存。"""
+    """每次測試前清空 API Key 快取。"""
     auth_module._api_key_cache.clear()
     yield
     auth_module._api_key_cache.clear()
@@ -63,11 +63,11 @@ class TestApiKeyCache:
         assert not hit
 
     def test_cache_hit_skips_db(self):
-        """缓存命中时不应查询数据库（通过 _verify_api_key 的分支逻辑验证）。"""
+        """快取命中時不應查詢資料庫（透過 _verify_api_key 的分支邏輯驗證）。"""
         key = "arc-cached-key"
         key_hash = auth_module._hash_api_key(key)
         auth_module._set_api_key_cache(key_hash, {"sub": "apikey:cached", "via": "apikey"})
-        # 若命中缓存则返回缓存值；True means hit
+        # 若命中快取則返回快取值；True means hit
         hit, payload = auth_module._get_cached_api_key_payload(key_hash)
         assert hit
         assert payload["sub"] == "apikey:cached"
@@ -76,14 +76,14 @@ class TestApiKeyCache:
 class TestVerifyAndGetPayloadAsync:
     @pytest.mark.asyncio
     async def test_jwt_path_success(self):
-        """非 arc- 前缀走 JWT 路径，成功返回 payload。"""
+        """非 arc- 字首走 JWT 路徑，成功返回 payload。"""
         with patch("server.auth.verify_token", return_value={"sub": "admin"}):
             result = await auth_module._verify_and_get_payload_async("some.jwt.token")
         assert result == {"sub": "admin"}
 
     @pytest.mark.asyncio
     async def test_jwt_invalid_raises_401(self):
-        """非 arc- 前缀但 JWT 验证失败，抛出 401。"""
+        """非 arc- 字首但 JWT 驗證失敗，丟擲 401。"""
         with patch("server.auth.verify_token", return_value=None):
             with pytest.raises(HTTPException) as exc_info:
                 await auth_module._verify_and_get_payload_async("invalid.jwt.token")
@@ -91,7 +91,7 @@ class TestVerifyAndGetPayloadAsync:
 
     @pytest.mark.asyncio
     async def test_api_key_path_success(self):
-        """arc- 前缀走 API Key 路径，成功返回 payload。"""
+        """arc- 字首走 API Key 路徑，成功返回 payload。"""
         expected = {"sub": "apikey:mykey", "via": "apikey"}
         with patch("server.auth._verify_api_key", new=AsyncMock(return_value=expected)):
             result = await auth_module._verify_and_get_payload_async("arc-validkey")
@@ -100,7 +100,7 @@ class TestVerifyAndGetPayloadAsync:
 
     @pytest.mark.asyncio
     async def test_api_key_not_found_raises_401(self):
-        """arc- 前缀但 key 不存在，抛出 401。"""
+        """arc- 字首但 key 不存在，丟擲 401。"""
         with patch("server.auth._verify_api_key", new=AsyncMock(return_value=None)):
             with pytest.raises(HTTPException) as exc_info:
                 await auth_module._verify_and_get_payload_async("arc-badkey")
@@ -108,7 +108,7 @@ class TestVerifyAndGetPayloadAsync:
 
     @pytest.mark.asyncio
     async def test_api_key_expired_raises_401(self):
-        """arc- 前缀但 key 已过期（_verify_api_key 返回 None），抛出 401。"""
+        """arc- 字首但 key 已過期（_verify_api_key 返回 None），丟擲 401。"""
         with patch("server.auth._verify_api_key", new=AsyncMock(return_value=None)):
             with pytest.raises(HTTPException) as exc_info:
                 await auth_module._verify_and_get_payload_async("arc-expiredkey")
@@ -116,7 +116,7 @@ class TestVerifyAndGetPayloadAsync:
 
     @pytest.mark.asyncio
     async def test_jwt_path_not_called_for_api_key(self):
-        """arc- 前缀时不应调用 verify_token。"""
+        """arc- 字首時不應呼叫 verify_token。"""
         with (
             patch("server.auth._verify_api_key", new=AsyncMock(return_value={"sub": "apikey:k", "via": "apikey"})),
             patch("server.auth.verify_token") as mock_jwt,

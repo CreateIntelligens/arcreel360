@@ -44,7 +44,7 @@ class User(Base):
 
 ## 三、模型基类体系（Mixin）
 
-### 3.1 现有问题
+### 3.1 現有问题
 
 | 不一致 | 涉及模型 |
 |--------|---------|
@@ -115,7 +115,7 @@ class BaseRepository:
         return stmt
 ```
 
-四个 Repository 继承 `BaseRepository`：`TaskRepository`、`UsageRepository`、`SessionRepository`、`ApiKeyRepository`。
+四個 Repository 继承 `BaseRepository`：`TaskRepository`、`UsageRepository`、`SessionRepository`、`ApiKeyRepository`。
 
 ### 4.1 需要插入 `_scope_query` 的查询方法完整清单
 
@@ -185,7 +185,7 @@ class CurrentUserInfo(BaseModel):
 
 ### 5.2 `get_current_user` 和 `get_current_user_flexible` 同步改造
 
-两个认证函数都需要改为返回 `CurrentUserInfo`：
+两個认证函数都需要改为返回 `CurrentUserInfo`：
 
 ```python
 async def get_current_user(...) -> CurrentUserInfo:
@@ -214,11 +214,11 @@ CurrentUserFlexible = Annotated[CurrentUserInfo, Depends(get_current_user_flexib
 ### 5.4 `id` 与 `sub` 的语义说明
 
 - `id`：对应 `users.id` 主键，用于数据库关联。开源版固定 `"default"`，商业版为真实用户 ID
-- `sub`：JWT payload 中的 subject claim，表示登录身份（用户名或 `apikey:<name>`）。保留此字段以兼容现有日志/审计逻辑
+- `sub`：JWT payload 中的 subject claim，表示登录身份（用户名或 `apikey:<name>`）。保留此字段以兼容現有日志/审计逻辑
 
-### 5.5 对现有代码的影响
+### 5.5 对現有代码的影响
 
-- 约 15 个路由文件中共 ~80 处 `current_user` 引用需更新（签名类型 + 变量名 + 属性访问方式）
+- 约 15 個路由文件中共 ~80 处 `current_user` 引用需更新（签名类型 + 变量名 + 属性访问方式）
 - 路由签名 `current_user: dict` → `user: CurrentUser`（大部分改动）
 - `current_user["sub"]` → `current_user.sub`（仅约 2 处 dict 属性访问）
 
@@ -265,12 +265,12 @@ Skill 脚本运行在 agent runtime 中无 HTTP 认证上下文，`user_id` 来�
 
 ## 七、Migration 计划
 
-单个 migration 文件完成所有 schema 变更：
+单個 migration 文件完成所有 schema 变更：
 
 1. 创建 `users` 表
 2. 插入默认用户 `(id="default", username="admin", role="admin")`
 3. 给 Task、ApiCall、AgentSession、ApiKey 添加 `user_id` 字段（`server_default="default"`，FK → `users.id`，含索引）
-4. 修复 ApiCall.created_at：Optional → NOT NULL（填充现有 NULL 行为 `started_at` 值）
+4. 修复 ApiCall.created_at：Optional → NOT NULL（填充現有 NULL 行为 `started_at` 值）
 5. 给 ApiCall 新增 `updated_at` 字段
 6. 给 ApiKey 新增 `updated_at` 字段
 7. AgentSession 的 `created_at`/`updated_at` 迁移为 Mixin 统一实现（schema 不变，仅代码层面）
@@ -282,7 +282,7 @@ Skill 脚本运行在 agent runtime 中无 HTTP 认证上下文，`user_id` 来�
 ## 八、不做什么
 
 - **不改 ProjectManager**：扁平目录结构不变
-- **不加登录流程**：开源版保持现有单用户认证
+- **不加登录流程**：开源版保持現有单用户认证
 - **不建管理后台**：留给商业版
 - **不加配额系统**：留给商业版
 - **不改前端**：无用户可见的功能变化

@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from lib.cost_calculator import CostCalculator
+from lib.cost_calculator import CNY_TO_USD_RATE, CostCalculator
+
+
+def cny(amount: float) -> float:
+    return amount * CNY_TO_USD_RATE
 
 
 class TestCustomTextCost:
@@ -36,9 +40,8 @@ class TestCustomTextCost:
             custom_price_output=1.0,
             custom_currency="CNY",
         )
-        assert currency == "CNY"
-        # (2000 * 0.5 + 1000 * 1.0) / 1_000_000 = 0.002
-        assert abs(amount - 0.002) < 0.0001
+        assert currency == "USD"
+        assert abs(amount - cny(0.002)) < 0.0001
 
 
 class TestCustomImageCost:
@@ -61,12 +64,12 @@ class TestCustomImageCost:
         amount, currency = calc.calculate_cost(
             "custom-1",
             "image",
-            model="seedream",
+            model="image-model",
             custom_price_input=0.22,
             custom_currency="CNY",
         )
-        assert currency == "CNY"
-        assert abs(amount - 0.22) < 0.0001
+        assert currency == "USD"
+        assert abs(amount - cny(0.22)) < 0.0001
 
 
 class TestCustomVideoCost:

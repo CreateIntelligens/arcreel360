@@ -13,12 +13,12 @@
 
 ## 核心定位
 
-`MediaGenerator` 是一个中间层，封装 `GeminiClient` + `VersionManager`，提供"调用方无感"的版本管理。
+`MediaGenerator` 是一個中间层，封装 `GeminiClient` + `VersionManager`，提供"调用方无感"的版本管理。
 
 **核心原则：**
 - 调用方只需传入 `project_path` 和 `resource_id`
 - 版本管理自动完成（备份、记录、跟踪）
-- 不改变现有 `GeminiClient` 的职责
+- 不改变現有 `GeminiClient` 的职责
 
 **覆盖的 4 种资源类型：**
 
@@ -174,8 +174,8 @@ lib/media_generator.py    # MediaGenerator 类
 
 | 阶段 | 内容 |
 |-----|------|
-| Phase 1 | 创建 `lib/media_generator.py`，实现 4 个核心方法 |
-| Phase 2 | 迁移 4 个 skill 脚本 |
+| Phase 1 | 创建 `lib/media_generator.py`，实现 4 個核心方法 |
+| Phase 2 | 迁移 4 個 skill 脚本 |
 | Phase 3 | 简化 webui router |
 
 ---
@@ -183,6 +183,6 @@ lib/media_generator.py    # MediaGenerator 类
 ## 注意事项
 
 1. **线程安全**：`VersionManager` 已实现线程安全锁，`MediaGenerator` 可直接复用
-2. **异步支持**：需要同时提供同步和异步版本的方法
-3. **向后兼容**：`GeminiClient` 保持不变，现有直接调用不受影响
+2. **異步支持**：需要同时提供同步和異步版本的方法
+3. **向后兼容**：`GeminiClient` 保持不变，現有直接调用不受影响
 4. **元数据传递**：通过 `**version_metadata` 支持传递额外信息（如 `aspect_ratio`、`duration_seconds`）

@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, useLayoutEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { ProviderIcon } from "@/components/ui/ProviderIcon";
+import { Popover, type PopoverLayer } from "@/components/ui/Popover";
 
 interface ProviderModelSelectProps {
   value: string; // "gemini-aistudio/veo-3.1-generate-001"
@@ -13,9 +14,17 @@ interface ProviderModelSelectProps {
   allowDefault?: boolean;
   /** Label for the default option (defaults to "跟隨全域預設") */
   defaultLabel?: string;
-  defaultHint?: string; // "当前: gemini-aistudio/veo-3.1-generate-001"
+  defaultHint?: string; // "當前: gemini-aistudio/veo-3.1-generate-001"
+  /**
+   * 選「預設」時實際會用到的模型值（如 "gemini/veo-3"）。有值時，會自動在預設選項
+   * 旁顯示該模型名作為提示，讓使用者知道「專案預設／全域預設」到底指向哪個模型。
+   * 若同時提供 defaultHint，以 defaultHint 為準。
+   */
+  defaultModelValue?: string;
   /** Accessible label for the trigger button */
   "aria-label"?: string;
+  size?: "sm" | "md";
+  popoverLayer?: PopoverLayer;
 }
 
 interface FlatOption {
@@ -48,7 +57,10 @@ export function ProviderModelSelect({
   allowDefault,
   defaultLabel,
   defaultHint,
+  defaultModelValue,
   "aria-label": ariaLabel,
+  size = "md",
+  popoverLayer = "workspacePopover",
 }: ProviderModelSelectProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -75,16 +87,13 @@ export function ProviderModelSelect({
     return list;
   }, [options, allowDefault]);
 
-  // Close on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  const [triggerWidth, setTriggerWidth] = useState<number | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    if (open && triggerRef.current) {
+      setTriggerWidth(triggerRef.current.getBoundingClientRect().width);
+    }
+  }, [open]);
 
   // Reset active index when opened — point to current value or 0
   useEffect(() => {
@@ -156,11 +165,20 @@ export function ProviderModelSelect({
   );
 
   const slashIdx = value ? value.indexOf("/") : -1;
-  const currentProvider = slashIdx !== -1 ? value.slice(0, slashIdx) : "";
   const currentModel = slashIdx !== -1 ? value.slice(slashIdx + 1) : "";
 
+  // 預設選項旁的提示：優先用顯式 defaultHint，否則由 defaultModelValue 推導出模型名。
+  const defaultModelName = defaultModelValue
+    ? defaultModelValue.slice(defaultModelValue.indexOf("/") + 1) || defaultModelValue
+    : "";
+  const effectiveDefaultHint = defaultHint ?? (defaultModelName || undefined);
+
   const displayText = value
-    ? `${providerNames[currentProvider] || currentProvider} · ${currentModel}`
+    ? (currentModel || value)
+    : allowDefault && defaultLabel
+    ? defaultModelName
+      ? `${defaultLabel} · ${defaultModelName}`
+      : defaultLabel
     : placeholder;
 
   const activeDescendantId =
@@ -183,21 +201,31 @@ export function ProviderModelSelect({
         aria-label={ariaLabel}
         onClick={() => setOpen(!open)}
         onKeyDown={handleKeyDown}
-        className="flex w-full items-center justify-between gap-2 rounded-lg border border-gray-700 bg-gray-900/80 px-3 py-2 text-sm text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-gray-900"
+        className={`flex w-full items-center justify-between gap-1.5 rounded-lg border border-gray-700 bg-gray-900/80 ${size === "sm" ? "px-2.5 py-1 text-xs h-8" : "px-3 py-2 text-sm h-9"} text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 focus-visible:ring-offset-gray-900`}
       >
-        <span className="truncate">{displayText}</span>
+        <span className="flex-1 truncate text-center leading-none">{displayText}</span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
       {/* Dropdown panel */}
-      {open && (
+      <Popover
+        open={open}
+        onClose={() => setOpen(false)}
+        anchorRef={triggerRef}
+        align="start"
+        sideOffset={4}
+        layer={popoverLayer}
+        style={{ width: triggerWidth }}
+        className="max-h-60 overflow-y-auto rounded-lg border border-gray-700 bg-gray-900 shadow-xl flex flex-col scrollbar-thin"
+        width=""
+      >
         <div
           id={LISTBOX_ID}
           role="listbox"
           aria-label="選擇模型"
-          className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-gray-700 bg-gray-900 shadow-xl"
+          className="w-full flex flex-col"
         >
           {allowDefault && (
             <button
@@ -216,8 +244,8 @@ export function ProviderModelSelect({
               }`}
             >
               <span>{defaultLabel ?? "跟隨全域預設"}</span>
-              {defaultHint && (
-                <span className="ml-auto text-xs text-gray-500">{defaultHint}</span>
+              {effectiveDefaultHint && (
+                <span className="ml-auto text-xs text-gray-500">{effectiveDefaultHint}</span>
               )}
             </button>
           )}
@@ -269,7 +297,7 @@ export function ProviderModelSelect({
             </div>
           ))}
         </div>
-      )}
+      </Popover>
     </div>
   );
 }

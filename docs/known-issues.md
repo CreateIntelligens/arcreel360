@@ -1,75 +1,75 @@
-# 已知问题
+# 已知問題
 
-多供应商视频生成接入（#98）过程中发现的存量技术债，不影响功能正确性，记录以便后续迭代。
-
----
-
-## ~~1. UsageRepository 费用路由逻辑泄漏~~ ✅ 已修复
-
-**修复：** `CostCalculator.calculate_cost()` 统一入口按 `(call_type, provider)` 显式路由，Repository 只调一次。Gemini video 不再隐式 fallthrough。
+多供應商影片生成接入（#98）過程中發現的存量技術債，不影響功能正確性，記錄以便後續迭代。
 
 ---
 
-## ~~2. CostCalculator 费用结构不对称~~ ✅ 已修复
+## ~~1. UsageRepository 費用路由邏輯洩漏~~ ✅ 已修復
 
-**修复：** 随 Issue 1 一并解决。`calculate_cost()` 统一入口隐藏了各供应商的费率字典结构差异。
+**修復：** `CostCalculator.calculate_cost()` 統一入口按 `(call_type, provider)` 顯式路由，Repository 只調一次。Gemini video 不再隱式 fallthrough。
 
 ---
 
-## 3. VideoGenerationRequest 参数膨胀
+## ~~2. CostCalculator 費用結構不對稱~~ ✅ 已修復
+
+**修復：** 隨 Issue 1 一併解決。`calculate_cost()` 統一入口隱藏了各供應商的費率字典結構差異。
+
+---
+
+## 3. VideoGenerationRequest 引數膨脹
 
 **位置：** `lib/video_backends/base.py` — `VideoGenerationRequest`
 
-**现状：** 共享 dataclass 中混入了后端特有字段（`negative_prompt` 为 Veo 特有，`service_tier`/`seed` 为 Seedance 特有），靠注释"各 Backend 忽略不支持的字段"约定。
+**現狀：** 共享 dataclass 中混入了後端特有欄位（`negative_prompt` 為 Veo 特有，`service_tier`/`seed` 為 Seedance 特有），靠註釋"各 Backend 忽略不支援的欄位"約定。
 
-**评估：** 仅 3 个后端 3 个特有字段，引入 per-backend config 类的复杂度不值得。待第 4 个后端接入时再重构。
-
----
-
-## ~~4. SystemConfigManager secret 块重复模式~~ ✅ 已修复
-
-**修复：** 将 `_apply_to_env()` 中 ~8 个相同模式的 if/else secret 块替换为元组 + 循环。
+**評估：** 僅 3 個後端 3 個特有欄位，引入 per-backend config 類的複雜度不值得。待第 4 個後端接入時再重構。
 
 ---
 
-## 5. UsageRepository finish_call 双次 DB 往返
+## ~~4. SystemConfigManager secret 塊重複模式~~ ✅ 已修復
+
+**修復：** 將 `_apply_to_env()` 中 ~8 個相同模式的 if/else secret 塊替換為元組 + 迴圈。
+
+---
+
+## 5. UsageRepository finish_call 雙次 DB 往返
 
 **位置：** `lib/db/repositories/usage_repo.py` — `finish_call()`
 
-**现状：** 先 `SELECT` 读取整行（取 `provider`、`call_type` 等字段计算费用），再 `UPDATE` 写回结果。对每个任务两次串行数据库往返。
+**現狀：** 先 `SELECT` 讀取整行（取 `provider`、`call_type` 等欄位計算費用），再 `UPDATE` 寫回結果。對每個任務兩次序列資料庫往返。
 
-**评估：** 视频生成耗时分钟级，DB 往返影响极小。消除需改动 3 个调用方（MediaGenerator、TextGenerator、UsageTracker），风险不对称。
+**評估：** 影片生成耗時分鐘級，DB 往返影響極小。消除需改動 3 個呼叫方（MediaGenerator、TextGenerator、UsageTracker），風險不對稱。
 
 ---
 
-## 6. UsageRepository.finish_call() 参数膨胀
+## 6. UsageRepository.finish_call() 引數膨脹
 
 **位置：** `lib/db/repositories/usage_repo.py` — `finish_call()`，`lib/usage_tracker.py` — `finish_call()`
 
-**现状：** `finish_call()` 已有 9 个 keyword 参数，且 `UsageTracker.finish_call()` 1:1 镜像透传。
+**現狀：** `finish_call()` 已有 9 個 keyword 引數，且 `UsageTracker.finish_call()` 1:1 映象透傳。
 
-**评估：** 与 Issue 5 耦合，单独改收益低。待 Issue 5 一并重构。
-
----
-
-## ~~7. call_type 裸字符串缺乏类型约束~~ ✅ 已修复
-
-**修复：** Python 端定义 `CallType = Literal["image", "video", "text"]`（`lib/providers.py`），前端定义对应 `CallType` 类型（`frontend/src/types/provider.ts`），在接口签名中统一使用。
+**評估：** 與 Issue 5 耦合，單獨改收益低。待 Issue 5 一併重構。
 
 ---
 
-## ~~8. UsageRepository 查询方法 filter 构建重复~~ ✅ 已修复
+## ~~7. call_type 裸字串缺乏型別約束~~ ✅ 已修復
 
-**修复：** 将 `_base_filters()` 提升为类方法 `_build_filters()`，三个查询方法共享。
-
----
-
-## ~~9. update_project 后端字段缺少 provider 合法性校验~~ ✅ 已修复
-
-**修复：** 提取共享校验函数 `validate_backend_value()`（`server/routers/_validators.py`），`update_project()` 和 `patch_system_config()` 共同使用，拒绝非法 provider/model 值并返回 400。
+**修復：** Python 端定義 `CallType = Literal["image", "video", "text"]`（`lib/providers.py`），前端定義對應 `CallType` 型別（`frontend/src/types/provider.ts`），在介面簽名中統一使用。
 
 ---
 
-## ~~10. test_text_backends 测试文件 asyncio.to_thread patch 重复~~ ✅ 已修复
+## ~~8. UsageRepository 查詢方法 filter 構建重複~~ ✅ 已修復
 
-**修复：** 在 `tests/test_text_backends/conftest.py` 中提取 `sync_to_thread` fixture，各测试文件共享。
+**修復：** 將 `_base_filters()` 提升為類方法 `_build_filters()`，三個查詢方法共享。
+
+---
+
+## ~~9. update_project 後端欄位缺少 provider 合法性校驗~~ ✅ 已修復
+
+**修復：** 提取共享校驗函式 `validate_backend_value()`（`server/routers/_validators.py`），`update_project()` 和 `patch_system_config()` 共同使用，拒絕非法 provider/model 值並返回 400。
+
+---
+
+## ~~10. test_text_backends 測試檔案 asyncio.to_thread patch 重複~~ ✅ 已修復
+
+**修復：** 在 `tests/test_text_backends/conftest.py` 中提取 `sync_to_thread` fixture，各測試檔案共享。

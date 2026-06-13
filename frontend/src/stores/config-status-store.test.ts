@@ -24,6 +24,7 @@ function makeConfigResponse(overrides?: Partial<GetSystemConfigResponse["setting
       agent_session_cleanup_delay_seconds: 300,
       agent_max_concurrent_sessions: 5,
       ...overrides,
+      byteplus_video_endpoint_id: overrides?.byteplus_video_endpoint_id ?? "",
     },
     options: {
       video_backends: ["gemini/veo-3"],

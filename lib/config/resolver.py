@@ -1,7 +1,7 @@
-"""统一运行时配置解析器。
+"""統一執行時配置解析器。
 
-将散落在多个文件中的配置读取和默认值定义集中到一处。
-每次调用从 DB 读取，不缓存（本地 SQLite 开销可忽略）。
+將散落在多個檔案中的配置讀取和預設值定義集中到一處。
+每次呼叫從 DB 讀取，不快取（本地 SQLite 開銷可忽略）。
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ _project_manager: ProjectManager | None = None
 
 
 def get_project_manager() -> ProjectManager:
-    """返回共享的 ProjectManager 单例（使用标准项目根目录）。"""
+    """返回共享的 ProjectManager 單例（使用標準專案根目錄）。"""
     global _project_manager
     if _project_manager is None:
         _project_manager = ProjectManager(PROJECT_ROOT / "projects")
@@ -42,12 +42,12 @@ def get_project_manager() -> ProjectManager:
 
 logger = logging.getLogger(__name__)
 
-# 布尔字符串解析的 truthy 值集合
+# 布林字串解析的 truthy 值集合
 _TRUTHY = frozenset({"true", "1", "yes"})
 
 
 def _parse_bool(raw: str) -> bool:
-    """将配置字符串解析为布尔值。"""
+    """將配置字串解析為布林值。"""
     return raw.strip().lower() in _TRUTHY
 
 
@@ -59,15 +59,15 @@ _TEXT_TASK_SETTING_KEYS: dict[TextTaskType, str] = {
 
 
 class ConfigResolver:
-    """运行时配置解析器。
+    """執行時配置解析器。
 
-    作为 ConfigService 的上层薄封装，提供：
-    - 唯一的默认值定义点
-    - 类型化输出（bool / tuple / dict）
-    - 内置优先级解析（全局配置 → 项目级覆盖）
+    作為 ConfigService 的上層薄封裝，提供：
+    - 唯一的預設值定義點
+    - 型別化輸出（bool / tuple / dict）
+    - 內建優先順序解析（全域性配置 → 專案級覆蓋）
     """
 
-    # ── 唯一的默认值定义点 ──
+    # ── 唯一的預設值定義點 ──
     _DEFAULT_VIDEO_GENERATE_AUDIO = False
 
     def __init__(
@@ -83,7 +83,7 @@ class ConfigResolver:
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator[ConfigResolver]:
-        """打开共享 session，返回绑定到该 session 的 ConfigResolver。"""
+        """開啟共享 session，返回繫結到該 session 的 ConfigResolver。"""
         if self._bound_session is not None:
             yield self
         else:
@@ -92,19 +92,19 @@ class ConfigResolver:
 
     @asynccontextmanager
     async def _open_session(self) -> AsyncIterator[tuple[AsyncSession, ConfigService]]:
-        """获取 (session, ConfigService)，优先复用 bound session。"""
+        """獲取 (session, ConfigService)，優先複用 bound session。"""
         if self._bound_session is not None:
             yield self._bound_session, ConfigService(self._bound_session)
         else:
             async with self._session_factory() as session:
                 yield session, ConfigService(session)
 
-    # ── 公开 API ──
+    # ── 公開 API ──
 
     async def video_generate_audio(self, project_name: str | None = None) -> bool:
         """解析 video_generate_audio。
 
-        优先级：项目级覆盖 > 全局配置 > 默认值(False)。
+        優先順序：專案級覆蓋 > 全域性配置 > 預設值(False)。
         """
         async with self._open_session() as (session, svc):
             return await self._resolve_video_generate_audio(svc, project_name)
@@ -120,16 +120,16 @@ class ConfigResolver:
             return await self._resolve_default_image_backend(svc, session)
 
     async def provider_config(self, provider_id: str) -> dict[str, str]:
-        """获取单个供应商配置。"""
+        """獲取單個供應商配置。"""
         async with self._open_session() as (session, svc):
             return await self._resolve_provider_config(svc, session, provider_id)
 
     async def all_provider_configs(self) -> dict[str, dict[str, str]]:
-        """批量获取所有供应商配置。"""
+        """批次獲取所有供應商配置。"""
         async with self._open_session() as (session, svc):
             return await self._resolve_all_provider_configs(svc, session)
 
-    # ── 内部解析方法（可独立测试，接收已创建的 svc） ──
+    # ── 內部解析方法（可獨立測試，接收已建立的 svc） ──
 
     async def _resolve_video_generate_audio(
         self,
@@ -198,7 +198,7 @@ class ConfigResolver:
         task_type: TextTaskType,
         project_name: str | None = None,
     ) -> tuple[str, str]:
-        """解析文本 backend。优先级：项目级任务配置 → 全局任务配置 → 全局默认 → 自动推断"""
+        """解析文字 backend。優先順序：專案級任務配置 → 全域性任務配置 → 全域性預設 → 自動推斷"""
         async with self._open_session() as (session, svc):
             return await self._resolve_text_backend(svc, session, task_type, project_name)
 
@@ -237,7 +237,7 @@ class ConfigResolver:
         session: AsyncSession,
         media_type: str,
     ) -> tuple[str, str]:
-        """遍历 PROVIDER_REGISTRY（按注册顺序），找到第一个 ready 且支持该 media_type 的供应商。"""
+        """遍歷 PROVIDER_REGISTRY（按註冊順序），找到第一個 ready 且支援該 media_type 的供應商。"""
         statuses = await svc.get_all_providers_status()
         ready = {s.name for s in statuses if s.status == "ready"}
 
@@ -257,4 +257,4 @@ class ConfigResolver:
             if model.is_default:
                 return make_provider_id(model.provider_id), model.model_id
 
-        raise ValueError(f"未找到可用的 {media_type} 供应商。请在「全局设置 → 供应商」页面配置至少一个供应商。")
+        raise ValueError(f"未找到可用的 {media_type} 供應商。請在「全域性設定 → 供應商」頁面配置至少一個供應商。")
